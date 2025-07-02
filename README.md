@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="https://static.wikia.nocookie.net/newworld_gamepedia/images/2/2e/New_World_Logo.png" alt="New World Logo" width="120" />
+  <img src="logo.png" alt="Involvex Logo" />
 </p>
 
 <h1 align="center" style="font-family: 'UnifrakturCook', cursive; color: #e2b857; text-shadow: 2px 2px 8px #000, 0 0 8px #e2b85799; letter-spacing: 2px;">

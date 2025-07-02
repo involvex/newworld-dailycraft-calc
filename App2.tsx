@@ -5,7 +5,7 @@ import { RECIPES } from './data/recipes';
 import CraftingNode from './components/CraftingNode';
 import SummaryList from './components/SummaryList';
 import { Item, AllBonuses, BonusConfiguration, RawMaterial } from './types';
-
+import Tesseract from 'tesseract.js';
 
 type SummaryMode = 'net' | 'xp' | 'standing';
 type ViewMode = 'net' | 'gross';
@@ -395,62 +395,137 @@ const App: React.FC = () => {
     <div className="bg-gray-900 text-gray-300 min-h-screen font-sans" style={{background: 'radial-gradient(ellipse at top, #232526 0%, #414345 100%)'}}>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-5xl">
         <header className="mb-8 text-center">
-          <img src="logo.png" alt="Logo" className="mx-auto mb-4 h-16 w-auto" />
           <h1 className="text-4xl sm:text-5xl font-bold tracking-wider" style={{fontFamily: 'UnifrakturCook, cursive', color: '#e2b857', textShadow: '2px 2px 8px #000, 0 0 8px #e2b85799', letterSpacing: 2}}>New World Crafting Calculator</h1>
           <p className="text-lg text-gray-200 mt-2">A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
         </header>
 
-        <div className="bg-gray-800/30 backdrop-blur-sm p-3 rounded-xl border border-yellow-900/40 mb-6 shadow-lg">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-base font-semibold text-yellow-300 flex items-center gap-2">
-              ⚙️ Settings
+        <div className="bg-gray-800/70 p-4 sm:p-6 rounded-2xl border border-yellow-900/40 mb-8 shadow-lg">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
+            <h3 className="text-lg font-semibold text-yellow-300 flex items-center gap-2">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="#e2b857" d="M12 2l2.09 6.26L20 9.27l-5 3.64L16.18 20 12 16.77 7.82 20 9 12.91l-5-3.64 5.91-.01z"/></svg>
+              Calculator Settings
             </h3>
+{(summaryMode === 'net' ? netRequirementsWithInventory : summaryData.materials).length > 0 && (
+  <div>
+    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 mb-4">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-4 gap-2">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-2">Summary</h3>
+          <div className="flex gap-2 mb-2">
             <button
               onClick={() => {
-                setShowAdvanced(!showAdvanced);
-                localStorage.setItem('showAdvanced', JSON.stringify(!showAdvanced));
+                const newValue = !showAdvanced;
+                setShowAdvanced(newValue);
+                localStorage.setItem('showAdvanced', JSON.stringify(newValue));
               }}
-              className="px-3 py-1 rounded text-xs bg-yellow-700 text-white hover:bg-yellow-600 transition font-medium"
+              className="px-4 py-1.5 rounded-lg text-sm bg-yellow-700 text-white hover:bg-yellow-600 shadow transition font-semibold border border-yellow-900/40"
+              onClick={() => setSummaryMode('net')}
+              className={`px-3 py-1 rounded text-sm font-semibold transition ${
+                summaryMode === 'net'
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
             >
               {showAdvanced ? 'Simple' : 'Advanced'}
+              Buy Order
+            </button>
+            <button
+              onClick={() => setSummaryMode('xp')}
+              className={`px-3 py-1 rounded text-sm font-semibold transition ${
+                summaryMode === 'xp'
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              XP Summary
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 max-w-4xl mx-auto">
-            <div>
-              <label className="block text-xs text-yellow-300 mb-1 font-medium">Presets</label>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="md:col-span-3">
+              <label className="block text-xs font-semibold text-yellow-300 mb-1 tracking-wide uppercase">Quick Presets</label>
               <select
                 onChange={(e) => {
-                  const preset = presets.find(p => p.name === e.target.value);
-                  if (preset?.items[0]) {
-                    setSelectedItemId(preset.items[0].id);
-                    setQuantity(preset.items[0].qty);
+                  if (e.target.value) {
+                    const preset = presets.find(p => p.name === e.target.value);
+                    if (preset && preset.items.length > 0) {
+                      setSelectedItemId(preset.items[0].id);
+                      setQuantity(preset.items[0].qty);
+          {summaryMode === 'net' && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  const materials = netRequirementsWithInventory.filter(m => m.quantity > 0);
+                  const text = materials.map(m => `${m.item.name}: ${Math.ceil(m.quantity)}`).join('\n');
+                  navigator.clipboard.writeText(text);
+                }}
+                className="px-3 py-1 rounded text-sm bg-blue-600 text-white hover:bg-blue-700 transition"
+              >
+                Copy List
+              </button>
+              <button
+                onClick={generatePrismaticBuyList}
+                className="px-3 py-1 rounded text-sm bg-purple-600 text-white hover:bg-purple-700 transition"
+              >
+                All Prismatics
+              </button>
+              <button
+                onClick={() => {
+                  const input = prompt('Paste OCR text from New World inventory/storage:\n\nSupported formats:\n- "Iron Ore 150"\n- "150 Iron Ore"\n- Multi-line lists');
+                  if (input) {
+                    const parsedItems = parseInventoryOCR(input);
+                    if (Object.keys(parsedItems).length > 0) {
+                      const newInventory = { ...inventory, ...parsedItems };
+                      setInventory(newInventory);
+                      localStorage.setItem('inventory', JSON.stringify(newInventory));
+                      const itemList = Object.entries(parsedItems).map(([id, qty]) => {
+                        const item = ITEMS[id];
+                        return `${item?.name || id}: ${qty}`;
+                      }).join('\n');
+                      alert(`Imported ${Object.keys(parsedItems).length} items:\n\n${itemList}`);
+                    } else {
+                      alert('No items found. Make sure the text contains item names and quantities.');
+                    }
                   }
                   e.target.value = '';
                 }}
-                className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
+                className="w-full bg-gray-700 border border-yellow-900/40 rounded-md py-2 px-3 text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 shadow text-sm"
+                className="px-3 py-1 rounded text-sm bg-green-600 text-white hover:bg-green-700 transition"
               >
-                <option value="">Select...</option>
+                <option value="">Select preset...</option>
                 {presets.map(preset => (
                   <option key={preset.name} value={preset.name}>{preset.name}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs text-yellow-300 mb-1 font-medium">Search</label>
+            <div className="md:col-span-3">
+              <label htmlFor="search" className="block text-xs font-semibold text-yellow-300 mb-1 tracking-wide uppercase">Search Items</label>
               <input
                 type="text"
+                id="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search..."
-                className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
+                placeholder="Search for items..."
+                className="w-full bg-gray-700 border border-yellow-900/40 rounded-md py-2 px-3 text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 shadow text-sm"
               />
             </div>
-            <div>
-              <label className="block text-xs text-yellow-300 mb-1 font-medium">Item</label>
+            <div className="md:col-span-4">
+              <label htmlFor="item-select" className="block text-xs font-semibold text-yellow-300 mb-1 tracking-wide uppercase">Final Item</label>
               <select
+                id="item-select"
                 value={selectedItemId}
                 onChange={(e) => setSelectedItemId(e.target.value)}
-                className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
+                className="w-full bg-gray-700 border border-yellow-900/40 rounded-md py-2 px-3 text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 shadow text-sm"
+                Import OCR
+              </button>
+              <button
+                onClick={captureAndProcessScreenshot}
+                disabled={isProcessingOCR}
+                className={`px-3 py-1 rounded text-sm transition ${
+                  isProcessingOCR 
+                    ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                    : 'bg-orange-600 text-white hover:bg-orange-700'
+                }`}
+                title="Take screenshot and auto-detect items with OCR"
               >
                 {filteredItems.map(item => (
                   <option key={item.id} value={item.id}>
@@ -458,20 +533,46 @@ const App: React.FC = () => {
                   </option>
                 ))}
               </select>
+                {isProcessingOCR ? 'Processing...' : 'Auto OCR'}
+              </button>
+              <button
+                onClick={() => {
+                  const items = Object.entries(inventory).map(([id, qty]) => {
+                    const item = ITEMS[id];
+                    return `${item?.name || id}: ${qty}`;
+                  }).join('\n');
+                  alert(items || 'Inventory is empty');
+                }}
+                className="px-3 py-1 rounded text-sm bg-gray-600 text-white hover:bg-gray-700 transition"
+              >
+                Show Inventory
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm('Clear all inventory items?')) {
+                    setInventory({});
+                    localStorage.setItem('inventory', JSON.stringify({}));
+                  }
+                }}
+                className="px-3 py-1 rounded text-sm bg-red-600 text-white hover:bg-red-700 transition"
+              >
+                Clear Inventory
+              </button>
             </div>
-            <div>
-              <label className="block text-xs text-yellow-300 mb-1 font-medium">Amount</label>
+            <div className="md:col-span-2">
+              <label htmlFor="quantity" className="block text-xs font-semibold text-yellow-300 mb-1 tracking-wide uppercase">Amount</label>
               <div className="flex gap-1">
                 <input
                   type="number"
+                  id="quantity"
                   value={quantity}
                   min="1"
                   onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="flex-1 bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
+                  className="flex-1 bg-gray-700 border border-yellow-900/40 rounded-md py-2 px-3 text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 shadow text-sm"
                 />
                 <button
                   onClick={() => setQuantity(q => q * 10)}
-                  className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
+                  className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600 shadow"
                   title="×10"
                 >
                   ×10
@@ -479,6 +580,7 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {(viewMode === 'gross' || showAdvanced) && (
@@ -543,147 +645,174 @@ const App: React.FC = () => {
         )}
         {(summaryMode === 'net' ? netRequirementsWithInventory : summaryData.materials).length > 0 && (
           <div>
-            <div className="bg-gray-800/30 backdrop-blur-sm p-3 rounded-xl border border-yellow-900/40 mb-6 shadow-lg">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-base font-semibold text-yellow-300 flex items-center gap-2">
-                    📊 Summary
-                  </h3>
-                  <div className="flex rounded-lg bg-gray-700 border border-yellow-900/40 overflow-hidden">
+            <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 mb-4">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-4 gap-2">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Summary</h3>
+                  <div className="flex gap-2 mb-2">
                     <button
                       onClick={() => setSummaryMode('net')}
-                      className={`px-3 py-1 text-sm font-medium transition ${
+                      className={`px-3 py-1 rounded text-sm font-semibold transition ${
                         summaryMode === 'net'
                           ? 'bg-yellow-600 text-white'
-                          : 'bg-transparent text-yellow-100 hover:bg-gray-600'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                       }`}
                     >
                       Buy Order
                     </button>
                     <button
                       onClick={() => setSummaryMode('xp')}
-                      className={`px-3 py-1 text-sm font-medium transition ${
+                      className={`px-3 py-1 rounded text-sm font-semibold transition ${
                         summaryMode === 'xp'
                           ? 'bg-yellow-600 text-white'
-                          : 'bg-transparent text-yellow-100 hover:bg-gray-600'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                       }`}
                     >
                       XP Summary
                     </button>
                   </div>
+                  {summaryMode === 'net' && (
+                    <>
+                      <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
+                        <div className="flex rounded-lg bg-gray-700 border border-yellow-900/40 overflow-hidden w-full md:w-auto">
+                          <button
+                            onClick={() => setViewMode('net')}
+                            className={`flex-1 py-2 px-3 text-sm font-medium transition z-10 ${
+                              viewMode === 'net'
+                                ? 'bg-yellow-600 text-white shadow font-bold'
+                                : 'bg-transparent text-yellow-100 hover:bg-gray-600'
+                            }`}
+                            style={{ borderTopLeftRadius: 8, borderBottomLeftRadius: 8, borderRight: '1.5px solid #bfa76a' }}
+                            title="Calculate raw materials needed without yield bonuses"
+                          >
+                            Net
+                          </button>
+                          <button
+                            onClick={() => setViewMode('gross')}
+                            className={`flex-1 py-2 px-3 text-sm font-medium transition z-10 ${
+                              viewMode === 'gross'
+                                ? 'bg-yellow-600 text-white shadow font-bold'
+                                : 'bg-transparent text-yellow-100 hover:bg-gray-600'
+                            }`}
+                            style={{ borderTopRightRadius: 8, borderBottomRightRadius: 8, borderLeft: '1.5px solid #bfa76a' }}
+                            title="Calculate with yield bonuses applied"
+                          >
+                            Gross
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => {
+                              const materials = netRequirementsWithInventory.filter(m => m.quantity > 0);
+                              const text = materials.map(m => `${m.item.name}: ${Math.ceil(m.quantity)}`).join('\n');
+                              navigator.clipboard.writeText(text);
+                            }}
+                            className="px-3 py-1 rounded text-sm bg-blue-600 text-white hover:bg-blue-700 transition"
+                          >
+                            Copy List
+                          </button>
+                          <button
+                            onClick={generatePrismaticBuyList}
+                            className="px-3 py-1 rounded text-sm bg-purple-600 text-white hover:bg-purple-700 transition"
+                          >
+                            All Prismatics
+                          </button>
+                          <button
+                            onClick={() => {
+                              const input = prompt('Paste OCR text from New World inventory/storage:\n\nSupported formats:\n- "Iron Ore 150"\n- "150 Iron Ore"\n- Multi-line lists');
+                              if (input) {
+                                const parsedItems = parseInventoryOCR(input);
+                                if (Object.keys(parsedItems).length > 0) {
+                                  const newInventory = { ...inventory, ...parsedItems };
+                                  setInventory(newInventory);
+                                  localStorage.setItem('inventory', JSON.stringify(newInventory));
+                                  const itemList = Object.entries(parsedItems).map(([id, qty]) => {
+                                    const item = ITEMS[id];
+                                    return `${item?.name || id}: ${qty}`;
+                                  }).join('\n');
+                                  alert(`Imported ${Object.keys(parsedItems).length} items:\n\n${itemList}`);
+                                } else {
+                                  alert('No items found. Make sure the text contains item names and quantities.');
+                                }
+                              }
+                            }}
+                            className="px-3 py-1 rounded text-sm bg-green-600 text-white hover:bg-green-700 transition"
+                          >
+                            Import OCR
+                          </button>
+                          <button
+                            onClick={captureAndProcessScreenshot}
+                            disabled={isProcessingOCR}
+                            className={`px-3 py-1 rounded text-sm transition ${
+                              isProcessingOCR 
+                                ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                                : 'bg-orange-600 text-white hover:bg-orange-700'
+                            }`}
+                            title="Take screenshot and auto-detect items with OCR"
+                          >
+                            {isProcessingOCR ? 'Processing...' : 'Auto OCR'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const items = Object.entries(inventory).map(([id, qty]) => {
+                                const item = ITEMS[id];
+                                return `${item?.name || id}: ${qty}`;
+                              }).join('\n');
+                              alert(items || 'Inventory is empty');
+                            }}
+                            className="px-3 py-1 rounded text-sm bg-gray-600 text-white hover:bg-gray-700 transition"
+                          >
+                            Show Inventory
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm('Clear all inventory items?')) {
+                                setInventory({});
+                                localStorage.setItem('inventory', JSON.stringify({}));
+                              }
+                            }}
+                            className="px-3 py-1 rounded text-sm bg-red-600 text-white hover:bg-red-700 transition"
+                          >
+                            Clear Inventory
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
                 
-                {summaryMode === 'net' && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-yellow-300 font-medium">Mode:</span>
-                    <div className="flex rounded bg-gray-700 border border-yellow-900/40 overflow-hidden">
-                      <button
-                        onClick={() => setViewMode('net')}
-                        className={`py-1 px-3 text-xs font-medium transition ${
-                          viewMode === 'net'
-                            ? 'bg-yellow-600 text-white'
-                            : 'bg-transparent text-yellow-100 hover:bg-gray-600'
-                        }`}
-                        title="Without yield bonuses"
-                      >
-                        Net
-                      </button>
-                      <button
-                        onClick={() => setViewMode('gross')}
-                        className={`py-1 px-3 text-xs font-medium transition ${
-                          viewMode === 'gross'
-                            ? 'bg-yellow-600 text-white'
-                            : 'bg-transparent text-yellow-100 hover:bg-gray-600'
-                        }`}
-                        title="With yield bonuses"
-                      >
-                        Gross
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
-              
-              {summaryMode === 'net' && (
-                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-yellow-900/40">
-                  <button
-                    onClick={() => {
-                      const materials = netRequirementsWithInventory.filter(m => m.quantity > 0);
-                      const text = materials.map(m => `${m.item.name}: ${Math.ceil(m.quantity)}`).join('\n');
-                      navigator.clipboard.writeText(text);
-                    }}
-                    className="px-2 py-1 rounded text-xs bg-blue-600 text-white hover:bg-blue-700 transition font-medium"
-                  >
-                    📋 Copy
-                  </button>
-                  <button
-                    onClick={generatePrismaticBuyList}
-                    className="px-2 py-1 rounded text-xs bg-purple-600 text-white hover:bg-purple-700 transition font-medium"
-                  >
-                    ✨ Prismatics
-                  </button>
-                  <button
-                    onClick={() => {
-                      const input = prompt('Paste OCR text from inventory:');
-                      if (input) {
-                        const parsedItems = parseInventoryOCR(input);
-                        if (Object.keys(parsedItems).length > 0) {
-                          const newInventory = { ...inventory, ...parsedItems };
-                          setInventory(newInventory);
-                          localStorage.setItem('inventory', JSON.stringify(newInventory));
-                          const itemList = Object.entries(parsedItems).map(([id, qty]) => {
-                            const item = ITEMS[id];
-                            return `${item?.name || id}: ${qty}`;
-                          }).join('\n');
-                          alert(`Imported ${Object.keys(parsedItems).length} items:\n\n${itemList}`);
-                        } else {
-                          alert('No items found.');
-                        }
-                      }
-                    }}
-                    className="px-2 py-1 rounded text-xs bg-green-600 text-white hover:bg-green-700 transition font-medium"
-                  >
-                    📝 Import
-                  </button>
-                  <button
-                    onClick={captureAndProcessScreenshot}
-                    disabled={isProcessingOCR}
-                    className={`px-2 py-1 rounded text-xs transition font-medium ${
-                      isProcessingOCR 
-                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                        : 'bg-orange-600 text-white hover:bg-orange-700'
-                    }`}
-                    title="Screenshot OCR"
-                  >
-                    {isProcessingOCR ? '⏳' : '📷'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      const items = Object.entries(inventory).map(([id, qty]) => {
-                        const item = ITEMS[id];
-                        return `${item?.name || id}: ${qty}`;
-                      }).join('\n');
-                      alert(items || 'Inventory is empty');
-                    }}
-                    className="px-2 py-1 rounded text-xs bg-gray-600 text-white hover:bg-gray-700 transition font-medium"
-                  >
-                    👁️ View
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm('Clear all inventory?')) {
-                        setInventory({});
-                        localStorage.setItem('inventory', JSON.stringify({}));
-                      }
-                    }}
-                    className="px-2 py-1 rounded text-xs bg-red-600 text-white hover:bg-red-700 transition font-medium"
-                  >
-                    🗑️ Clear
-                  </button>
-                </div>
-              )}
             </div>
-            
+            {/* Calculation Mode Toggle */}
+                <div className="flex flex-col items-end w-full md:w-auto">
+                  <label className="block text-sm font-medium text-yellow-300 mb-1">Calculation Mode</label>
+                  <div className="flex rounded-lg bg-gray-700 border border-yellow-900/40 overflow-hidden w-full md:w-auto">
+                    <button
+                      onClick={() => setViewMode('net')}
+                      className={`flex-1 py-2 px-3 text-sm font-medium transition z-10 ${
+                        viewMode === 'net'
+                          ? 'bg-yellow-600 text-white shadow font-bold'
+                          : 'bg-transparent text-yellow-100 hover:bg-gray-600'
+                      }`}
+                      style={{ borderTopLeftRadius: 8, borderBottomLeftRadius: 8, borderRight: '1.5px solid #bfa76a' }}
+                      title="Calculate raw materials needed without yield bonuses"
+                    >
+                      Net
+                    </button>
+                    <button
+                      onClick={() => setViewMode('gross')}
+                      className={`flex-1 py-2 px-3 text-sm font-medium transition z-10 ${
+                        viewMode === 'gross'
+                          ? 'bg-yellow-600 text-white shadow font-bold'
+                          : 'bg-transparent text-yellow-100 hover:bg-gray-600'
+                      }`}
+                      style={{ borderTopRightRadius: 8, borderBottomRightRadius: 8, borderLeft: '1.5px solid #bfa76a' }}
+                      title="Calculate with yield bonuses applied"
+                    >
+                      Gross
+                    </button>
+                  </div>
+                </div>
             <SummaryList 
               materials={summaryMode === 'net' ? netRequirementsWithInventory : summaryData.materials} 
               getIconUrl={getIconUrl} 
@@ -728,3 +857,42 @@ const App: React.FC = () => {
 };
 
 export default App;
+    <SummaryList 
+      materials={summaryMode === 'net' ? netRequirementsWithInventory : summaryData.materials} 
+      getIconUrl={getIconUrl} 
+      title={summaryData.title}
+      inventory={inventory}
+      onInventoryChange={handleInventoryChange}
+      showInventory={summaryMode === 'net'}
+    />
+    {summaryMode === 'net' && (
+      <div className="mt-4 flex justify-center">
+        <div className="flex rounded-lg bg-gray-700 border border-yellow-900/40 overflow-hidden">
+          <button
+            onClick={() => setViewMode('net')}
+            className={`py-2 px-4 text-sm font-medium transition ${
+              viewMode === 'net'
+                ? 'bg-yellow-600 text-white shadow font-bold'
+                : 'bg-transparent text-yellow-100 hover:bg-gray-600'
+            }`}
+            style={{ borderRight: '1.5px solid #bfa76a' }}
+            title="Calculate raw materials needed without yield bonuses"
+          >
+            Net Requirements
+          </button>
+          <button
+            onClick={() => setViewMode('gross')}
+            className={`py-2 px-4 text-sm font-medium transition ${
+              viewMode === 'gross'
+                ? 'bg-yellow-600 text-white shadow font-bold'
+                : 'bg-transparent text-yellow-100 hover:bg-gray-600'
+            }`}
+            title="Calculate with yield bonuses applied"
+          >
+            Gross Requirements
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+)}

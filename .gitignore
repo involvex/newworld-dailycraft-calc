@@ -7,21 +7,47 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist-ssr
-*.local
+# Node
+node_modules/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Build output
+dist/
+build/
+dist-ssr/
+
+# System files
 .DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+!.vscode/extensions.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-*.png
-readme_ocr.md
-*/__pycache__/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 *_ocr
+
+# Images
+*.png
+*.webp
+icons/
+# Misc
+.env
+.env.*
+*.local
+readme_ocr.md
+
+# Test/coverage
+coverage/
+
+# OS
+*.orig
