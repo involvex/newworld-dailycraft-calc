@@ -1,0 +1,6 @@
+{
+  "name": "New World Crafting Calculator",
+  "description": "An application to calculate the required materials for crafting high-tier items in a game like New World. Users can specify the desired quantity and apply various crafting bonuses to see an optimized material list and crafting tree.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
