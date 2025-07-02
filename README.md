@@ -1,49 +1,72 @@
-# New World Crafting Calculator
 
-A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.
+<p align="center">
+  <img src="https://static.wikia.nocookie.net/newworld_gamepedia/images/2/2e/New_World_Logo.png" alt="New World Logo" width="120" />
+</p>
 
-## Features
+<h1 align="center" style="font-family: 'UnifrakturCook', cursive; color: #e2b857; text-shadow: 2px 2px 8px #000, 0 0 8px #e2b85799; letter-spacing: 2px;">
+  New World Crafting Calculator
+</h1>
 
-- **Crafting Tree Visualization** - Interactive tree showing all required materials
-- **Yield Bonus Calculations** - Factor in skill levels, gear bonuses, and fort buffs
-- **Inventory Management** - Track your current materials
-- **Auto OCR Detection** - Screenshot your inventory/storage for automatic import
-- **Buy Order Generation** - Calculate exactly what you need to purchase
-- **XP Calculations** - See total tradeskill XP from crafting
-- **Prismatic Materials** - Combined shopping lists for all prismatic items
+<p align="center"><b>A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</b></p>
 
-## Run Locally
+---
+
+## ✨ Features
+
+- <b>Crafting Tree Visualization</b> – Interactive tree showing all required materials
+- <b>Yield Bonus Calculations</b> – Factor in skill levels, gear bonuses, and fort buffs
+- <b>Inventory Management</b> – Track your current materials
+- <b>Auto OCR Detection</b> – Screenshot your inventory/storage for automatic import
+- <b>Buy Order Generation</b> – Calculate exactly what you need to purchase
+- <b>XP Calculations</b> – See total tradeskill XP from crafting
+- <b>Prismatic Materials</b> – Combined shopping lists for all prismatic items
+
+---
+
+## 🚀 Run Locally
+
+<details>
+<summary><b>Show Setup Instructions</b></summary>
 
 **Prerequisites:** Node.js
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+npm run dev
+# Open http://localhost:3000
+```
 
-2. Run the app:
-   ```bash
-   npm run dev
-   ```
+</details>
 
-3. Open [http://localhost:3000](http://localhost:3000)
+---
 
-## Usage
+## 🕹️ Usage
 
-1. **Select Item & Quantity** - Choose what you want to craft
-2. **Set Bonuses** - Configure your skill levels and gear bonuses
-3. **Import Inventory** - Use Auto OCR or manual import
-4. **View Results** - See crafting tree and buy order
 
-### OCR Features
+1. <b>Select Item & Quantity</b> – Choose what you want to craft
+2. <b>Set Bonuses</b> – Configure your skill levels and gear bonuses
+3. <b>Import Inventory</b> – Use Auto OCR or manual import
+4. <b>View Results</b> – See crafting tree and buy order
 
-- **Auto OCR** - Take screenshot of New World inventory/storage
-- **Import OCR** - Manually paste OCR text
+### 🖼️ OCR Features
+
+- <b>Auto OCR</b> – Take screenshot of New World inventory/storage
+- <b>Import OCR</b> – Manually paste OCR text
 - Supports various text formats and OCR misreadings
 
-## Technologies
+---
+
+## 🛠️ Technologies
 
 - React + TypeScript
 - Tailwind CSS
 - Tesseract.js (OCR)
 - New World game data
+
+---
+
+## 🏅 Credits
+
+- <b>Author:</b> Involvex
+- <b>Based on:</b> [nw-buddy.de](https://nw-buddy.de/)
+- <b>Images from:</b> [nwdb.info](https://nwdb.info/)

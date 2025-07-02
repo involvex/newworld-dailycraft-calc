@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New World Crafting Calculator</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <meta name="description" content="A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR." />
+  <style>
+    body {
+      font-family: 'Montserrat', Arial, sans-serif;
+      background: linear-gradient(135deg, #232526 0%, #414345 100%);
+    }
+    .nw-title {
+      font-family: 'UnifrakturCook', cursive;
+      letter-spacing: 2px;
+      color: #e2b857;
+      text-shadow: 2px 2px 8px #000, 0 0 8px #e2b85799;
+    }
+    .nw-section {
+      background: rgba(34, 32, 28, 0.85);
+      border-radius: 1rem;
+      box-shadow: 0 4px 24px #0008;
+      border: 1.5px solid #e2b85744;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .nw-list li::marker {
+      color: #e2b857;
+    }
+    .nw-link {
+      color: #e2b857;
+      text-decoration: underline;
+      transition: color 0.2s;
+    }
+    .nw-link:hover {
+      color: #fffbe6;
+    }
+    .nw-footer {
+      color: #bfa76a;
+      font-size: 1rem;
+      margin-top: 2rem;
+    }
+    .nw-credits {
+      color: #bfa76a;
+      font-size: 0.95rem;
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+    .nw-logo {
+      width: 80px;
+      margin-bottom: 1rem;
+      filter: drop-shadow(0 0 12px #e2b85788);
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w-3xl mx-auto p-6">
+    <header class="mb-8 text-center">
+      <h1 class="text-5xl font-bold nw-title mb-2">New World Crafting Calculator</h1>
+      <p class="text-lg text-gray-200">A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
+    </header>
+    <section class="nw-section">
+      <h2 class="text-2xl font-semibold mb-2 text-yellow-400">Features</h2>
+      <ul class="nw-list list-disc list-inside space-y-1 text-gray-100">
+        <li><strong>Crafting Tree Visualization</strong> - Interactive tree showing all required materials</li>
+        <li><strong>Yield Bonus Calculations</strong> - Factor in skill levels, gear bonuses, and fort buffs</li>
+        <li><strong>Inventory Management</strong> - Track your current materials</li>
+        <li><strong>Auto OCR Detection</strong> - Screenshot your inventory/storage for automatic import</li>
+        <li><strong>Buy Order Generation</strong> - Calculate exactly what you need to purchase</li>
+        <li><strong>XP Calculations</strong> - See total tradeskill XP from crafting</li>
+        <li><strong>Prismatic Materials</strong> - Combined shopping lists for all prismatic items</li>
+      </ul>
+    </section>
+    <section class="nw-section">
+      <h2 class="text-2xl font-semibold mb-2 text-yellow-400">Run Locally</h2>
+      <ol class="list-decimal list-inside space-y-1 text-gray-100">
+        <li>Install dependencies:<br><code class="text-yellow-300 bg-gray-800 px-2 py-1 rounded">npm install</code></li>
+        <li>Run the app:<br><code class="text-yellow-300 bg-gray-800 px-2 py-1 rounded">npm run dev</code></li>
+        <li>Open <a href="http://localhost:3000" class="nw-link">http://localhost:3000</a></li>
+      </ol>
+    </section>
+    <section class="nw-section">
+      <h2 class="text-2xl font-semibold mb-2 text-yellow-400">Usage</h2>
+      <ol class="list-decimal list-inside space-y-1 text-gray-100">
+        <li><strong>Select Item & Quantity</strong> - Choose what you want to craft</li>
+        <li><strong>Set Bonuses</strong> - Configure your skill levels and gear bonuses</li>
+        <li><strong>Import Inventory</strong> - Use Auto OCR or manual import</li>
+        <li><strong>View Results</strong> - See crafting tree and buy order</li>
+      </ol>
+    </section>
+    <section class="nw-section">
+      <h2 class="text-2xl font-semibold mb-2 text-yellow-400">OCR Features</h2>
+      <ul class="nw-list list-disc list-inside space-y-1 text-gray-100">
+        <li><strong>Auto OCR</strong> - Take screenshot of New World inventory/storage</li>
+        <li><strong>Import OCR</strong> - Manually paste OCR text</li>
+        <li>Supports various text formats and OCR misreadings</li>
+      </ul>
+    </section>
+    <section class="nw-section">
+      <h2 class="text-2xl font-semibold mb-2 text-yellow-400">Technologies</h2>
+      <ul class="nw-list list-disc list-inside space-y-1 text-gray-100">
+        <li>React + TypeScript</li>
+        <li>Tailwind CSS</li>
+        <li>Tesseract.js (OCR)</li>
+        <li>New World game data</li>
+      </ul>
+    </section>
+    <footer class="nw-footer text-center">
+      <p>View on <a href="https://github.com/involvex/newworld-dailycraft-calc" class="nw-link">GitHub</a></p>
+      <div class="nw-credits">
+        <p><strong>Credits:</strong></p>
+        <p>Author: <span class="text-yellow-300">Involvex</span></p>
+        <p>Based on <a href="https://nw-buddy.de/" class="nw-link" target="_blank" rel="noopener">nw-buddy.de</a></p>
+        <p>Images from <a href="https://nwdb.info/" class="nw-link" target="_blank" rel="noopener">nwdb.info</a></p>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
