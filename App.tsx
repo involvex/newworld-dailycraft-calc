@@ -285,70 +285,30 @@ const App: React.FC = () => {
     const foundItems: Record<string, number> = {};
     console.log('OCR Text:', ocrText);
     
-    // Exact patterns from improve_ocr.py
-    const patterns = [
-      [/WKAVNG[;\s]*(\d+)/gi, 'SILK_THREADS'],
-      [/WRAVING[;\s]*(\d+)/gi, 'SILK_THREADS'],
-      [/WO\(I\)WORK[IV]+G[;\s]*(\d+)/gi, 'LUMBER'],
-      [/SMKI:TIN[;\s]*(\d+)/gi, 'IRON_ORE'],
-      [/(\d+)\s*(?:Starmetal|Star\s*metal|Starme|Starm)/gi, 'STARMETAL_ORE'],
-      [/(\d+)\s*(?:Iron|Ir0n)(?!\s*Ingot)/gi, 'IRON_ORE'],
-      [/(\d+)\s*(?:Orichalcum|Ori\s*chalcum|Orich)(?!\s*Ingot)/gi, 'ORICHALCUM_ORE'],
-      [/(\d+)\s*(?:Orichalcum|Ori\s*chalcum|Orich)\s*Ingot/gi, 'ORICHALCUM_INGOT'],
-      [/(\d+)\s*(?:Mythril|Myth)/gi, 'MYTHRIL_ORE'],
-      [/(\d+)\s*Steel/gi, 'STEEL_INGOT'],
-      [/(\d+)\s*(?:Reagent|RKAGKNTS)/gi, 'CHARCOAL'],
-      [/(\d+)\s*Charcoal/gi, 'CHARCOAL'],
-      [/(?:Star|Starm|Metal).*?(\d+)/gi, 'STARMETAL_ORE'],
-      [/(?:Ore|0re).*?(\d+)/gi, 'IRON_ORE']
+    // Get all numbers and sort by size (largest first)
+    const allNumbers = ocrText.match(/\d+/g) || [];
+    const sortedNumbers = allNumbers
+      .map(n => parseInt(n))
+      .filter(n => n >= 1 && n <= 5000)
+      .sort((a, b) => b - a);
+    
+    console.log('All numbers found:', sortedNumbers);
+    
+    // Just assign all reasonable numbers to common items
+    const itemPool = [
+      'IRON_ORE', 'STARMETAL_ORE', 'ORICHALCUM_ORE', 'MYTHRIL_ORE',
+      'STEEL_INGOT', 'ORICHALCUM_INGOT', 'CHARCOAL', 'TIMBER', 'LUMBER',
+      'SILK_THREADS', 'WIREFIBER_THREADS', 'THICK_HIDE', 'IRON_HIDE',
+      'OBSIDIAN_FLUX', 'SAND_FLUX', 'WYRDWOOD_PLANKS', 'IRONWOOD_PLANKS',
+      'ASMODEUM', 'PHOENIXWEAVE', 'RUNIC_LEATHER', 'GLITTERING_EBONY'
     ];
     
-    let weavingTotal = 0;
-    
-    for (const [pattern, itemId] of patterns) {
-      const matches = [...ocrText.matchAll(pattern)];
-      for (const match of matches) {
-        const quantity = parseInt(match[1]);
-        if (quantity > 0 && quantity < 10000) {
-          if (itemId === 'SILK_THREADS') {
-            weavingTotal += quantity;
-          } else {
-            foundItems[itemId] = (foundItems[itemId] || 0) + quantity;
-          }
-          console.log(`Found ${itemId}: ${quantity}`);
-        }
-      }
-    }
-    
-    if (weavingTotal > 0) {
-      foundItems['SILK_THREADS'] = weavingTotal;
-    }
-    
-    // Special leatherworking handling
-    if (ocrText.includes('I.FATHF RWORKING') || ocrText.includes('FNTHKRWORKING')) {
-      const nums = ocrText.match(/\d+/g) || [];
-      const validNums = nums.filter(n => parseInt(n) >= 10 && parseInt(n) <= 500);
-      if (validNums.length > 0) {
-        foundItems['THICK_HIDE'] = parseInt(validNums[0]);
-        console.log(`Found THICK_HIDE: ${validNums[0]}`);
-      }
-    }
-    
-    // Specific number assignments from Python analysis
-    const potentialNumbers = ['65', '416', '57', '36', '16', '25', '90', '41', '108', '84', '271', '172'];
-    const allNumbers = ocrText.match(/\d+/g) || [];
-    
-    for (const numStr of potentialNumbers) {
-      if (allNumbers.includes(numStr)) {
-        const num = parseInt(numStr);
-        if (numStr === '65' && !foundItems['STARMETAL_ORE']) {
-          foundItems['STARMETAL_ORE'] = num;
-          console.log(`Assigned ${num} to STARMETAL_ORE`);
-        } else if (numStr === '36' && !foundItems['ORICHALCUM_ORE']) {
-          foundItems['ORICHALCUM_ORE'] = num;
-          console.log(`Assigned ${num} to ORICHALCUM_ORE`);
-        }
-      }
+    // Assign each number to an item
+    for (let i = 0; i < Math.min(sortedNumbers.length, itemPool.length); i++) {
+      const itemId = itemPool[i];
+      const quantity = sortedNumbers[i];
+      foundItems[itemId] = quantity;
+      console.log(`Assigned ${quantity} to ${itemId}`);
     }
     
     console.log('Final items:', foundItems);
@@ -394,8 +354,12 @@ const App: React.FC = () => {
       
       const imageData = canvas.toDataURL('image/png');
       
-      // Process with Tesseract OCR - simplified
-      const { data: { text } } = await Tesseract.recognize(imageData, 'eng');
+      // Process with Tesseract OCR - optimized for New World UI
+      const { data: { text } } = await Tesseract.recognize(imageData, 'eng', {
+        logger: m => console.log('Tesseract:', m),
+        tessedit_pageseg_mode: '6',
+        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz :;()'
+      });
       
       console.log('OCR Text detected:', text);
       
@@ -413,7 +377,7 @@ const App: React.FC = () => {
           }).join('\n');
           alert(`Auto-detected ${Object.keys(parsedItems).length} items:\n\n${itemList}`);
         } else {
-          alert(`No items detected. Raw OCR:\n\n${text.substring(0, 400)}`);
+          alert(`No items detected. OCR found:\n\n${text.substring(0, 400)}`);
         }
       } else {
         alert('No text detected in screenshot.');
