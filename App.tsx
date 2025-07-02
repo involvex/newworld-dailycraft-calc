@@ -721,3 +721,42 @@ const App: React.FC = () => {
 };
 
 export default App;
+    <SummaryList 
+      materials={summaryMode === 'net' ? netRequirementsWithInventory : summaryData.materials} 
+      getIconUrl={getIconUrl} 
+      title={summaryData.title}
+      inventory={inventory}
+      onInventoryChange={handleInventoryChange}
+      showInventory={summaryMode === 'net'}
+    />
+    {summaryMode === 'net' && (
+      <div className="mt-4 flex justify-center">
+        <div className="flex rounded-lg bg-gray-700 border border-yellow-900/40 overflow-hidden">
+          <button
+            onClick={() => setViewMode('net')}
+            className={`py-2 px-4 text-sm font-medium transition ${
+              viewMode === 'net'
+                ? 'bg-yellow-600 text-white shadow font-bold'
+                : 'bg-transparent text-yellow-100 hover:bg-gray-600'
+            }`}
+            style={{ borderRight: '1.5px solid #bfa76a' }}
+            title="Calculate raw materials needed without yield bonuses"
+          >
+            Net Requirements
+          </button>
+          <button
+            onClick={() => setViewMode('gross')}
+            className={`py-2 px-4 text-sm font-medium transition ${
+              viewMode === 'gross'
+                ? 'bg-yellow-600 text-white shadow font-bold'
+                : 'bg-transparent text-yellow-100 hover:bg-gray-600'
+            }`}
+            title="Calculate with yield bonuses applied"
+          >
+            Gross Requirements
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+)}
