@@ -136,6 +136,9 @@ const App: React.FC = () => {
   }, []);
 
   const getIconUrl = useCallback((itemId: string) => {
+    if (itemId === 'MULTI') {
+      return 'https://nwdb.info/images/db/icons/filters/itemtypes/all.png';
+    }
     const iconId = ITEMS[itemId]?.iconId || itemId.toLowerCase().replace(/_/g, '');
     return `https://cdn.nwdb.info/db/images/live/v55/icons/items/resource/${iconId}.png`;
   }, []);
@@ -1250,7 +1253,7 @@ const App: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-yellow-300 mb-2">Version</h4>
-                  <div className="text-sm text-gray-300">v0.7.4</div>
+                  <div className="text-sm text-gray-300">v0.8.1</div>
                 </div>
               </div>
               <div className="flex gap-2 mt-6">
@@ -1273,7 +1276,7 @@ const App: React.FC = () => {
                 <div className="text-center">
                   <img src="logo.png" alt="Logo" className="mx-auto mb-4 h-16 w-auto" />
                   <h4 className="text-yellow-300 font-bold text-lg">New World Crafting Calculator</h4>
-                  <p className="text-gray-300 text-sm mt-2">Version 0.7.3</p>
+                  <p className="text-gray-300 text-sm mt-2">Version 0.8.1</p>
                 </div>
                 <div className="text-sm text-gray-300">
                   <p>A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
