@@ -1,18 +1,11 @@
-
-<<<<<<< HEAD
 <p align="center">
   <img src="logo.png" alt="Involvex Logo" />
 </p>
-
-=======
->>>>>>> 33ef57adbf76b207dd80b4eedd5d754b1d3e84c4
 <h1 align="center" style="font-family: 'UnifrakturCook', cursive; color: #e2b857; text-shadow: 2px 2px 8px #000, 0 0 8px #e2b85799; letter-spacing: 2px;">
   New World Crafting Calculator
 </h1>
-
 <p align="center"><b>A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</b></p>
 
----
 
 ## ✨ Features
 
