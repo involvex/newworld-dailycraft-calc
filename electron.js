@@ -52,16 +52,24 @@ function createWindow() {
   
   Menu.setApplicationMenu(customMenu);
 
-  // Load the local build files
-  mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  // Load from dev server in development, build files in production
+  const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
+  
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:5173');
+    // Open DevTools in development
+    mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  }
   
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.show();
   });
 
-  // Hide to tray instead of closing
+  // Hide to tray instead of closing (if tray exists)
   mainWindow.on('close', (event) => {
-    if (!app.isQuiting) {
+    if (!app.isQuiting && tray) {
       event.preventDefault();
       mainWindow.hide();
     }
@@ -70,7 +78,14 @@ function createWindow() {
 
 function createTray() {
   // Create a simple tray icon
-  tray = new Tray(path.join(__dirname, 'public', 'logo.png'));
+  const trayIconPath = path.join(__dirname, 'logo.png');
+  
+  try {
+    tray = new Tray(trayIconPath);
+  } catch (error) {
+    console.error('Failed to create tray:', error);
+    return;
+  }
   
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -105,18 +120,20 @@ function createTray() {
     }
   ]);
 
-  tray.setToolTip('New World Crafting Calculator');
-  tray.setContextMenu(contextMenu);
-  
-  // Double click to show/hide
-  tray.on('double-click', () => {
-    if (mainWindow.isVisible()) {
-      mainWindow.hide();
-    } else {
-      mainWindow.show();
-      mainWindow.focus();
-    }
-  });
+  if (tray) {
+    tray.setToolTip('New World Crafting Calculator');
+    tray.setContextMenu(contextMenu);
+    
+    // Double click to show/hide
+    tray.on('double-click', () => {
+      if (mainWindow.isVisible()) {
+        mainWindow.hide();
+      } else {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    });
+  }
 }
 
 app.whenReady().then(() => {
@@ -133,6 +150,12 @@ app.whenReady().then(() => {
     });
     console.log('Desktop sources found:', sources.length);
     return sources;
+  });
+  
+  // Handle app exit
+  ipcMain.handle('app-exit', () => {
+    app.isQuiting = true;
+    app.quit();
   });
   
   // Register global hotkeys

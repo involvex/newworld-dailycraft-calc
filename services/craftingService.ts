@@ -264,6 +264,10 @@ export const aggregateRawMaterials = (
   viewMode: 'net' | 'gross' = 'net',
   bonuses?: AllBonuses
 ): RawMaterial[] => {
+  if (!node?.item?.id) {
+    return [];
+  }
+  
   if (viewMode === 'net') {
     // Net mode: calculate without yield bonuses
     const materialQuantities = calculateNetRequirements(
@@ -274,15 +278,19 @@ export const aggregateRawMaterials = (
     
     const materials: RawMaterial[] = [];
     materialQuantities.forEach((quantity, itemId) => {
-      if (itemId !== node.item.id) {
+      const item = ITEMS[itemId];
+      if (itemId !== node.item.id && item) {
         materials.push({
-          item: ITEMS[itemId],
+          item: item,
           quantity: quantity
         });
       }
     });
     
-    return materials.sort((a, b) => b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name));
+    return materials.sort((a, b) => {
+      if (!a.item || !b.item) return 0;
+      return b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name);
+    });
   }
   
   // Gross mode: calculate with yield bonuses applied
@@ -297,15 +305,19 @@ export const aggregateRawMaterials = (
   
   const materials: RawMaterial[] = [];
   materialQuantities.forEach((quantity, itemId) => {
-    if (itemId !== node.item.id && ITEMS[itemId]) {
+    const item = ITEMS[itemId];
+    if (itemId !== node.item.id && item) {
       materials.push({
-        item: ITEMS[itemId],
+        item: item,
         quantity: quantity
       });
     }
   });
   
-  return materials.sort((a, b) => b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name));
+  return materials.sort((a, b) => {
+    if (!a.item || !b.item) return 0;
+    return b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name);
+  });
 
 };
 
@@ -336,5 +348,8 @@ export const aggregateAllComponents = (
   };
 
   traverse(node);
-  return Array.from(componentMap.values()).sort((a, b) => b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name));
+  return Array.from(componentMap.values()).sort((a, b) => {
+    if (!a.item || !b.item) return 0;
+    return b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name);
+  });
 };

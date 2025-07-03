@@ -1,21 +1,27 @@
 {
   "name": "new-world-crafting-calculator",
-  "author": {
-    "name": "Involvex"
+  "version": "0.8.1",
+  "description": "A comprehensive crafting calculator for Amazon's New World MMO with OCR inventory detection.",
+  "author": "Involvex",
+  "homepage": "https://involvex.github.io/newworld-dailycraft-calc/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/involvex/newworld-dailycraft-calc.git"
   },
-  "description": "A crafting calculator for New World MMORPG.",
+  "keywords": ["new-world", "mmo", "crafting", "calculator", "gaming", "ocr"],
   "private": true,
-  "version": "0.7.1",
   "main": "electron.js",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "serve": "npm run build && node simple-server.js",
-    "portable": "npm run build && node build-portable.js",
-    "deploy": "npm run build && gh-pages -d dist",
+    "electron-dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron": "npm run build && electron .",
     "dist": "electron-builder",
+    "portable": "npm run build && node build-portable.js",
+    "deploy": "npm run build && copy dist\\index.html docs\\index.html && xcopy dist\\assets docs\\assets /E /I /Y",
+    "push-pages": "npm run deploy && git add docs/ && git commit -m \"Deploy to GitHub Pages\" && git push origin main",
+    "serve": "npm run build && node simple-server.js",
     "build-all": "node build-all.js",
     "build-web": "node build-web-only.js"
   },
@@ -29,31 +35,42 @@
     "@types/node": "^24.0.10",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "concurrently": "^9.2.0",
     "electron": "^37.2.0",
     "electron-builder": "^26.0.17",
     "gh-pages": "^6.3.0",
     "tailwindcss": "^4.1.11",
     "typescript": "^5.8.3",
-    "vite": "^7.0.0"
+    "vite": "^7.0.0",
+    "wait-on": "^8.0.3"
   },
   "build": {
     "appId": "com.involvex.newworld-calculator",
     "productName": "New World Crafting Calculator",
     "directories": {
-      "output": "dist-electron"
+      "output": "dist-electron",
+      "buildResources": "build"
     },
     "files": [
       "electron.js",
       "preload.js",
       "logo.png",
-      "public/**/*",
-      "dist/**/*"
+      "dist/**/*",
+      "!dist/**/*.map"
     ],
     "icon": "logo.png",
+    "compression": "maximum",
     "win": {
-      "target": "portable",
+      "target": {
+        "target": "portable",
+        "arch": ["x64"]
+      },
       "icon": "logo.png"
     },
-    "publish": null
+    "publish": null,
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

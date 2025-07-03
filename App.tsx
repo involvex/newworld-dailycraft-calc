@@ -6,11 +6,14 @@ import CraftingNode from './components/CraftingNode';
 import SummaryList from './components/SummaryList';
 import { Item, AllBonuses, BonusConfiguration, RawMaterial } from './types';
 
+// Types
 type SummaryMode = 'net' | 'xp';
 type ViewMode = 'net' | 'gross';
 type Inventory = Record<string, number>;
 
+// Constants
 const FINAL_ITEMS = [ITEMS.PRISMATIC_INGOT, ITEMS.PRISMATIC_CLOTH, ITEMS.PRISMATIC_LEATHER, ITEMS.PRISMATIC_PLANKS];
+const PRISMATIC_ITEMS = ['PRISMATIC_INGOT', 'PRISMATIC_CLOTH', 'PRISMATIC_LEATHER', 'PRISMATIC_PLANKS'];
 const DEFAULT_BONUSES = {
   Smelting: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
   Weaving: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
@@ -18,9 +21,26 @@ const DEFAULT_BONUSES = {
   Woodworking: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
 };
 const PRESETS = [
-  { name: 'Daily Cooldowns', items: [{ id: 'ASMODEUM', qty: 10 }, { id: 'PHOENIXWEAVE', qty: 10 }, { id: 'RUNIC_LEATHER', qty: 10 }, { id: 'GLITTERING_EBONY', qty: 10 }] },
+  { name: 'Daily Cooldowns', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 },{ id: 'ASMODEUM', qty: 10 }, { id: 'PHOENIXWEAVE', qty: 10 }, { id: 'RUNIC_LEATHER', qty: 10 }, { id: 'GLITTERING_EBONY', qty: 10 }] },
   { name: 'Prismatic Set', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 }] },
-  { name: 'Orichalcum Tools', items: [{ id: 'ORICHALCUM_INGOT', qty: 50 }] },
+];
+const ITEM_MAPPINGS = {
+  'iron ore': 'IRON_ORE', 'steel ingot': 'STEEL_INGOT', 'starmetal ingot': 'STARMETAL_INGOT',
+  'orichalcum ore': 'ORICHALCUM_ORE', 'starmetal ore': 'STARMETAL_ORE', 'charcoal': 'CHARCOAL',
+  'thick hide': 'THICK_HIDE', 'timber': 'TIMBER', 'lumber': 'LUMBER', 'fiber': 'FIBERS',
+  'linen': 'LINEN', 'silk': 'SILK', 'reagents': 'REAGENTS'
+};
+const COMMON_ITEMS = [
+  'Iron Ore', 'Orichalcum Ore', 'Starmetal Ore', 'Steel Ingot', 'Starmetal Ingot', 
+  'Charcoal', 'Thick Hide', 'Linen', 'Fiber', 'Lumber', 'Timber', 'Silk', 
+  'Rawhide', 'Green Wood', 'Aged Wood', 'Silver Ore', 'Gold Ore', 'Mythril Ore',
+  'Reagents', 'Coarse Leather', 'Rugged Leather', 'Wyrdwood', 'Ironwood',
+  'Sand Flux', 'Obsidian Flux', 'Hemp', 'Cotton', 'Wirefiber', 'Silkweed',
+  'Iron Ingot', 'Orichalcum Ingot', 'Platinum Ore', 'Lodestone', 'Fae Iron',
+  'Voidmetal', 'Cinnabar', 'Tolvium', 'Azoth', 'Quintessence', 'Sateen',
+  'Phoenixweave', 'Runic Leather', 'Layered Leather', 'Glittering Ebony',
+  'Asmodeum', 'Void Ore', 'Scalecloth', 'Infused Leather', 'Barbvine',
+  'Blisterweave', 'Scarhide', 'Shadowcloth', 'Voidbent Ingot'
 ];
 
 const getInitial = <T,>(key: string, fallback: T): T => {
@@ -36,28 +56,58 @@ const App: React.FC = () => {
       .sort((a, b) => a.tier !== b.tier ? b.tier - a.tier : a.name.localeCompare(b.name))
   , []);
 
+  // Core state
   const [selectedItemId, setSelectedItemId] = useState(() => getInitial('selectedItemId', FINAL_ITEMS[0].id));
   const [quantity, setQuantity] = useState(() => getInitial('quantity', 10));
+  const [multiItems, setMultiItems] = useState(() => getInitial('multiItems', []));
   const [summaryMode, setSummaryMode] = useState<SummaryMode>(() => getInitial('summaryMode', 'net'));
   const [viewMode, setViewMode] = useState<ViewMode>(() => getInitial('viewMode', 'net'));
   const [bonuses, setBonuses] = useState<AllBonuses>(() => getInitial('bonuses', DEFAULT_BONUSES));
   const [collapsedNodes, setCollapsedNodes] = useState(() => new Set(getInitial<string[]>('collapsedNodes', [])));
   const [inventory, setInventory] = useState<Inventory>(() => getInitial('inventory', {}));
+  
+  // UI state
   const [searchTerm, setSearchTerm] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(() => getInitial('showAdvanced', false));
+  const [manualMode, setManualMode] = useState(() => getInitial('manualMode', false));
+  const [selectedPreset, setSelectedPreset] = useState('');
+  
+  // Modal states
   const [showPrismaticList, setShowPrismaticList] = useState(false);
-  const [prismaticBuyList, setPrismaticBuyList] = useState<RawMaterial[]>([]);
   const [showManualEntry, setShowManualEntry] = useState(false);
-  const [manualEntryText, setManualEntryText] = useState('');
   const [showOCREdit, setShowOCREdit] = useState(false);
-  const [ocrEditText, setOCREditText] = useState('');
-  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showCreatePreset, setShowCreatePreset] = useState(false);
+  
+  // Data states
+  const [prismaticBuyList, setPrismaticBuyList] = useState<RawMaterial[]>([]);
+  const [customPresets, setCustomPresets] = useState(() => getInitial('customPresets', []));
+  const [manualEntryText, setManualEntryText] = useState('');
+  const [ocrEditText, setOCREditText] = useState('');
+  const [presetName, setPresetName] = useState('');
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
 
-  const craftingData = useMemo(() => 
-    selectedItemId && quantity > 0 ? calculateCraftingTree(selectedItemId, quantity, bonuses) : null
-  , [selectedItemId, quantity, bonuses]);
+  const craftingData = useMemo(() => {
+    if (multiItems.length > 0) {
+      // Create individual trees for each item
+      const trees = multiItems.map(({ id, qty }) => calculateCraftingTree(id, qty, bonuses)).filter(Boolean);
+      
+      if (trees.length === 0) return null;
+      if (trees.length === 1) return trees[0];
+      
+      // Create a virtual root node for multiple items
+      return {
+        id: 'ROOT>MULTI',
+        item: { id: 'MULTI', name: 'Multiple Items', tier: 0, type: 'Virtual', types: '', iconId: 'multi', weight: 0, maxStack: 1 },
+        quantity: 1,
+        totalQuantity: multiItems.reduce((sum, item) => sum + item.qty, 0),
+        yieldBonus: 0,
+        children: trees
+      };
+    }
+    return selectedItemId && quantity > 0 ? calculateCraftingTree(selectedItemId, quantity, bonuses) : null;
+  }, [selectedItemId, quantity, bonuses, multiItems, viewMode]);
 
   const handleCollapseAll = useCallback(() => {
     if (!craftingData?.children) return;
@@ -123,7 +173,7 @@ const App: React.FC = () => {
   const filteredItems = useMemo(() => 
     searchTerm ? allCraftableItems.filter(item => 
       item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ) : FINAL_ITEMS
+    ) : allCraftableItems.slice(0, 50)
   , [searchTerm, allCraftableItems]);
 
   useEffect(() => {
@@ -171,18 +221,65 @@ const App: React.FC = () => {
       return { title: 'Tradeskill XP', materials: xpMaterials };
     }
     
+    // Handle multi-item scenarios
+    if (multiItems.length > 0) {
+      const totalMaterials = new Map<string, number>();
+      multiItems.forEach(({ id, qty }) => {
+        const tree = calculateCraftingTree(id, qty, bonuses);
+        if (tree) {
+          const materials = aggregateRawMaterials(tree, new Set(), viewMode, bonuses);
+          materials.forEach(material => {
+            if (material?.item?.id) {
+              const current = totalMaterials.get(material.item.id) || 0;
+              totalMaterials.set(material.item.id, current + material.quantity);
+            }
+          });
+        }
+      });
+      
+      const combinedMaterials = Array.from(totalMaterials.entries())
+        .map(([itemId, qty]) => ({ item: ITEMS[itemId], quantity: qty }))
+        .filter(m => m.item)
+        .sort((a, b) => b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name));
+      
+      return {
+        title: viewMode === 'gross' ? 'Gross Requirements' : 'Buy Order',
+        materials: combinedMaterials
+      };
+    }
+    
     return {
       title: viewMode === 'gross' ? 'Gross Requirements' : 'Buy Order',
       materials: aggregateRawMaterials(craftingData, collapsedNodes, viewMode, bonuses)
     };
-  }, [craftingData, summaryMode, collapsedNodes, selectedItemId, viewMode, bonuses]);
+  }, [craftingData, summaryMode, collapsedNodes, selectedItemId, viewMode, bonuses, multiItems]);
 
   useEffect(() => {
-    const items = { selectedItemId, quantity, summaryMode, viewMode };
+    const items = { selectedItemId, quantity, summaryMode, viewMode, multiItems };
     Object.entries(items).forEach(([key, value]) => 
       localStorage.setItem(key, JSON.stringify(value))
     );
-  }, [selectedItemId, quantity, summaryMode, viewMode]);
+    
+    // Update selected preset based on current selection
+    const allPresets = [...PRESETS, ...customPresets];
+    let matchingPreset;
+    
+    if (multiItems.length > 0) {
+      // Match multi-item preset
+      matchingPreset = allPresets.find(p => 
+        p.items.length > 1 && 
+        p.items.length === multiItems.length &&
+        p.items.every(item => multiItems.some(mi => mi.id === item.id && mi.qty === item.qty))
+      );
+    } else {
+      // Match single-item preset
+      matchingPreset = allPresets.find(p => 
+        p.items.length === 1 && p.items[0]?.id === selectedItemId && p.items[0]?.qty === quantity
+      );
+    }
+    
+    setSelectedPreset(matchingPreset?.name || '');
+  }, [selectedItemId, quantity, summaryMode, viewMode, multiItems, customPresets]);
   
   useEffect(() => {
     if (typeof window !== 'undefined' && window.electronAPI) {
@@ -213,11 +310,10 @@ const App: React.FC = () => {
     }).filter(m => m.quantity > 0 || m.inInventory > 0);
   }, [summaryData.materials, inventory, summaryMode, craftingData]);
 
-  const generatePrismaticBuyList = useCallback(() => {
-    const prismaticItems = ['PRISMATIC_INGOT', 'PRISMATIC_CLOTH', 'PRISMATIC_LEATHER', 'PRISMATIC_PLANKS'];
+  const generatePrismaticBuyList = useCallback(async () => {
     const totalMaterials = new Map<string, number>();
     
-    prismaticItems.forEach(itemId => {
+    PRISMATIC_ITEMS.forEach(itemId => {
       const tree = calculateCraftingTree(itemId, quantity, bonuses);
       if (tree) {
         const materials = aggregateRawMaterials(tree, new Set(), viewMode, bonuses);
@@ -237,18 +333,29 @@ const App: React.FC = () => {
       .filter(m => m.item)
       .sort((a, b) => b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name));
     
+    // Copy to clipboard
+    const text = buyList.map(m => `${m.item.name}: ${Math.ceil(m.quantity)}`).join('\n');
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
+    
     setPrismaticBuyList(buyList);
     setShowPrismaticList(true);
   }, [quantity, bonuses, viewMode]);
 
   const parseInventoryOCR = useCallback((ocrText: string) => {
     const foundItems: Record<string, number> = {};
-    const itemMappings: Record<string, string> = {
-      'iron ore': 'IRON_ORE', 'steel ingot': 'STEEL_INGOT', 'starmetal ingot': 'STARMETAL_INGOT',
-      'orichalcum ore': 'ORICHALCUM_ORE', 'starmetal ore': 'STARMETAL_ORE', 'charcoal': 'CHARCOAL',
-      'thick hide': 'THICK_HIDE', 'timber': 'TIMBER', 'lumber': 'LUMBER', 'fiber': 'FIBERS',
-      'linen': 'LINEN', 'silk': 'SILK', 'reagents': 'REAGENTS'
-    };
     
     // Only process lines that look like "Item Name: Number"
     const lines = ocrText.split(/[\n\r]+/);
@@ -263,7 +370,7 @@ const App: React.FC = () => {
         
         // Only accept realistic quantities (10-10000)
         if (quantity >= 10 && quantity <= 10000) {
-          for (const [key, itemId] of Object.entries(itemMappings)) {
+          for (const [key, itemId] of Object.entries(ITEM_MAPPINGS)) {
             if (itemName === key || itemName.includes(key)) {
               foundItems[itemId] = quantity;
               break;
@@ -425,18 +532,7 @@ const App: React.FC = () => {
         .sort((a, b) => b - a)
         .slice(0, 30);
       
-      const commonItems = [
-        'Iron Ore', 'Orichalcum Ore', 'Starmetal Ore', 'Steel Ingot', 'Starmetal Ingot', 
-        'Charcoal', 'Thick Hide', 'Linen', 'Fiber', 'Lumber', 'Timber', 'Silk', 
-        'Rawhide', 'Green Wood', 'Aged Wood', 'Silver Ore', 'Gold Ore', 'Mythril Ore',
-        'Reagents', 'Coarse Leather', 'Rugged Leather', 'Wyrdwood', 'Ironwood',
-        'Sand Flux', 'Obsidian Flux', 'Hemp', 'Cotton', 'Wirefiber', 'Silkweed',
-        'Iron Ingot', 'Orichalcum Ingot', 'Platinum Ore', 'Lodestone', 'Fae Iron',
-        'Voidmetal', 'Cinnabar', 'Tolvium', 'Azoth', 'Quintessence', 'Sateen',
-        'Phoenixweave', 'Runic Leather', 'Layered Leather', 'Glittering Ebony',
-        'Asmodeum', 'Void Ore', 'Scalecloth', 'Infused Leather', 'Barbvine',
-        'Blisterweave', 'Scarhide', 'Shadowcloth', 'Voidbent Ingot'
-      ];
+
       
       // Combine parsed items with quantity-based suggestions
       const combinedItems = new Map();
@@ -452,7 +548,7 @@ const App: React.FC = () => {
       const unusedNumbers = allNumbers.filter(n => !usedQuantities.has(n));
       
       unusedNumbers.slice(0, Math.min(35 - combinedItems.size, 25)).forEach((qty, i) => {
-        const itemName = commonItems[combinedItems.size + i];
+        const itemName = COMMON_ITEMS[combinedItems.size + i];
         if (itemName && !combinedItems.has(itemName)) {
           combinedItems.set(itemName, qty);
         }
@@ -467,7 +563,7 @@ const App: React.FC = () => {
       } else {
         // Fallback: use quantities even if no items matched
         const fallbackItems = allNumbers.slice(0, 10).map((qty, i) => 
-          `${commonItems[i] || `Item ${i + 1}`}: ${qty}`
+          `${COMMON_ITEMS[i] || `Item ${i + 1}`}: ${qty}`
         ).join('\n');
         suggestions = allNumbers.length > 0 
           ? `Found ${allNumbers.length} potential items. Edit the names below:\n\n${fallbackItems}\n\n(Tip: Change item names to match your actual inventory)`
@@ -499,48 +595,119 @@ const App: React.FC = () => {
           <p className="text-xs text-gray-200 mt-1">A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
         </header>
 
-        <div className="bg-gray-800/30 backdrop-blur-sm p-3 rounded-xl border border-yellow-900/40 mb-6 shadow-lg">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-base font-semibold text-yellow-300 flex items-center gap-2">
+        <div className="bg-gray-800/30 backdrop-blur-sm p-4 rounded-xl border border-yellow-900/40 mb-6 shadow-lg">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+            <h3 className="text-lg font-semibold text-yellow-300 flex items-center gap-2">
               ⚙️ Settings
             </h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setShowSettings(true)}
-                className="px-3 py-1 rounded text-xs bg-gray-700 text-white hover:bg-gray-600 transition font-medium"
+                className="px-3 py-1.5 rounded text-sm bg-gray-700 text-white hover:bg-gray-600 transition font-medium"
               >
                 ⚙️ Settings
               </button>
+              <button
+                onClick={() => setShowAbout(true)}
+                className="px-3 py-1.5 rounded text-sm bg-blue-700 text-white hover:bg-blue-600 transition font-medium"
+              >
+                ℹ️ About
+              </button>
+              {typeof window !== 'undefined' && window.electronAPI && (
+                <button
+                  onClick={() => window.electronAPI.exitApp()}
+                  className="px-3 py-1.5 rounded text-sm bg-red-700 text-white hover:bg-red-600 transition font-medium"
+                >
+                  ❌ Exit
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowAdvanced(!showAdvanced);
                   localStorage.setItem('showAdvanced', JSON.stringify(!showAdvanced));
                 }}
-                className="px-3 py-1 rounded text-xs bg-yellow-700 text-white hover:bg-yellow-600 transition font-medium"
+                className="px-3 py-1.5 rounded text-sm bg-yellow-700 text-white hover:bg-yellow-600 transition font-medium"
               >
                 {showAdvanced ? 'Simple' : 'Advanced'}
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-yellow-300 mb-1 font-medium">Presets</label>
-              <select
-                onChange={(e) => {
-                  const preset = PRESETS.find(p => p.name === e.target.value);
-                  if (preset?.items[0]) {
-                    setSelectedItemId(preset.items[0].id);
-                    setQuantity(preset.items[0].qty);
-                  }
-                  e.target.value = '';
-                }}
-                className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
-              >
-                <option value="">Select...</option>
-                {PRESETS.map(preset => (
-                  <option key={preset.name} value={preset.name}>{preset.name}</option>
-                ))}
-              </select>
+              <div className="flex gap-1">
+                <select
+                  value={selectedPreset}
+                  onChange={(e) => {
+                    const presetName = e.target.value;
+                    setSelectedPreset(presetName);
+                    
+                    if (presetName) {
+                      const allPresets = [...PRESETS, ...customPresets];
+                      const preset = allPresets.find(p => p.name === presetName);
+                      if (preset?.items) {
+                        if (preset.items.length === 1) {
+                          // Single item preset
+                          setSelectedItemId(preset.items[0].id);
+                          setQuantity(preset.items[0].qty);
+                          setMultiItems([]);
+                        } else {
+                          // Multi-item preset
+                          setMultiItems(preset.items);
+                          setSelectedItemId('');
+                          setQuantity(0);
+                        }
+                        
+                        if (preset.collapsedNodes) {
+                          const nodeSet = new Set(preset.collapsedNodes);
+                          setCollapsedNodes(nodeSet);
+                          localStorage.setItem('collapsedNodes', JSON.stringify(preset.collapsedNodes));
+                        }
+                        
+                        localStorage.setItem('multiItems', JSON.stringify(preset.items.length > 1 ? preset.items : []));
+                      }
+                    }
+                  }}
+                  className="flex-1 bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
+                >
+                  <option value="">Select...</option>
+                  {PRESETS.map(preset => (
+                    <option key={preset.name} value={preset.name}>{preset.name}</option>
+                  ))}
+                  {customPresets.length > 0 && <option disabled>--- Custom ---</option>}
+                  {customPresets.map(preset => (
+                    <option key={preset.name} value={preset.name}>{preset.name}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setShowCreatePreset(true)}
+                  className="px-2 py-1 bg-green-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-green-600"
+                  title="Create Preset"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => {
+                    const currentPreset = `${ITEMS[selectedItemId]?.name} x${quantity}`;
+                    const matchingPreset = customPresets.find(p => 
+                      p.items[0]?.id === selectedItemId && p.items[0]?.qty === quantity
+                    );
+                    if (matchingPreset) {
+                      if (confirm(`Delete preset "${matchingPreset.name}"?`)) {
+                        const updatedPresets = customPresets.filter(p => p.name !== matchingPreset.name);
+                        setCustomPresets(updatedPresets);
+                        localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
+                      }
+                    } else {
+                      alert(`No preset found for current selection: ${currentPreset}`);
+                    }
+                  }}
+                  className="px-2 py-1 bg-red-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-red-600"
+                  title="Delete Current Selection Preset"
+                >
+                  -
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-xs text-yellow-300 mb-1 font-medium">Search</label>
@@ -568,27 +735,50 @@ const App: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs text-yellow-300 mb-1 font-medium">Amount</label>
-              <div className="flex gap-1">
+              <div className="space-y-2">
                 <input
                   type="number"
                   value={quantity}
                   min="1"
                   onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="flex-1 bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
+                  className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
                 />
-                <button
-                  onClick={() => setQuantity(q => q * 10)}
-                  className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
-                  title="×10"
-                >
-                  ×10
-                </button>
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    onClick={() => setQuantity(q => q + 10)}
+                    className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
+                    title="+10"
+                  >
+                    +10
+                  </button>
+                  <button
+                    onClick={() => setQuantity(q => q + 100)}
+                    className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
+                    title="+100"
+                  >
+                    +100
+                  </button>
+                  <button
+                    onClick={() => setQuantity(q => q + 1000)}
+                    className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
+                    title="+1000"
+                  >
+                    +1000
+                  </button>
+                  <button
+                    onClick={() => setQuantity(1)}
+                    className="px-2 py-1 bg-red-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-red-600"
+                    title="Reset to 1"
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {(viewMode === 'gross' || showAdvanced) && (
+        {showAdvanced && (
           <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 mb-6">
             <h3 className="text-lg font-semibold text-white mb-3">Yield Bonuses</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -714,10 +904,25 @@ const App: React.FC = () => {
               {summaryMode === 'net' && (
                 <div className="flex flex-wrap gap-1.5 pt-2 border-t border-yellow-900/40">
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       const materials = netRequirementsWithInventory.filter(m => m.quantity > 0);
                       const text = materials.map(m => `${m.item.name}: ${Math.ceil(m.quantity)}`).join('\n');
-                      navigator.clipboard.writeText(text);
+                      try {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                          await navigator.clipboard.writeText(text);
+                        } else {
+                          // Fallback for older browsers
+                          const textArea = document.createElement('textarea');
+                          textArea.value = text;
+                          document.body.appendChild(textArea);
+                          textArea.select();
+                          document.execCommand('copy');
+                          document.body.removeChild(textArea);
+                        }
+                      } catch (err) {
+                        console.error('Copy failed:', err);
+                        alert('Copy failed. Text:\n\n' + text);
+                      }
                     }}
                     className="px-2 py-1 rounded text-xs bg-blue-600 text-white hover:bg-blue-700 transition font-medium"
                   >
@@ -729,14 +934,16 @@ const App: React.FC = () => {
                   >
                     ✨ Prismatics
                   </button>
-                  <button
-                    onClick={() => {
-                      setShowManualEntry(true);
-                    }}
-                    className="px-2 py-1 rounded text-xs bg-green-600 text-white hover:bg-green-700 transition font-medium"
-                  >
-                    📝 Import
-                  </button>
+                  {manualMode && (
+                    <button
+                      onClick={() => {
+                        setShowManualEntry(true);
+                      }}
+                      className="px-2 py-1 rounded text-xs bg-green-600 text-white hover:bg-green-700 transition font-medium"
+                    >
+                      📝 Import
+                    </button>
+                  )}
                   {(window.location.hostname === 'localhost' || window.location.protocol === 'https:' || window.location.protocol === 'file:' || typeof window !== 'undefined' && window.electronAPI) && (
                     <button
                       onClick={captureAndProcessScreenshot}
@@ -751,13 +958,15 @@ const App: React.FC = () => {
                       {isProcessingOCR ? '⏳' : '📷'}
                     </button>
                   )}
-                  <button
-                    onClick={() => setShowManualEntry(true)}
-                    className="px-2 py-1 rounded text-xs bg-yellow-600 text-white hover:bg-yellow-700 transition font-medium"
-                    title="Manual Entry"
-                  >
-                    ✏️ Manual
-                  </button>
+                  {manualMode && (
+                    <button
+                      onClick={() => setShowManualEntry(true)}
+                      className="px-2 py-1 rounded text-xs bg-yellow-600 text-white hover:bg-yellow-700 transition font-medium"
+                      title="Manual Entry"
+                    >
+                      ✏️ Manual
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       const items = Object.entries(inventory).map(([id, qty]) => {
@@ -770,49 +979,7 @@ const App: React.FC = () => {
                   >
                     👁️ View
                   </button>
-                  <button
-                    onClick={() => {
-                      const data = JSON.stringify({ inventory, bonuses, selectedItemId, quantity }, null, 2);
-                      const blob = new Blob([data], { type: 'application/json' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = 'crafting-data.json';
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                    className="px-2 py-1 rounded text-xs bg-blue-600 text-white hover:bg-blue-700 transition font-medium"
-                  >
-                    💾 Export
-                  </button>
-                  <button
-                    onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.accept = '.json';
-                      input.onchange = (e) => {
-                        const file = (e.target as HTMLInputElement).files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (e) => {
-                            try {
-                              const data = JSON.parse(e.target?.result as string);
-                              if (data.inventory) setInventory(data.inventory);
-                              if (data.bonuses) setBonuses(data.bonuses);
-                              if (data.selectedItemId) setSelectedItemId(data.selectedItemId);
-                              if (data.quantity) setQuantity(data.quantity);
-                              alert('Data imported successfully!');
-                            } catch { alert('Invalid file format'); }
-                          };
-                          reader.readAsText(file);
-                        }
-                      };
-                      input.click();
-                    }}
-                    className="px-2 py-1 rounded text-xs bg-green-600 text-white hover:bg-green-700 transition font-medium"
-                  >
-                    📁 Import
-                  </button>
+
                   <button
                     onClick={() => {
                       if (confirm('Clear all inventory?')) {
@@ -972,9 +1139,108 @@ const App: React.FC = () => {
 
         {showSettings && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full mx-4">
+            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-lg w-full mx-4">
               <h3 className="text-lg font-semibold text-white mb-4">Settings</h3>
               <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-300 mb-2">Interface Options</h4>
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-sm text-gray-300">Show Manual Entry Button</span>
+                    <input
+                      type="checkbox"
+                      checked={manualMode}
+                      onChange={(e) => {
+                        setManualMode(e.target.checked);
+                        localStorage.setItem('manualMode', JSON.stringify(e.target.checked));
+                      }}
+                      className="h-4 w-4 bg-gray-700 border-gray-600 rounded text-yellow-500 focus:ring-yellow-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-300 mb-2">Data Management</h4>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const data = JSON.stringify({ inventory, bonuses, selectedItemId, quantity, customPresets }, null, 2);
+                          const blob = new Blob([data], { type: 'application/json' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = 'crafting-data.json';
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="px-3 py-1 rounded text-xs bg-blue-600 text-white hover:bg-blue-700 transition font-medium"
+                      >
+                        💾 Export Data
+                      </button>
+                      <button
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = '.json';
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (e) => {
+                                try {
+                                  const data = JSON.parse(e.target?.result as string);
+                                  if (data.inventory) setInventory(data.inventory);
+                                  if (data.bonuses) setBonuses(data.bonuses);
+                                  if (data.selectedItemId) setSelectedItemId(data.selectedItemId);
+                                  if (data.quantity) setQuantity(data.quantity);
+                                  if (data.customPresets) {
+                                    setCustomPresets(data.customPresets);
+                                    localStorage.setItem('customPresets', JSON.stringify(data.customPresets));
+                                  }
+                                  alert('Data imported successfully!');
+                                } catch { alert('Invalid file format'); }
+                              };
+                              reader.readAsText(file);
+                            }
+                          };
+                          input.click();
+                        }}
+                        className="px-3 py-1 rounded text-xs bg-green-600 text-white hover:bg-green-700 transition font-medium"
+                      >
+                        📁 Import Data
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (confirm('Delete all custom presets? This cannot be undone.')) {
+                            setCustomPresets([]);
+                            localStorage.setItem('customPresets', JSON.stringify([]));
+                            alert('Custom presets deleted.');
+                          }
+                        }}
+                        className="px-3 py-1 rounded text-xs bg-orange-600 text-white hover:bg-orange-700 transition font-medium"
+                      >
+                        🗑️ Delete Presets
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('Erase ALL data including inventory, bonuses, and presets? This cannot be undone.')) {
+                            setInventory({});
+                            setBonuses(DEFAULT_BONUSES);
+                            setCustomPresets([]);
+                            setSelectedItemId(FINAL_ITEMS[0].id);
+                            setQuantity(10);
+                            localStorage.clear();
+                            alert('All data erased.');
+                          }
+                        }}
+                        className="px-3 py-1 rounded text-xs bg-red-600 text-white hover:bg-red-700 transition font-medium"
+                      >
+                        🗑️ Erase All Data
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 <div>
                   <h4 className="text-sm font-medium text-yellow-300 mb-2">Global Hotkeys</h4>
                   <div className="text-sm text-gray-300 space-y-1">
@@ -984,7 +1250,7 @@ const App: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-yellow-300 mb-2">Version</h4>
-                  <div className="text-sm text-gray-300">v0.7.1</div>
+                  <div className="text-sm text-gray-300">v0.7.4</div>
                 </div>
               </div>
               <div className="flex gap-2 mt-6">
@@ -1007,11 +1273,33 @@ const App: React.FC = () => {
                 <div className="text-center">
                   <img src="logo.png" alt="Logo" className="mx-auto mb-4 h-16 w-auto" />
                   <h4 className="text-yellow-300 font-bold text-lg">New World Crafting Calculator</h4>
-                  <p className="text-gray-300 text-sm mt-2">Version 0.7.1</p>
+                  <p className="text-gray-300 text-sm mt-2">Version 0.7.3</p>
                 </div>
                 <div className="text-sm text-gray-300">
                   <p>A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
                   <p className="mt-2">Created by <span className="text-yellow-300">Involvex</span></p>
+                  <div className="mt-4 space-y-2">
+                    <div>
+                      <a 
+                        href="https://github.com/involvex/newworld-dailycraft-calc" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 underline"
+                      >
+                        💻 GitHub Repository
+                      </a>
+                    </div>
+                    <div>
+                      <a 
+                        href="https://involvex.github.io/newworld-dailycraft-calc/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-green-400 hover:text-green-300 underline"
+                      >
+                        🌐 Live Web App
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2 mt-6">
@@ -1026,8 +1314,92 @@ const App: React.FC = () => {
           </div>
         )}
         
+        {showCreatePreset && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-white mb-4">Create Preset</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-yellow-300 mb-2">Preset Name</label>
+                  <input
+                    type="text"
+                    value={presetName}
+                    onChange={(e) => setPresetName(e.target.value)}
+                    placeholder="My Custom Preset"
+                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                  />
+                </div>
+                <div className="text-sm text-gray-300">
+                  <p>Current Selection:</p>
+                  {multiItems.length > 0 ? (
+                    <div className="text-yellow-300">
+                      {multiItems.map((item, i) => (
+                        <div key={i}>{ITEMS[item.id]?.name} x{item.qty}</div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-yellow-300">{ITEMS[selectedItemId]?.name} x{quantity}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2 mt-6">
+                <button
+                  onClick={() => {
+                    if (presetName.trim()) {
+                      const trimmedName = presetName.trim();
+                      const existingIndex = customPresets.findIndex(p => p.name === trimmedName);
+                      
+                      if (existingIndex !== -1) {
+                        if (confirm(`Preset "${trimmedName}" already exists. Overwrite?`)) {
+                          const newPreset = {
+                            name: trimmedName,
+                            items: [{ id: selectedItemId, qty: quantity }],
+                            collapsedNodes: [...collapsedNodes]
+                          };
+                          const updatedPresets = [...customPresets];
+                          updatedPresets[existingIndex] = newPreset;
+                          setCustomPresets(updatedPresets);
+                          localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
+                          setShowCreatePreset(false);
+                          setPresetName('');
+                        }
+                      } else {
+                        const newPreset = {
+                          name: trimmedName,
+                          items: multiItems.length > 0 ? multiItems : [{ id: selectedItemId, qty: quantity }],
+                          collapsedNodes: [...collapsedNodes]
+                        };
+                        const updatedPresets = [...customPresets, newPreset];
+                        setCustomPresets(updatedPresets);
+                        localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
+                        setShowCreatePreset(false);
+                        setPresetName('');
+                      }
+                    }
+                  }}
+                  disabled={!presetName.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:bg-gray-500"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCreatePreset(false);
+                    setPresetName('');
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <footer className="text-center mt-12 text-gray-600 text-sm">
+          <p><img src="logo.png" alt="Logo" className="mx-auto mb-2 h-16 w-auto" /></p>
           <p>Created by Involvex</p>
+          <p>Data from <a href="https://nw-buddy.de" className="text-blue-500 hover:underline">nw-buddy.de</a></p>
         </footer>
       </div>
     </div>

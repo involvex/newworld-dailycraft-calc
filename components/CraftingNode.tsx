@@ -12,7 +12,7 @@ interface CraftingNodeProps {
 }
 
 const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = false, isLast = false, collapsedNodes, onToggle }) => {
-  const hasChildren = node.children.length > 0;
+  const hasChildren = node.children?.length > 0;
   const isExpanded = !collapsedNodes.has(node.id);
 
   const toggleExpansion = () => {
@@ -41,7 +41,7 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
             <button 
                 onClick={toggleExpansion} 
                 className="absolute -left-[0.4rem] top-[1.3rem] z-10 flex h-[1.1rem] w-[1.1rem] items-center justify-center rounded-full bg-gray-700 hover:bg-gray-600 border border-gray-500 cursor-pointer"
-                aria-label={isExpanded ? `Collapse ${node.item.name}` : `Expand ${node.item.name}`}
+                aria-label={isExpanded ? `Collapse ${node.item?.name || 'item'}` : `Expand ${node.item?.name || 'item'}`}
             >
                 <div className={`h-px w-2 ${isExpanded ? '' : 'rotate-90'} absolute bg-gray-300 transition-transform`}></div>
                 <div className="h-2 w-px bg-gray-300"></div>
@@ -52,10 +52,10 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
         )}
 
         <div className="flex items-center space-x-3">
-            <div className={`flex-shrink-0 h-10 w-10 rounded-full bg-gray-900 border-2 ${node.item.type.includes('Legendary') ? 'border-yellow-400' : 'border-gray-600'}`}>
+            <div className={`flex-shrink-0 h-10 w-10 rounded-full bg-gray-900 border-2 ${node.item?.type?.includes('Legendary') ? 'border-yellow-400' : 'border-gray-600'}`}>
                 <img
-                  src={getIconUrl(node.item.id, node.item.tier)}
-                  alt={node.item.name}
+                  src={getIconUrl(node.item?.id || '', node.item?.tier || 0)}
+                  alt={node.item?.name || ''}
                   className="h-full w-full object-contain"
                   onError={(e) => {
                     const fallback = '/fallback-icon.png';
@@ -64,13 +64,13 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
                       e.currentTarget.src = fallback;
                     }
                   }}
-                  data-debug-url={getIconUrl(node.item.id, node.item.tier)}
+                  data-debug-url={getIconUrl(node.item?.id || '', node.item?.tier || 0)}
                 />
             </div>
             
             <div className="flex flex-col">
                 <p className="font-bold text-white">
-                    {(isRoot ? Math.ceil(node.totalQuantity) : displayQuantity).toLocaleString()} x {node.item.name}
+                    {(isRoot ? Math.ceil(node.totalQuantity) : displayQuantity).toLocaleString()} x {node.item?.name || 'Unknown Item'}
                 </p>
                 {node.yieldBonus > 0 && (
                     <span className="text-sm font-semibold text-green-400">
@@ -83,12 +83,12 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
 
       {hasChildren && isExpanded && (
         <div className="mt-1 pl-5">
-          {node.children.map((child, index) => (
+          {node.children?.map((child, index) => (
             <CraftingNode
               key={child.id}
               node={child}
               getIconUrl={getIconUrl}
-              isLast={index === node.children.length - 1}
+              isLast={index === (node.children?.length || 0) - 1}
               collapsedNodes={collapsedNodes}
               onToggle={onToggle}
             />
