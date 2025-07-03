@@ -68,7 +68,17 @@ npm run dev
 - <b>Images from:</b> [nwdb.info](https://nwdb.info/)
 
 ---
-## ToDo
+```markdown
+## 📝 ToDo
 
-- Improve OCR 
+- 🔍 Improve OCR accuracy and recognition
+- 📱 Add mobile responsive design
+- 🌐 Support multiple languages
+- 💾 Add local storage for saved configurations
+- 📊 Add crafting cost analysis graphs
+- ⚙️ Implement user settings/preferences
+- 🎨 Add dark/light theme toggle
+- 🔒 Add user accounts and saved builds
+- ⌨️ Keyboard shortcuts for common actions
+``` 
 
