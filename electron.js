@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu } = require('electron');
+const { app, BrowserWindow, Tray, Menu, session, desktopCapturer, ipcMain } = require('electron');
 const path = require('path');
 
 let tray = null;
@@ -8,17 +8,19 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: path.join(__dirname, 'logo.png'),
     webPreferences: {
-      nodeIntegration: false,
+      nodeIntegration: true,
       contextIsolation: true,
-      webSecurity: true
+      webSecurity: false,
+      preload: path.join(__dirname, 'preload.js')
     },
     title: 'New World Crafting Calculator',
     show: false
   });
 
-  // Load the GitHub Pages URL directly
-  mainWindow.loadURL('https://involvex.github.io/newworld-dailycraft-calc/');
+  // Load the local build files
+  mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
   
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.show();
@@ -34,8 +36,8 @@ function createWindow() {
 }
 
 function createTray() {
-  // Create a simple tray icon (you can replace with actual icon file)
-  tray = new Tray(path.join(__dirname, 'logo.png'));
+  // Create a simple tray icon
+  tray = new Tray(path.join(__dirname, 'public', 'logo.png'));
   
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -76,6 +78,17 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
+  // Handle screen capture permissions
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    callback(true);
+  });
+  
+  // Handle desktop capture
+  ipcMain.handle('get-desktop-sources', async () => {
+    const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
+    return sources;
+  });
+  
   createWindow();
   createTray();
 });

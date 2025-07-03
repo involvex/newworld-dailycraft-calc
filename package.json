@@ -5,7 +5,7 @@
   },
   "description": "A crafting calculator for New World MMORPG.",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.4.6",
   "main": "electron.js",
   "scripts": {
     "dev": "vite",
@@ -26,15 +26,14 @@
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.11",
     "@types/node": "^22.16.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "electron": "^37.2.0",
     "electron-builder": "^26.0.17",
-    "gh-pages": "^6.0.0",
-    "tailwindcss": "^0.0.0-insiders.9169d73",
-    "typescript": "~5.7.2",
+    "gh-pages": "^6.3.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
     "vite": "^6.3.5"
   },
   "build": {
@@ -45,10 +44,15 @@
     },
     "files": [
       "electron.js",
-      "logo.png"
+      "preload.js",
+      "logo.png",
+      "public/**/*",
+      "dist/**/*"
     ],
+    "icon": "logo.png",
     "win": {
-      "target": "portable"
+      "target": "portable",
+      "icon": "logo.png"
     },
     "publish": null
   }

@@ -54,6 +54,10 @@ const App: React.FC = () => {
   const [showAdvanced, setShowAdvanced] = useState<boolean>(() => getInitial('showAdvanced', false));
   const [showPrismaticList, setShowPrismaticList] = useState<boolean>(false);
   const [prismaticBuyList, setPrismaticBuyList] = useState<RawMaterial[]>([]);
+  const [showManualEntry, setShowManualEntry] = useState<boolean>(false);
+  const [manualEntryText, setManualEntryText] = useState<string>('');
+  const [showOCREdit, setShowOCREdit] = useState<boolean>(false);
+  const [ocrEditText, setOCREditText] = useState<string>('');
   
   const presets = [
     { name: 'Daily Cooldowns', items: [{ id: 'ASMODEUM', qty: 10 }, { id: 'PHOENIXWEAVE', qty: 10 }, { id: 'RUNIC_LEATHER', qty: 10 }, { id: 'GLITTERING_EBONY', qty: 10 }] },
@@ -285,33 +289,96 @@ const App: React.FC = () => {
     const foundItems: Record<string, number> = {};
     console.log('OCR Text:', ocrText);
     
-    // Get all numbers and sort by size (largest first)
-    const allNumbers = ocrText.match(/\d+/g) || [];
-    const sortedNumbers = allNumbers
-      .map(n => parseInt(n))
-      .filter(n => n >= 1 && n <= 5000)
-      .sort((a, b) => b - a);
+    // Comprehensive item mappings with common OCR misreadings
+    const itemMappings: Record<string, string> = {
+      // Ores
+      'iron ore': 'IRON_ORE', 'ironore': 'IRON_ORE', 'iron': 'IRON_ORE',
+      'starmetal ore': 'STARMETAL_ORE', 'starmetalore': 'STARMETAL_ORE', 'starmetal': 'STARMETAL_ORE',
+      'orichalcum ore': 'ORICHALCUM_ORE', 'orichalcumore': 'ORICHALCUM_ORE', 'orichalcum': 'ORICHALCUM_ORE',
+      'silver ore': 'SILVER_ORE', 'silverore': 'SILVER_ORE', 'silver': 'SILVER_ORE',
+      'gold ore': 'GOLD_ORE', 'goldore': 'GOLD_ORE', 'gold': 'GOLD_ORE',
+      'platinum ore': 'PLATINUM_ORE', 'platinumore': 'PLATINUM_ORE', 'platinum': 'PLATINUM_ORE',
+      
+      // Ingots
+      'iron ingot': 'IRON_INGOT', 'ironingot': 'IRON_INGOT',
+      'steel ingot': 'STEEL_INGOT', 'steelingot': 'STEEL_INGOT', 'steel': 'STEEL_INGOT',
+      'starmetal ingot': 'STARMETAL_INGOT', 'starmetalingot': 'STARMETAL_INGOT',
+      'orichalcum ingot': 'ORICHALCUM_INGOT', 'orichalcumingot': 'ORICHALCUM_INGOT',
+      'asmodeum': 'ASMODEUM',
+      
+      // Wood
+      'green wood': 'GREEN_WOOD', 'greenwood': 'GREEN_WOOD',
+      'aged wood': 'AGED_WOOD', 'agedwood': 'AGED_WOOD',
+      'wyrdwood': 'WYRDWOOD', 'wyrd wood': 'WYRDWOOD',
+      'ironwood': 'IRONWOOD', 'iron wood': 'IRONWOOD',
+      'timber': 'TIMBER',
+      'lumber': 'LUMBER',
+      'wyrdwood planks': 'WYRDWOOD_PLANKS', 'wyrdwoodplanks': 'WYRDWOOD_PLANKS',
+      'ironwood planks': 'IRONWOOD_PLANKS', 'ironwoodplanks': 'IRONWOOD_PLANKS',
+      'glittering ebony': 'GLITTERING_EBONY', 'glitteringebony': 'GLITTERING_EBONY',
+      
+      // Leather
+      'rawhide': 'RAWHIDE', 'raw hide': 'RAWHIDE',
+      'thick hide': 'THICK_HIDE', 'thickhide': 'THICK_HIDE',
+      'iron hide': 'IRON_HIDE', 'ironhide': 'IRON_HIDE',
+      'coarse leather': 'COARSE_LEATHER', 'coarseleather': 'COARSE_LEATHER',
+      'rugged leather': 'RUGGED_LEATHER', 'ruggedleather': 'RUGGED_LEATHER',
+      'layered leather': 'LAYERED_LEATHER', 'layeredleather': 'LAYERED_LEATHER',
+      'infused leather': 'INFUSED_LEATHER', 'infusedleather': 'INFUSED_LEATHER',
+      'runic leather': 'RUNIC_LEATHER', 'runicleather': 'RUNIC_LEATHER',
+      
+      // Cloth
+      'fibers': 'FIBERS', 'fiber': 'FIBERS',
+      'silk threads': 'SILK_THREADS', 'silkthreads': 'SILK_THREADS',
+      'wirefiber': 'WIREFIBER', 'wire fiber': 'WIREFIBER',
+      'linen': 'LINEN',
+      'sateen': 'SATEEN',
+      'silk': 'SILK',
+      'infused silk': 'INFUSED_SILK', 'infusedsilk': 'INFUSED_SILK',
+      'phoenixweave': 'PHOENIXWEAVE', 'phoenix weave': 'PHOENIXWEAVE',
+      
+      // Other materials
+      'charcoal': 'CHARCOAL',
+      'flux': 'FLUX',
+      'sandpaper': 'SANDPAPER', 'sand paper': 'SANDPAPER',
+      'tannin': 'TANNIN',
+      'crossweave': 'CROSSWEAVE', 'cross weave': 'CROSSWEAVE',
+      'solvent': 'SOLVENT',
+      'obsidian flux': 'OBSIDIAN_FLUX', 'obsidianflux': 'OBSIDIAN_FLUX',
+      'obsidian sandpaper': 'OBSIDIAN_SANDPAPER', 'obsidiansandpaper': 'OBSIDIAN_SANDPAPER'
+    };
     
-    console.log('All numbers found:', sortedNumbers);
+    // Clean and normalize text
+    const normalizedText = ocrText
+      .toLowerCase()
+      .replace(/[|\\]/g, ' ') // Replace common OCR artifacts
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/[^a-z0-9\s:.,]/g, ''); // Remove special chars except basic punctuation
     
-    // Just assign all reasonable numbers to common items
-    const itemPool = [
-      'IRON_ORE', 'STARMETAL_ORE', 'ORICHALCUM_ORE', 'MYTHRIL_ORE',
-      'STEEL_INGOT', 'ORICHALCUM_INGOT', 'CHARCOAL', 'TIMBER', 'LUMBER',
-      'SILK_THREADS', 'WIREFIBER_THREADS', 'THICK_HIDE', 'IRON_HIDE',
-      'OBSIDIAN_FLUX', 'SAND_FLUX', 'WYRDWOOD_PLANKS', 'IRONWOOD_PLANKS',
-      'ASMODEUM', 'PHOENIXWEAVE', 'RUNIC_LEATHER', 'GLITTERING_EBONY'
-    ];
+    const lines = normalizedText.split('\n');
     
-    // Assign each number to an item
-    for (let i = 0; i < Math.min(sortedNumbers.length, itemPool.length); i++) {
-      const itemId = itemPool[i];
-      const quantity = sortedNumbers[i];
-      foundItems[itemId] = quantity;
-      console.log(`Assigned ${quantity} to ${itemId}`);
+    for (const line of lines) {
+      const cleanLine = line.trim();
+      if (!cleanLine) continue;
+      
+      console.log(`Processing line: "${cleanLine}"`);
+      
+      // Simple pattern: "item name: number"
+      const simpleMatch = cleanLine.match(/^(.+?):\s*(\d+)$/i);
+      if (simpleMatch) {
+        const itemName = simpleMatch[1].toLowerCase().trim();
+        const quantity = parseInt(simpleMatch[2]);
+        
+        console.log(`Simple match found: "${itemName}" = ${quantity}`);
+        
+        if (itemMappings[itemName]) {
+          foundItems[itemMappings[itemName]] = quantity;
+          console.log(`Mapped: ${itemName} -> ${itemMappings[itemName]}: ${quantity}`);
+        }
+      }
     }
     
-    console.log('Final items:', foundItems);
+    console.log('Final parsed items:', foundItems);
     return foundItems;
   }, []);
 
@@ -321,80 +388,63 @@ const App: React.FC = () => {
     try {
       setIsProcessingOCR(true);
       
-      // Check if running in Electron
-      if (window.navigator.userAgent.includes('Electron')) {
-        alert('Screen capture OCR is not available in the desktop app.\nPlease use the "Import OCR" button instead.');
-        return;
-      }
-      
       const stream = await navigator.mediaDevices.getDisplayMedia({ 
-        video: { mediaSource: 'screen' } 
+        video: { width: { ideal: 1920 }, height: { ideal: 1080 } } 
       });
       
       const video = document.createElement('video');
       video.srcObject = stream;
       video.muted = true;
       
-      // Wait for video to be ready
       await new Promise((resolve, reject) => {
-        video.onloadedmetadata = () => {
-          video.play().then(resolve).catch(reject);
-        };
+        video.onloadedmetadata = () => video.play().then(resolve).catch(reject);
         video.onerror = reject;
+        setTimeout(reject, 5000);
       });
       
-      // Wait a bit for the video to stabilize
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas context failed');
       
       ctx.drawImage(video, 0, 0);
-      
-      // Stop the stream immediately after capture
       stream.getTracks().forEach(track => track.stop());
       video.srcObject = null;
       
-      const imageData = canvas.toDataURL('image/png');
-      
-      // Process with Tesseract OCR - optimized for New World UI
-      const { data: { text } } = await Tesseract.recognize(imageData, 'eng', {
-        logger: m => console.log('Tesseract:', m),
+      const { data: { text } } = await Tesseract.recognize(canvas.toDataURL('image/png'), 'eng', {
         tessedit_pageseg_mode: '6',
-        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz :;()'
+        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz :.,/-'
       });
       
-      console.log('OCR Text detected:', text);
+      const filteredText = text.split('\n')
+        .filter(line => {
+          const l = line.toLowerCase().trim();
+          return l && 
+            /\d/.test(l) && 
+            l.length > 3 && l.length < 50 && 
+            !l.includes('fps') && 
+            !l.includes('cpu') && 
+            !l.includes('gpu') && 
+            !l.includes('ram') && 
+            !l.includes('inventory') && 
+            !l.includes('decorate') && 
+            !l.includes('smelting') && 
+            !l.includes('leatherworking') && 
+            !l.includes('fishing');
+        })
+        .join('\n');
       
-      if (text && text.trim()) {
-        const parsedItems = parseInventoryOCR(text);
-        console.log('Parsed items:', parsedItems);
-        
-        if (Object.keys(parsedItems).length > 0) {
-          const newInventory = { ...inventory, ...parsedItems };
-          setInventory(newInventory);
-          localStorage.setItem('inventory', JSON.stringify(newInventory));
-          const itemList = Object.entries(parsedItems).map(([id, qty]) => {
-            const item = ITEMS[id];
-            return `${item?.name || id}: ${qty}`;
-          }).join('\n');
-          alert(`Auto-detected ${Object.keys(parsedItems).length} items:\n\n${itemList}`);
-        } else {
-          alert(`No items detected. OCR found:\n\n${text.substring(0, 400)}`);
-        }
-      } else {
-        alert('No text detected in screenshot.');
-      }
+      // Show filtered text in OCR edit modal
+      setOCREditText(filteredText.substring(0, 2000));
+      setShowOCREdit(true);
     } catch (error) {
-      console.error('OCR Error:', error);
-      alert('OCR processing failed. Use Import OCR button instead.');
+      setShowManualEntry(true);
     } finally {
       setIsProcessingOCR(false);
     }
-  }, [inventory, parseInventoryOCR]);
+  }, []);
 
   return (
 
@@ -630,22 +680,7 @@ const App: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
-                      const input = prompt('Paste OCR text from inventory:');
-                      if (input) {
-                        const parsedItems = parseInventoryOCR(input);
-                        if (Object.keys(parsedItems).length > 0) {
-                          const newInventory = { ...inventory, ...parsedItems };
-                          setInventory(newInventory);
-                          localStorage.setItem('inventory', JSON.stringify(newInventory));
-                          const itemList = Object.entries(parsedItems).map(([id, qty]) => {
-                            const item = ITEMS[id];
-                            return `${item?.name || id}: ${qty}`;
-                          }).join('\n');
-                          alert(`Imported ${Object.keys(parsedItems).length} items:\n\n${itemList}`);
-                        } else {
-                          alert('No items found.');
-                        }
-                      }
+                      setShowManualEntry(true);
                     }}
                     className="px-2 py-1 rounded text-xs bg-green-600 text-white hover:bg-green-700 transition font-medium"
                   >
@@ -662,6 +697,13 @@ const App: React.FC = () => {
                     title="Screenshot OCR"
                   >
                     {isProcessingOCR ? '⏳' : '📷'}
+                  </button>
+                  <button
+                    onClick={() => setShowManualEntry(true)}
+                    className="px-2 py-1 rounded text-xs bg-yellow-600 text-white hover:bg-yellow-700 transition font-medium"
+                    title="Manual Entry"
+                  >
+                    ✏️ Manual
                   </button>
                   <button
                     onClick={() => {
@@ -722,6 +764,113 @@ const App: React.FC = () => {
               onInventoryChange={() => {}}
               showInventory={false}
             />
+          </div>
+        )}
+
+        {showManualEntry && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-white mb-4">Manual Entry</h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Enter items one per line:<br/>
+                Format: "Item Name: Quantity"<br/>
+                Example: Iron Ore: 1800
+              </p>
+              <textarea
+                value={manualEntryText}
+                onChange={(e) => setManualEntryText(e.target.value)}
+                placeholder="Iron Ore: 1800\nCharcoal: 41\nThick Hide: 635"
+                className="w-full h-32 bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+              />
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => {
+                    if (manualEntryText.trim()) {
+                      const parsedItems = parseInventoryOCR(manualEntryText);
+                      if (Object.keys(parsedItems).length > 0) {
+                        const newInventory = { ...inventory, ...parsedItems };
+                        setInventory(newInventory);
+                        localStorage.setItem('inventory', JSON.stringify(newInventory));
+                        const itemList = Object.entries(parsedItems).map(([id, qty]) => {
+                          const item = ITEMS[id];
+                          return `${item?.name || id}: ${qty}`;
+                        }).join('\n');
+                        alert(`Added ${Object.keys(parsedItems).length} items:\n\n${itemList}`);
+                        setShowManualEntry(false);
+                        setManualEntryText('');
+                      } else {
+                        alert('No valid items found. Use format:\nIron Ore: 1800\nCharcoal: 41');
+                      }
+                    }
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                >
+                  Add Items
+                </button>
+                <button
+                  onClick={() => {
+                    setShowManualEntry(false);
+                    setManualEntryText('');
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showOCREdit && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-2xl w-full mx-4">
+              <h3 className="text-lg font-semibold text-white mb-4">OCR Text Editor</h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Clean up the OCR text below. Look for item names with numbers and format as:<br/>
+                <span className="text-yellow-300">Item Name: Quantity</span><br/>
+                Example: Iron Ore: 280, Steel Ingot: 266, Charcoal: 88
+              </p>
+              <textarea
+                value={ocrEditText}
+                onChange={(e) => setOCREditText(e.target.value)}
+                className="w-full h-48 bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm font-mono"
+              />
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => {
+                    if (ocrEditText.trim()) {
+                      const parsedItems = parseInventoryOCR(ocrEditText);
+                      if (Object.keys(parsedItems).length > 0) {
+                        const newInventory = { ...inventory, ...parsedItems };
+                        setInventory(newInventory);
+                        localStorage.setItem('inventory', JSON.stringify(newInventory));
+                        const itemList = Object.entries(parsedItems).map(([id, qty]) => {
+                          const item = ITEMS[id];
+                          return `${item?.name || id}: ${qty}`;
+                        }).join('\n');
+                        alert(`Imported ${Object.keys(parsedItems).length} items from OCR:\n\n${itemList}`);
+                        setShowOCREdit(false);
+                        setOCREditText('');
+                      } else {
+                        alert('No valid items found in OCR text.');
+                      }
+                    }
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                >
+                  Process Items
+                </button>
+                <button
+                  onClick={() => {
+                    setShowOCREdit(false);
+                    setOCREditText('');
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

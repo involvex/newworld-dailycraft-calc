@@ -17,3 +17,4 @@ build-all.js
 icons/
 build-web-only.js
 build-portable.js
+.amazonq/
