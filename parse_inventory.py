@@ -7,22 +7,24 @@ def parse_inventory_ocr(ocr_text: str) -> Dict[str, int]:
     # Clean up the OCR text
     text = ocr_text.replace('\n', ' ').replace('  ', ' ')
     
-    # Item patterns with common OCR misreadings
+    # Enhanced item patterns with common OCR misreadings
     item_patterns = {
-        'Starmetal Ore': [r'Starmetal\s*Ore[:\s]*(\d+)', r'Star.*?Ore[:\s]*(\d+)', r'Modium[:\s]*(\d+)'],
-        'Iron Ore': [r'Iron\s*Ore[:\s]*(\d+)'],
-        'Orichalcum Ore': [r'Orichalcum\s*Ore[:\s]*(\d+)', r'Ori.*?Ore[:\s]*(\d+)'],
-        'Mythril Ore': [r'Mythril\s*Ore[:\s]*(\d+)'],
-        'Steel Ingot': [r'Steel\s*Ingot[:\s]*(\d+)'],
-        'Iron Ingot': [r'Iron\s*Ingot[:\s]*(\d+)'],
-        'Reagents': [r'RKAGKNTS[:\s]*(\d+)', r'REAGENTS[:\s]*(\d+)', r'Reagents[:\s]*(\d+)'],
-        'Silk': [r'Silk[:\s]*(\d+)'],
-        'Leather': [r'Leather[:\s]*(\d+)'],
-        'Timber': [r'Timber[:\s]*(\d+)'],
-        'Lumber': [r'Lumber[:\s]*(\d+)'],
-        'Charcoal': [r'Charcoal[:\s]*(\d+)'],
-        'Sand Flux': [r'Sand\s*Flux[:\s]*(\d+)'],
-        'Obsidian Flux': [r'Obsidian\s*Flux[:\s]*(\d+)']
+        'Iron Ore': [r'Iron\s*Ore[:\s]*(\d+)', r'lron\s*Ore[:\s]*(\d+)', r'Iron.*?Ore.*?(\d+)', r'(?:^|\s)Iron\s+(\d+)'],
+        'Orichalcum Ore': [r'Orichalcum\s*Ore[:\s]*(\d+)', r'Ori.*?Ore[:\s]*(\d+)', r'Orich.*?Ore.*?(\d+)', r'(?:^|\s)Orichalcum\s+(\d+)'],
+        'Starmetal Ore': [r'Starmetal\s*Ore[:\s]*(\d+)', r'Star.*?Ore[:\s]*(\d+)', r'Modium[:\s]*(\d+)', r'(?:^|\s)Starmetal\s+(\d+)', r'(?:^|\s)Modium\s+(\d+)'],
+        'Steel Ingot': [r'Steel\s*Ingot[:\s]*(\d+)', r'Steel.*?Ingot.*?(\d+)', r'(?:^|\s)Steel\s+(\d+)'],
+        'Mythril Ore': [r'Mythril\s*Ore[:\s]*(\d+)', r'Mythril.*?Ore.*?(\d+)'],
+        'Iron Ingot': [r'Iron\s*Ingot[:\s]*(\d+)', r'lron\s*Ingot[:\s]*(\d+)', r'Iron.*?Ingot.*?(\d+)'],
+        'Reagents': [r'RKAGKNTS[:\s]*(\d+)', r'REAGENTS[:\s]*(\d+)', r'Reagents[:\s]*(\d+)', r'(?:^|\s)Reagents\s+(\d+)'],
+        'Silk': [r'Silk[:\s]*(\d+)', r'(?:^|\s)Silk\s+(\d+)'],
+        'Leather': [r'Leather[:\s]*(\d+)', r'(?:^|\s)Leather\s+(\d+)'],
+        'Timber': [r'Timber[:\s]*(\d+)', r'(?:^|\s)Timber\s+(\d+)'],
+        'Lumber': [r'Lumber[:\s]*(\d+)', r'(?:^|\s)Lumber\s+(\d+)'],
+        'Charcoal': [r'Charcoal[:\s]*(\d+)', r'(?:^|\s)Charcoal\s+(\d+)'],
+        'Sand Flux': [r'Sand\s*Flux[:\s]*(\d+)', r'Sand.*?Flux.*?(\d+)'],
+        'Obsidian Flux': [r'Obsidian\s*Flux[:\s]*(\d+)', r'Obsidian.*?Flux.*?(\d+)'],
+        'Silver Ore': [r'Silver\s*Ore[:\s]*(\d+)', r'Silver.*?Ore.*?(\d+)'],
+        'Gold Ore': [r'Gold\s*Ore[:\s]*(\d+)', r'Gold.*?Ore.*?(\d+)']
     }
     
     found_items = {}
@@ -36,20 +38,49 @@ def parse_inventory_ocr(ocr_text: str) -> Dict[str, int]:
                 found_items[item_name] = quantity
                 break
     
-    # Fallback: look for standalone numbers near item keywords
-    if not found_items:
-        # Extract your specific data
-        if 'Starmetal' in text or 'Modium' in text:
-            # From your OCR: "Modium 22.2" suggests 22 Starmetal Ore
-            match = re.search(r'(?:Starmetal|Modium).*?(\d+)', text, re.IGNORECASE)
-            if match:
-                found_items['Starmetal Ore'] = int(match.group(1))
-        
-        if 'RKAGKNTS' in text or 'Reagents' in text:
-            # From your OCR: "RKAGKNTS 1.7" suggests 1 Reagent
-            match = re.search(r'(?:RKAGKNTS|Reagents).*?(\d+)', text, re.IGNORECASE)
-            if match:
-                found_items['Reagents'] = int(match.group(1))
+    # Enhanced parsing for number patterns after item names
+    number_patterns = [
+        # Pattern: "Item Name: 1800" or "Item Name 1800"
+        r'(Iron\s*Ore)[:\s]+(\d+)',
+        r'(Orichalcum\s*Ore)[:\s]+(\d+)', 
+        r'(Starmetal\s*Ore)[:\s]+(\d+)',
+        r'(Steel\s*Ingot)[:\s]+(\d+)',
+        # Handle OCR misreadings
+        r'(lron\s*Ore)[:\s]+(\d+)',  # 'I' read as 'l'
+        r'(Modium)[:\s]+(\d+)',      # Starmetal misread as Modium
+        r'(RKAGKNTS)[:\s]+(\d+)',    # Reagents misread
+    ]
+    
+    for pattern in number_patterns:
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            item_text = match.group(1).strip()
+            quantity = int(match.group(2))
+            
+            # Map OCR misreadings to correct item names
+            if item_text.lower() in ['modium']:
+                found_items['Starmetal Ore'] = quantity
+            elif item_text.lower() in ['lron ore', 'iron ore']:
+                found_items['Iron Ore'] = quantity
+            elif item_text.lower() in ['orichalcum ore']:
+                found_items['Orichalcum Ore'] = quantity
+            elif item_text.lower() in ['steel ingot']:
+                found_items['Steel Ingot'] = quantity
+            elif item_text.lower() in ['rkagknts']:
+                found_items['Reagents'] = quantity
+    
+    # Additional fallback for loose number matching
+    if len(found_items) < 4:  # If we haven't found enough items
+        # Look for patterns like "word number" in the text
+        loose_matches = re.findall(r'([A-Za-z]+)\s+(\d+)', text)
+        for word, num in loose_matches:
+            if word.lower() in ['iron', 'modium', 'steel'] and int(num) > 10:
+                if word.lower() == 'iron' and 'Iron Ore' not in found_items:
+                    found_items['Iron Ore'] = int(num)
+                elif word.lower() == 'modium' and 'Starmetal Ore' not in found_items:
+                    found_items['Starmetal Ore'] = int(num)
+                elif word.lower() == 'steel' and 'Steel Ingot' not in found_items:
+                    found_items['Steel Ingot'] = int(num)
     
     return found_items
 

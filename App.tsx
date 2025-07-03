@@ -1,110 +1,90 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { calculateCraftingTree, aggregateRawMaterials, aggregateAllComponents } from './services/craftingService';
+import { calculateCraftingTree, aggregateRawMaterials } from './services/craftingService';
 import { ITEMS } from './data/items';
 import { RECIPES } from './data/recipes';
 import CraftingNode from './components/CraftingNode';
 import SummaryList from './components/SummaryList';
 import { Item, AllBonuses, BonusConfiguration, RawMaterial } from './types';
 
-
-type SummaryMode = 'net' | 'xp' | 'standing';
+type SummaryMode = 'net' | 'xp';
 type ViewMode = 'net' | 'gross';
 type Inventory = Record<string, number>;
 
+const FINAL_ITEMS = [ITEMS.PRISMATIC_INGOT, ITEMS.PRISMATIC_CLOTH, ITEMS.PRISMATIC_LEATHER, ITEMS.PRISMATIC_PLANKS];
+const DEFAULT_BONUSES = {
+  Smelting: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+  Weaving: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+  Tanning: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+  Woodworking: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+};
+const PRESETS = [
+  { name: 'Daily Cooldowns', items: [{ id: 'ASMODEUM', qty: 10 }, { id: 'PHOENIXWEAVE', qty: 10 }, { id: 'RUNIC_LEATHER', qty: 10 }, { id: 'GLITTERING_EBONY', qty: 10 }] },
+  { name: 'Prismatic Set', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 }] },
+  { name: 'Orichalcum Tools', items: [{ id: 'ORICHALCUM_INGOT', qty: 50 }] },
+];
+
+const getInitial = <T,>(key: string, fallback: T): T => {
+  try {
+    const val = localStorage.getItem(key);
+    return val ? JSON.parse(val) : fallback;
+  } catch { return fallback; }
+};
+
 const App: React.FC = () => {
-  const finalItems: Item[] = [
-    ITEMS.PRISMATIC_INGOT,
-    ITEMS.PRISMATIC_CLOTH,
-    ITEMS.PRISMATIC_LEATHER,
-    ITEMS.PRISMATIC_PLANKS,
-  ];
-  
-  const allCraftableItems = useMemo(() => {
-    const craftableIds = Object.keys(RECIPES);
-    return craftableIds.map(id => ITEMS[id]).filter(Boolean).sort((a, b) => {
-      if (a.tier !== b.tier) return b.tier - a.tier;
-      return a.name.localeCompare(b.name);
-    });
-  }, []);
+  const allCraftableItems = useMemo(() => 
+    Object.keys(RECIPES).map(id => ITEMS[id]).filter(Boolean)
+      .sort((a, b) => a.tier !== b.tier ? b.tier - a.tier : a.name.localeCompare(b.name))
+  , []);
 
-  const getInitial = <T,>(key: string, fallback: T): T => {
-    try {
-      const val = localStorage.getItem(key);
-      if (val !== null) return JSON.parse(val);
-    } catch {}
-    return fallback;
-  };
-
-  const [selectedItemId, setSelectedItemId] = useState<string>(() => getInitial('selectedItemId', finalItems[0].id));
-  const [quantity, setQuantity] = useState<number>(() => getInitial('quantity', 10));
+  const [selectedItemId, setSelectedItemId] = useState(() => getInitial('selectedItemId', FINAL_ITEMS[0].id));
+  const [quantity, setQuantity] = useState(() => getInitial('quantity', 10));
   const [summaryMode, setSummaryMode] = useState<SummaryMode>(() => getInitial('summaryMode', 'net'));
   const [viewMode, setViewMode] = useState<ViewMode>(() => getInitial('viewMode', 'net'));
-  const [bonuses, setBonuses] = useState<AllBonuses>(() => getInitial('bonuses', {
-    Smelting: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
-    Weaving: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
-    Tanning: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
-    Woodworking: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
-  }));
-  const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(() => {
-    const saved = getInitial<string[]>('collapsedNodes', []);
-    return new Set(saved);
-  });
+  const [bonuses, setBonuses] = useState<AllBonuses>(() => getInitial('bonuses', DEFAULT_BONUSES));
+  const [collapsedNodes, setCollapsedNodes] = useState(() => new Set(getInitial<string[]>('collapsedNodes', [])));
   const [inventory, setInventory] = useState<Inventory>(() => getInitial('inventory', {}));
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(() => getInitial('showAdvanced', false));
-  const [showPrismaticList, setShowPrismaticList] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(() => getInitial('showAdvanced', false));
+  const [showPrismaticList, setShowPrismaticList] = useState(false);
   const [prismaticBuyList, setPrismaticBuyList] = useState<RawMaterial[]>([]);
-  const [showManualEntry, setShowManualEntry] = useState<boolean>(false);
-  const [manualEntryText, setManualEntryText] = useState<string>('');
-  const [showOCREdit, setShowOCREdit] = useState<boolean>(false);
-  const [ocrEditText, setOCREditText] = useState<string>('');
-  
-  const presets = [
-    { name: 'Daily Cooldowns', items: [{ id: 'ASMODEUM', qty: 10 }, { id: 'PHOENIXWEAVE', qty: 10 }, { id: 'RUNIC_LEATHER', qty: 10 }, { id: 'GLITTERING_EBONY', qty: 10 }] },
-    { name: 'Prismatic Set', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 }] },
-    { name: 'Orichalcum Tools', items: [{ id: 'ORICHALCUM_INGOT', qty: 50 }] },
-  ];
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualEntryText, setManualEntryText] = useState('');
+  const [showOCREdit, setShowOCREdit] = useState(false);
+  const [ocrEditText, setOCREditText] = useState('');
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
 
-  const craftingData = useMemo(() => {
-    if (!selectedItemId || quantity <= 0) return null;
-    return calculateCraftingTree(selectedItemId, quantity, bonuses);
-  }, [selectedItemId, quantity, bonuses]);
+  const craftingData = useMemo(() => 
+    selectedItemId && quantity > 0 ? calculateCraftingTree(selectedItemId, quantity, bonuses) : null
+  , [selectedItemId, quantity, bonuses]);
 
   const handleCollapseAll = useCallback(() => {
-    if (!craftingData) return;
+    if (!craftingData?.children) return;
     const allNodeIds = new Set<string>();
     const collectNodeIds = (node: any) => {
       allNodeIds.add(node.id);
       node.children?.forEach(collectNodeIds);
     };
-    if (craftingData.children) {
-      craftingData.children.forEach(collectNodeIds);
-    }
+    craftingData.children.forEach(collectNodeIds);
     setCollapsedNodes(allNodeIds);
-    localStorage.setItem('collapsedNodes', JSON.stringify(Array.from(allNodeIds)));
+    localStorage.setItem('collapsedNodes', JSON.stringify([...allNodeIds]));
   }, [craftingData]);
 
   const handleExpandAll = useCallback(() => {
     setCollapsedNodes(new Set());
-    localStorage.setItem('collapsedNodes', JSON.stringify([]));
+    localStorage.setItem('collapsedNodes', '[]');
   }, []);
 
   const handleToggleNode = useCallback((nodeId: string) => {
     setCollapsedNodes(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(nodeId)) {
-        newSet.delete(nodeId);
-      } else {
-        newSet.add(nodeId);
-      }
-      localStorage.setItem('collapsedNodes', JSON.stringify(Array.from(newSet)));
+      newSet.has(nodeId) ? newSet.delete(nodeId) : newSet.add(nodeId);
+      localStorage.setItem('collapsedNodes', JSON.stringify([...newSet]));
       return newSet;
     });
   }, []);
 
-  const getIconUrl = useCallback((itemId: string, tier: number) => {
-    const item = ITEMS[itemId];
-    const iconId = item ? item.iconId : itemId.toLowerCase().replace(/_/g, '');
+  const getIconUrl = useCallback((itemId: string) => {
+    const iconId = ITEMS[itemId]?.iconId || itemId.toLowerCase().replace(/_/g, '');
     return `https://cdn.nwdb.info/db/images/live/v55/icons/items/resource/${iconId}.png`;
   }, []);
 
@@ -138,109 +118,69 @@ const App: React.FC = () => {
     });
   };
 
-  const filteredItems = useMemo(() => {
-    const itemsToSearch = allCraftableItems;
-    if (!searchTerm) return finalItems;
-    return itemsToSearch.filter(item => 
+  const filteredItems = useMemo(() => 
+    searchTerm ? allCraftableItems.filter(item => 
       item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [searchTerm, allCraftableItems, finalItems]);
+    ) : FINAL_ITEMS
+  , [searchTerm, allCraftableItems]);
 
   useEffect(() => {
-    if (!craftingData) return;
+    if (!craftingData?.children) return;
     const nodesToCollapse = new Set<string>();
-    const collectSecondLevelAndBelow = (node: any, level: number = 0) => {
-      if (level >= 2) {
-        nodesToCollapse.add(node.id);
-      }
-      node.children?.forEach((child: any) => collectSecondLevelAndBelow(child, level + 1));
+    const collectSecondLevel = (node: any, level = 0) => {
+      if (level >= 2) nodesToCollapse.add(node.id);
+      node.children?.forEach((child: any) => collectSecondLevel(child, level + 1));
     };
-    if (craftingData.children) {
-      craftingData.children.forEach((child: any) => collectSecondLevelAndBelow(child, 1));
-    }
+    craftingData.children.forEach((child: any) => collectSecondLevel(child, 1));
     setCollapsedNodes(nodesToCollapse);
-    localStorage.setItem('collapsedNodes', JSON.stringify(Array.from(nodesToCollapse)));
+    localStorage.setItem('collapsedNodes', JSON.stringify([...nodesToCollapse]));
   }, [craftingData]);
 
-  const selectedItem = ITEMS[selectedItemId];
-  const summaryData = useMemo<{
-    title: string,
-    materials: (RawMaterial & { xp?: number; unitXP?: number })[]
-  }>(() => {
+  const summaryData = useMemo(() => {
     if (!craftingData) return { title: '', materials: [] };
+    
     if (summaryMode === 'xp') {
       const xpMaterials: (RawMaterial & { xp?: number; unitXP?: number })[] = [];
       let totalXP = 0;
+      
       const traverse = (node: any) => {
-        const nodeName = node.name || (ITEMS[node.id]?.name) || node.id;
         if (node.xp && node.quantity) {
-          const item = ITEMS[node.id] || {
-            id: node.id,
-            name: nodeName,
-            tier: node.tier || 0,
-            type: node.type || '',
-            types: node.types || '',
-            iconId: node.id.toLowerCase().replace(/_/g, ''),
-            weight: 0,
-            maxStack: 1000
-          };
+          const xpValue = node.xp * node.quantity;
           xpMaterials.push({
-            item,
-            quantity: node.xp * node.quantity,
-            xp: node.xp * node.quantity,
-            unitXP: node.xp
+            item: ITEMS[node.id] || {
+              id: node.id, name: node.name || node.id, tier: node.tier || 0,
+              type: node.type || '', types: '', iconId: node.id.toLowerCase().replace(/_/g, ''),
+              weight: 0, maxStack: 1000
+            },
+            quantity: xpValue, xp: xpValue, unitXP: node.xp
           });
-          totalXP += node.xp * node.quantity;
+          totalXP += xpValue;
         }
         node.children?.forEach(traverse);
       };
+      
       traverse(craftingData);
       xpMaterials.sort((a, b) => (b.xp || 0) - (a.xp || 0));
-      
-      const totalItem = {
-        id: 'TOTAL_XP',
-        name: `Total ${selectedItem ? selectedItem.type : 'XP'}`,
-        tier: 0,
-        type: 'Total',
-        types: '',
-        iconId: 'total',
-        weight: 0,
-        maxStack: 1
-      };
-      
       xpMaterials.unshift({
-        item: totalItem,
-        quantity: totalXP,
-        xp: totalXP,
-        unitXP: 0
+        item: { id: 'TOTAL_XP', name: `Total ${ITEMS[selectedItemId]?.type || 'XP'}`, tier: 0, type: 'Total', types: '', iconId: 'total', weight: 0, maxStack: 1 },
+        quantity: totalXP, xp: totalXP, unitXP: 0
       });
       
-      return {
-        title: 'Tradeskill XP',
-        materials: xpMaterials,
-      };
+      return { title: 'Tradeskill XP', materials: xpMaterials };
     }
-    const title = viewMode === 'gross' ? 'Gross Requirements' : 'Buy Order';
-    const materials = aggregateRawMaterials(craftingData, collapsedNodes, viewMode, bonuses);
     
     return {
-      title,
-      materials
+      title: viewMode === 'gross' ? 'Gross Requirements' : 'Buy Order',
+      materials: aggregateRawMaterials(craftingData, collapsedNodes, viewMode, bonuses)
     };
-  }, [craftingData, summaryMode, collapsedNodes, selectedItem, viewMode, bonuses]);
+  }, [craftingData, summaryMode, collapsedNodes, selectedItemId, viewMode, bonuses]);
 
   useEffect(() => {
-    localStorage.setItem('selectedItemId', JSON.stringify(selectedItemId));
-  }, [selectedItemId]);
-  useEffect(() => {
-    localStorage.setItem('quantity', JSON.stringify(quantity));
-  }, [quantity]);
-  useEffect(() => {
-    localStorage.setItem('summaryMode', JSON.stringify(summaryMode));
-  }, [summaryMode]);
-  useEffect(() => {
-    localStorage.setItem('viewMode', JSON.stringify(viewMode));
-  }, [viewMode]);
+    const items = { selectedItemId, quantity, summaryMode, viewMode };
+    Object.entries(items).forEach(([key, value]) => 
+      localStorage.setItem(key, JSON.stringify(value))
+    );
+  }, [selectedItemId, quantity, summaryMode, viewMode]);
 
   const netRequirementsWithInventory = useMemo(() => {
     if (!craftingData || summaryMode !== 'net') return summaryData.materials;
@@ -287,110 +227,83 @@ const App: React.FC = () => {
 
   const parseInventoryOCR = useCallback((ocrText: string) => {
     const foundItems: Record<string, number> = {};
-    console.log('OCR Text:', ocrText);
-    
-    // Comprehensive item mappings with common OCR misreadings
     const itemMappings: Record<string, string> = {
-      // Ores
-      'iron ore': 'IRON_ORE', 'ironore': 'IRON_ORE', 'iron': 'IRON_ORE',
-      'starmetal ore': 'STARMETAL_ORE', 'starmetalore': 'STARMETAL_ORE', 'starmetal': 'STARMETAL_ORE',
-      'orichalcum ore': 'ORICHALCUM_ORE', 'orichalcumore': 'ORICHALCUM_ORE', 'orichalcum': 'ORICHALCUM_ORE',
-      'silver ore': 'SILVER_ORE', 'silverore': 'SILVER_ORE', 'silver': 'SILVER_ORE',
-      'gold ore': 'GOLD_ORE', 'goldore': 'GOLD_ORE', 'gold': 'GOLD_ORE',
-      'platinum ore': 'PLATINUM_ORE', 'platinumore': 'PLATINUM_ORE', 'platinum': 'PLATINUM_ORE',
-      
-      // Ingots
-      'iron ingot': 'IRON_INGOT', 'ironingot': 'IRON_INGOT',
-      'steel ingot': 'STEEL_INGOT', 'steelingot': 'STEEL_INGOT', 'steel': 'STEEL_INGOT',
-      'starmetal ingot': 'STARMETAL_INGOT', 'starmetalingot': 'STARMETAL_INGOT',
-      'orichalcum ingot': 'ORICHALCUM_INGOT', 'orichalcumingot': 'ORICHALCUM_INGOT',
-      'asmodeum': 'ASMODEUM',
-      
-      // Wood
-      'green wood': 'GREEN_WOOD', 'greenwood': 'GREEN_WOOD',
-      'aged wood': 'AGED_WOOD', 'agedwood': 'AGED_WOOD',
-      'wyrdwood': 'WYRDWOOD', 'wyrd wood': 'WYRDWOOD',
-      'ironwood': 'IRONWOOD', 'iron wood': 'IRONWOOD',
-      'timber': 'TIMBER',
-      'lumber': 'LUMBER',
-      'wyrdwood planks': 'WYRDWOOD_PLANKS', 'wyrdwoodplanks': 'WYRDWOOD_PLANKS',
-      'ironwood planks': 'IRONWOOD_PLANKS', 'ironwoodplanks': 'IRONWOOD_PLANKS',
-      'glittering ebony': 'GLITTERING_EBONY', 'glitteringebony': 'GLITTERING_EBONY',
-      
-      // Leather
-      'rawhide': 'RAWHIDE', 'raw hide': 'RAWHIDE',
-      'thick hide': 'THICK_HIDE', 'thickhide': 'THICK_HIDE',
-      'iron hide': 'IRON_HIDE', 'ironhide': 'IRON_HIDE',
-      'coarse leather': 'COARSE_LEATHER', 'coarseleather': 'COARSE_LEATHER',
-      'rugged leather': 'RUGGED_LEATHER', 'ruggedleather': 'RUGGED_LEATHER',
-      'layered leather': 'LAYERED_LEATHER', 'layeredleather': 'LAYERED_LEATHER',
-      'infused leather': 'INFUSED_LEATHER', 'infusedleather': 'INFUSED_LEATHER',
-      'runic leather': 'RUNIC_LEATHER', 'runicleather': 'RUNIC_LEATHER',
-      
-      // Cloth
-      'fibers': 'FIBERS', 'fiber': 'FIBERS',
-      'silk threads': 'SILK_THREADS', 'silkthreads': 'SILK_THREADS',
-      'wirefiber': 'WIREFIBER', 'wire fiber': 'WIREFIBER',
-      'linen': 'LINEN',
-      'sateen': 'SATEEN',
-      'silk': 'SILK',
-      'infused silk': 'INFUSED_SILK', 'infusedsilk': 'INFUSED_SILK',
-      'phoenixweave': 'PHOENIXWEAVE', 'phoenix weave': 'PHOENIXWEAVE',
-      
-      // Other materials
-      'charcoal': 'CHARCOAL',
-      'flux': 'FLUX',
-      'sandpaper': 'SANDPAPER', 'sand paper': 'SANDPAPER',
-      'tannin': 'TANNIN',
-      'crossweave': 'CROSSWEAVE', 'cross weave': 'CROSSWEAVE',
-      'solvent': 'SOLVENT',
-      'obsidian flux': 'OBSIDIAN_FLUX', 'obsidianflux': 'OBSIDIAN_FLUX',
-      'obsidian sandpaper': 'OBSIDIAN_SANDPAPER', 'obsidiansandpaper': 'OBSIDIAN_SANDPAPER'
+      'iron ore': 'IRON_ORE', 'steel ingot': 'STEEL_INGOT', 'starmetal ingot': 'STARMETAL_INGOT',
+      'orichalcum ore': 'ORICHALCUM_ORE', 'starmetal ore': 'STARMETAL_ORE', 'charcoal': 'CHARCOAL',
+      'thick hide': 'THICK_HIDE', 'timber': 'TIMBER', 'lumber': 'LUMBER', 'fiber': 'FIBERS',
+      'linen': 'LINEN', 'silk': 'SILK', 'reagents': 'REAGENTS'
     };
     
-    // Clean and normalize text
-    const normalizedText = ocrText
-      .toLowerCase()
-      .replace(/[|\\]/g, ' ') // Replace common OCR artifacts
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .replace(/[^a-z0-9\s:.,]/g, ''); // Remove special chars except basic punctuation
-    
-    const lines = normalizedText.split('\n');
+    // Only process lines that look like "Item Name: Number"
+    const lines = ocrText.split(/[\n\r]+/);
     
     for (const line of lines) {
-      const cleanLine = line.trim();
-      if (!cleanLine) continue;
+      const cleanLine = line.trim().toLowerCase();
+      const match = cleanLine.match(/^(.+?):\s*(\d+)$/);
       
-      console.log(`Processing line: "${cleanLine}"`);
-      
-      // Simple pattern: "item name: number"
-      const simpleMatch = cleanLine.match(/^(.+?):\s*(\d+)$/i);
-      if (simpleMatch) {
-        const itemName = simpleMatch[1].toLowerCase().trim();
-        const quantity = parseInt(simpleMatch[2]);
+      if (match) {
+        const itemName = match[1].trim();
+        const quantity = parseInt(match[2]);
         
-        console.log(`Simple match found: "${itemName}" = ${quantity}`);
-        
-        if (itemMappings[itemName]) {
-          foundItems[itemMappings[itemName]] = quantity;
-          console.log(`Mapped: ${itemName} -> ${itemMappings[itemName]}: ${quantity}`);
+        // Only accept realistic quantities (10-10000)
+        if (quantity >= 10 && quantity <= 10000) {
+          for (const [key, itemId] of Object.entries(itemMappings)) {
+            if (itemName === key || itemName.includes(key)) {
+              foundItems[itemId] = quantity;
+              break;
+            }
+          }
         }
       }
     }
     
-    console.log('Final parsed items:', foundItems);
     return foundItems;
   }, []);
-
-  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
 
   const captureAndProcessScreenshot = useCallback(async () => {
     try {
       setIsProcessingOCR(true);
       
-      const stream = await navigator.mediaDevices.getDisplayMedia({ 
-        video: { width: { ideal: 1920 }, height: { ideal: 1080 } } 
-      });
+      // Check if we're in Electron
+      const isElectron = typeof window !== 'undefined' && window.electronAPI;
+      let stream;
+      
+      if (isElectron) {
+        // Use Electron's desktopCapturer
+        const sources = await window.electronAPI.getDesktopSources();
+        console.log('Available sources:', sources.map(s => s.name));
+        
+        const primaryScreen = sources.find(source => 
+          source.name.toLowerCase().includes('screen') ||
+          source.name.toLowerCase().includes('entire') ||
+          source.id.includes('screen')
+        ) || sources[0]; // Fallback to first source
+        
+        if (primaryScreen) {
+          console.log('Using source:', primaryScreen.name);
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: primaryScreen.id,
+              width: { ideal: 1920, max: 1920 },
+              height: { ideal: 1080, max: 1080 }
+            }
+          });
+        } else {
+          throw new Error(`No screen source found. Available: ${sources.map(s => s.name).join(', ')}`);
+        }
+      } else {
+        // Use web API
+        stream = await navigator.mediaDevices.getDisplayMedia({ 
+          video: { 
+            width: { ideal: 1920, max: 1920 }, 
+            height: { ideal: 1080, max: 1080 },
+            frameRate: { ideal: 1, max: 5 }
+          },
+          audio: false
+        });
+      }
       
       const video = document.createElement('video');
       video.srcObject = stream;
@@ -413,9 +326,48 @@ const App: React.FC = () => {
       stream.getTracks().forEach(track => track.stop());
       video.srcObject = null;
       
-      const { data: { text } } = await Tesseract.recognize(canvas.toDataURL('image/png'), 'eng', {
+      // Focus on inventory area - crop to center portion where inventory typically is
+      const cropX = Math.floor(canvas.width * 0.2);
+      const cropY = Math.floor(canvas.height * 0.3);
+      const cropWidth = Math.floor(canvas.width * 0.6);
+      const cropHeight = Math.floor(canvas.height * 0.4);
+      
+      const croppedCanvas = document.createElement('canvas');
+      croppedCanvas.width = cropWidth;
+      croppedCanvas.height = cropHeight;
+      const croppedCtx = croppedCanvas.getContext('2d');
+      
+      croppedCtx.drawImage(canvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+      
+      // Enhanced image preprocessing for better OCR
+      const imageData = croppedCtx.getImageData(0, 0, cropWidth, cropHeight);
+      const data = imageData.data;
+      
+      // Apply multiple preprocessing techniques
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        
+        // Adaptive thresholding for better text recognition
+        const threshold = gray > 140 ? 255 : 0;
+        data[i] = data[i + 1] = data[i + 2] = threshold;
+        data[i + 3] = 255; // Full opacity
+      }
+      croppedCtx.putImageData(imageData, 0, 0);
+      
+      // Scale up for better OCR accuracy
+      const scaledCanvas = document.createElement('canvas');
+      scaledCanvas.width = cropWidth * 2;
+      scaledCanvas.height = cropHeight * 2;
+      const scaledCtx = scaledCanvas.getContext('2d');
+      scaledCtx.imageSmoothingEnabled = false;
+      scaledCtx.drawImage(croppedCanvas, 0, 0, cropWidth * 2, cropHeight * 2);
+      
+      const { data: { text } } = await Tesseract.recognize(scaledCanvas.toDataURL('image/png'), 'eng', {
         tessedit_pageseg_mode: '6',
-        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz :.,/-'
+        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz :.,()-',
+        tessedit_ocr_engine_mode: '2',
+        preserve_interword_spaces: '1'
       });
       
       const filteredText = text.split('\n')
@@ -436,11 +388,86 @@ const App: React.FC = () => {
         })
         .join('\n');
       
-      // Show filtered text in OCR edit modal
-      setOCREditText(filteredText.substring(0, 2000));
+      // Extract only significant inventory quantities
+      const quantities = (text.match(/\b\d{2,5}\b/g) || [])
+        .map(n => parseInt(n))
+        .filter(n => n >= 50 && n <= 10000) // Realistic inventory range
+        .filter(n => ![60, 100, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000].includes(n))
+        .filter((n, i, arr) => arr.indexOf(n) === i)
+        .sort((a, b) => b - a)
+        .slice(0, 8); // Limit to 8 most likely items
+      
+      // Enhanced OCR processing with multiple strategies
+      const parsedItems = parseInventoryOCR(text);
+      const parsedCount = Object.keys(parsedItems).length;
+      
+      // Extract more numbers and try to match with common items
+      const allNumbers = (text.match(/\b\d{1,5}\b/g) || [])
+        .map(n => parseInt(n))
+        .filter(n => n >= 1 && n <= 20000)
+        .filter((n, i, arr) => arr.indexOf(n) === i)
+        .sort((a, b) => b - a)
+        .slice(0, 30);
+      
+      const commonItems = [
+        'Iron Ore', 'Orichalcum Ore', 'Starmetal Ore', 'Steel Ingot', 'Starmetal Ingot', 
+        'Charcoal', 'Thick Hide', 'Linen', 'Fiber', 'Lumber', 'Timber', 'Silk', 
+        'Rawhide', 'Green Wood', 'Aged Wood', 'Silver Ore', 'Gold Ore', 'Mythril Ore',
+        'Reagents', 'Coarse Leather', 'Rugged Leather', 'Wyrdwood', 'Ironwood',
+        'Sand Flux', 'Obsidian Flux', 'Hemp', 'Cotton', 'Wirefiber', 'Silkweed',
+        'Iron Ingot', 'Orichalcum Ingot', 'Platinum Ore', 'Lodestone', 'Fae Iron',
+        'Voidmetal', 'Cinnabar', 'Tolvium', 'Azoth', 'Quintessence', 'Sateen',
+        'Phoenixweave', 'Runic Leather', 'Layered Leather', 'Glittering Ebony',
+        'Asmodeum', 'Void Ore', 'Scalecloth', 'Infused Leather', 'Barbvine',
+        'Blisterweave', 'Scarhide', 'Shadowcloth', 'Voidbent Ingot'
+      ];
+      
+      // Combine parsed items with quantity-based suggestions
+      const combinedItems = new Map();
+      
+      // Add parsed items first
+      Object.entries(parsedItems).forEach(([id, qty]) => {
+        const item = Object.values(ITEMS).find(item => item.id === id);
+        if (item) combinedItems.set(item.name, qty);
+      });
+      
+      // Add quantity-based suggestions for remaining numbers
+      const usedQuantities = new Set(Object.values(parsedItems));
+      const unusedNumbers = allNumbers.filter(n => !usedQuantities.has(n));
+      
+      unusedNumbers.slice(0, Math.min(35 - combinedItems.size, 25)).forEach((qty, i) => {
+        const itemName = commonItems[combinedItems.size + i];
+        if (itemName && !combinedItems.has(itemName)) {
+          combinedItems.set(itemName, qty);
+        }
+      });
+      
+      const totalFound = combinedItems.size;
+      let suggestions;
+      if (totalFound > 0) {
+        suggestions = `Found ${totalFound} potential items. Edit the names below:\n\n` + 
+          Array.from(combinedItems.entries()).map(([name, qty]) => `${name}: ${qty}`).join('\n') +
+          '\n\n(Tip: Change item names to match your actual inventory)';
+      } else {
+        // Fallback: use quantities even if no items matched
+        const fallbackItems = allNumbers.slice(0, 10).map((qty, i) => 
+          `${commonItems[i] || `Item ${i + 1}`}: ${qty}`
+        ).join('\n');
+        suggestions = allNumbers.length > 0 
+          ? `Found ${allNumbers.length} potential items. Edit the names below:\n\n${fallbackItems}\n\n(Tip: Change item names to match your actual inventory)`
+          : `detected 0 out of 15 maybe\n\nManually enter your items like:\nIron Ore: 1800\nOrichalcum Ore: 635\nStarmetal Ore: 86\nSteel Ingot: 72`;
+      }
+      
+      setOCREditText(suggestions);
       setShowOCREdit(true);
     } catch (error) {
-      setShowManualEntry(true);
+      console.error('OCR Error:', error);
+      const isElectronCheck = typeof window !== 'undefined' && window.electronAPI;
+      const errorMsg = isElectronCheck 
+        ? 'Electron OCR failed. Try manual entry instead.'
+        : 'Screen capture failed. Try manual entry instead.';
+      setOCREditText(errorMsg + '\n\nManually enter your items like:\nIron Ore: 1800\nOrichalcum Ore: 635\nStarmetal Ore: 86\nSteel Ingot: 72');
+      setShowOCREdit(true);
     } finally {
       setIsProcessingOCR(false);
     }
@@ -450,10 +477,10 @@ const App: React.FC = () => {
 
     <div className="bg-gray-900 text-gray-300 min-h-screen font-sans" style={{background: 'radial-gradient(ellipse at top, #232526 0%, #414345 100%)'}}>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-5xl">
-        <header className="mb-8 text-center">
-          <img src="logo.png" alt="Logo" className="mx-auto mb-4 h-16 w-auto" />
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-wider" style={{fontFamily: 'UnifrakturCook, cursive', color: '#e2b857', textShadow: '2px 2px 8px #000, 0 0 8px #e2b85799', letterSpacing: 2}}>New World Crafting Calculator</h1>
-          <p className="text-lg text-gray-200 mt-2">A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
+        <header className="mb-4 text-center">
+          <img src="logo.png" alt="Logo" className="mx-auto mb-2 h-16 w-auto" />
+          <h1 className="text-s font-bold tracking-wider" style={{fontFamily: 'UnifrakturCook, cursive', color: '#e2b857', textShadow: '2px 2px 8px #000, 0 0 8px #e2b85799', letterSpacing: 2, fontSize: '14px'}}>New World Crafting Calculator</h1>
+          <p className="text-xs text-gray-200 mt-1">A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
         </header>
 
         <div className="bg-gray-800/30 backdrop-blur-sm p-3 rounded-xl border border-yellow-900/40 mb-6 shadow-lg">
@@ -476,7 +503,7 @@ const App: React.FC = () => {
               <label className="block text-xs text-yellow-300 mb-1 font-medium">Presets</label>
               <select
                 onChange={(e) => {
-                  const preset = presets.find(p => p.name === e.target.value);
+                  const preset = PRESETS.find(p => p.name === e.target.value);
                   if (preset?.items[0]) {
                     setSelectedItemId(preset.items[0].id);
                     setQuantity(preset.items[0].qty);
@@ -486,7 +513,7 @@ const App: React.FC = () => {
                 className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
               >
                 <option value="">Select...</option>
-                {presets.map(preset => (
+                {PRESETS.map(preset => (
                   <option key={preset.name} value={preset.name}>{preset.name}</option>
                 ))}
               </select>
@@ -618,7 +645,7 @@ const App: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setSummaryMode('xp')}
-                      className={`px-3 py-1 text-sm font-medium transition ${
+                      className={`px-3 py-1 text-sm font-medium transition hidden ${
                         summaryMode === 'xp'
                           ? 'bg-yellow-600 text-white'
                           : 'bg-transparent text-yellow-100 hover:bg-gray-600'
@@ -686,18 +713,20 @@ const App: React.FC = () => {
                   >
                     📝 Import
                   </button>
-                  <button
-                    onClick={captureAndProcessScreenshot}
-                    disabled={isProcessingOCR}
-                    className={`px-2 py-1 rounded text-xs transition font-medium ${
-                      isProcessingOCR 
-                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                        : 'bg-orange-600 text-white hover:bg-orange-700'
-                    }`}
-                    title="Screenshot OCR"
-                  >
-                    {isProcessingOCR ? '⏳' : '📷'}
-                  </button>
+                  {(window.location.hostname === 'localhost' || window.location.protocol === 'https:' || window.location.protocol === 'file:' || typeof window !== 'undefined' && window.electronAPI) && (
+                    <button
+                      onClick={captureAndProcessScreenshot}
+                      disabled={isProcessingOCR}
+                      className={`px-2 py-1 rounded text-xs transition font-medium ${
+                        isProcessingOCR 
+                          ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                          : 'bg-orange-600 text-white hover:bg-orange-700'
+                      }`}
+                      title="Screenshot OCR (HTTPS/localhost only)"
+                    >
+                      {isProcessingOCR ? '⏳' : '📷'}
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowManualEntry(true)}
                     className="px-2 py-1 rounded text-xs bg-yellow-600 text-white hover:bg-yellow-700 transition font-medium"
@@ -716,6 +745,49 @@ const App: React.FC = () => {
                     className="px-2 py-1 rounded text-xs bg-gray-600 text-white hover:bg-gray-700 transition font-medium"
                   >
                     👁️ View
+                  </button>
+                  <button
+                    onClick={() => {
+                      const data = JSON.stringify({ inventory, bonuses, selectedItemId, quantity }, null, 2);
+                      const blob = new Blob([data], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'crafting-data.json';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="px-2 py-1 rounded text-xs bg-blue-600 text-white hover:bg-blue-700 transition font-medium"
+                  >
+                    💾 Export
+                  </button>
+                  <button
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = '.json';
+                      input.onchange = (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (e) => {
+                            try {
+                              const data = JSON.parse(e.target?.result as string);
+                              if (data.inventory) setInventory(data.inventory);
+                              if (data.bonuses) setBonuses(data.bonuses);
+                              if (data.selectedItemId) setSelectedItemId(data.selectedItemId);
+                              if (data.quantity) setQuantity(data.quantity);
+                              alert('Data imported successfully!');
+                            } catch { alert('Invalid file format'); }
+                          };
+                          reader.readAsText(file);
+                        }
+                      };
+                      input.click();
+                    }}
+                    className="px-2 py-1 rounded text-xs bg-green-600 text-white hover:bg-green-700 transition font-medium"
+                  >
+                    📁 Import
                   </button>
                   <button
                     onClick={() => {
@@ -826,9 +898,8 @@ const App: React.FC = () => {
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-2xl w-full mx-4">
               <h3 className="text-lg font-semibold text-white mb-4">OCR Text Editor</h3>
               <p className="text-gray-300 text-sm mb-4">
-                Clean up the OCR text below. Delete everything and manually type your items as:<br/>
+                <span className="text-red-300">Clear the text below and manually type your items:</span><br/>
                 <span className="text-yellow-300">Item Name: Quantity</span><br/>
-                Example:<br/>
                 <span className="text-green-300">Iron Ore: 1800<br/>Steel Ingot: 266<br/>Charcoal: 88</span>
               </p>
               <textarea

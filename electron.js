@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, session, desktopCapturer, ipcMain } = require('electron');
+const { app, BrowserWindow, Tray, Menu, session, desktopCapturer, ipcMain, globalShortcut } = require('electron');
 const path = require('path');
 
 let tray = null;
@@ -13,6 +13,8 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: true,
       webSecurity: false,
+      allowRunningInsecureContent: true,
+      experimentalFeatures: true,
       preload: path.join(__dirname, 'preload.js')
     },
     title: 'New World Crafting Calculator',
@@ -85,8 +87,22 @@ app.whenReady().then(() => {
   
   // Handle desktop capture
   ipcMain.handle('get-desktop-sources', async () => {
-    const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
+    const sources = await desktopCapturer.getSources({ 
+      types: ['screen'], 
+      fetchWindowIcons: false 
+    });
+    console.log('Desktop sources found:', sources.length);
     return sources;
+  });
+  
+  // Register global hotkey Ctrl+Alt+I
+  globalShortcut.register('CommandOrControl+Alt+I', () => {
+    if (mainWindow.isVisible()) {
+      mainWindow.hide();
+    } else {
+      mainWindow.show();
+      mainWindow.focus();
+    }
   });
   
   createWindow();
@@ -95,6 +111,10 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   // Keep app running in tray
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on('activate', () => {
