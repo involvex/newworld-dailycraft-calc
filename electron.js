@@ -1,33 +1,91 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Tray, Menu } = require('electron');
 const path = require('path');
-const isDev = process.env.NODE_ENV === 'development';
+
+let tray = null;
+let mainWindow = null;
 
 function createWindow() {
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false
+      webSecurity: true
     },
-    icon: path.join(__dirname, 'logo.png'),
-    title: 'New World Crafting Calculator'
+    title: 'New World Crafting Calculator',
+    show: false
   });
 
-  if (isDev) {
-    win.loadURL('http://localhost:5173');
-    win.webContents.openDevTools();
-  } else {
-    win.loadFile(path.join(__dirname, 'dist', 'index.html'));
-  }
+  // Load the GitHub Pages URL directly
+  mainWindow.loadURL('https://involvex.github.io/newworld-dailycraft-calc/');
+  
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.show();
+  });
+
+  // Hide to tray instead of closing
+  mainWindow.on('close', (event) => {
+    if (!app.isQuiting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
+  });
 }
 
-app.whenReady().then(createWindow);
+function createTray() {
+  // Create a simple tray icon (you can replace with actual icon file)
+  tray = new Tray(path.join(__dirname, 'logo.png'));
+  
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show Calculator',
+      click: () => {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    },
+    {
+      label: 'Hide Calculator',
+      click: () => {
+        mainWindow.hide();
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        app.isQuiting = true;
+        app.quit();
+      }
+    }
+  ]);
+
+  tray.setToolTip('New World Crafting Calculator');
+  tray.setContextMenu(contextMenu);
+  
+  // Double click to show/hide
+  tray.on('double-click', () => {
+    if (mainWindow.isVisible()) {
+      mainWindow.hide();
+    } else {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
+app.whenReady().then(() => {
+  createWindow();
+  createTray();
+});
+
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  // Keep app running in tray
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
 });

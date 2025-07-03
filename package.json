@@ -15,7 +15,7 @@
     "portable": "npm run build && node build-portable.js",
     "deploy": "npm run build && gh-pages -d dist",
     "electron": "npm run build && electron .",
-    "dist": "npm run build && electron-builder",
+    "dist": "electron-builder",
     "build-all": "node build-all.js",
     "build-web": "node build-web-only.js"
   },
@@ -44,8 +44,8 @@
       "output": "dist-electron"
     },
     "files": [
-      "dist/**/*",
-      "electron.js"
+      "electron.js",
+      "logo.png"
     ],
     "win": {
       "target": "portable"

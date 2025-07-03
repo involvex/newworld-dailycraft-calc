@@ -321,6 +321,12 @@ const App: React.FC = () => {
     try {
       setIsProcessingOCR(true);
       
+      // Check if running in Electron
+      if (window.navigator.userAgent.includes('Electron')) {
+        alert('Screen capture OCR is not available in the desktop app.\nPlease use the "Import OCR" button instead.');
+        return;
+      }
+      
       const stream = await navigator.mediaDevices.getDisplayMedia({ 
         video: { mediaSource: 'screen' } 
       });
