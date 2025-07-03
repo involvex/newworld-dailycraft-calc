@@ -52,6 +52,7 @@ const App: React.FC = () => {
   const [showOCREdit, setShowOCREdit] = useState(false);
   const [ocrEditText, setOCREditText] = useState('');
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const craftingData = useMemo(() => 
     selectedItemId && quantity > 0 ? calculateCraftingTree(selectedItemId, quantity, bonuses) : null
@@ -181,6 +182,17 @@ const App: React.FC = () => {
       localStorage.setItem(key, JSON.stringify(value))
     );
   }, [selectedItemId, quantity, summaryMode, viewMode]);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.onTriggerOCR(() => {
+        if (!isProcessingOCR) captureAndProcessScreenshot();
+      });
+      window.electronAPI.onShowSettings(() => {
+        setShowSettings(true);
+      });
+    }
+  }, [isProcessingOCR]);
 
   const netRequirementsWithInventory = useMemo(() => {
     if (!craftingData || summaryMode !== 'net') return summaryData.materials;
@@ -488,15 +500,23 @@ const App: React.FC = () => {
             <h3 className="text-base font-semibold text-yellow-300 flex items-center gap-2">
               ⚙️ Settings
             </h3>
-            <button
-              onClick={() => {
-                setShowAdvanced(!showAdvanced);
-                localStorage.setItem('showAdvanced', JSON.stringify(!showAdvanced));
-              }}
-              className="px-3 py-1 rounded text-xs bg-yellow-700 text-white hover:bg-yellow-600 transition font-medium"
-            >
-              {showAdvanced ? 'Simple' : 'Advanced'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowSettings(true)}
+                className="px-3 py-1 rounded text-xs bg-gray-700 text-white hover:bg-gray-600 transition font-medium"
+              >
+                ⚙️ Settings
+              </button>
+              <button
+                onClick={() => {
+                  setShowAdvanced(!showAdvanced);
+                  localStorage.setItem('showAdvanced', JSON.stringify(!showAdvanced));
+                }}
+                className="px-3 py-1 rounded text-xs bg-yellow-700 text-white hover:bg-yellow-600 transition font-medium"
+              >
+                {showAdvanced ? 'Simple' : 'Advanced'}
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 max-w-4xl mx-auto">
             <div>
@@ -946,6 +966,35 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {showSettings && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-white mb-4">Settings</h3>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-300 mb-2">Global Hotkeys</h4>
+                  <div className="text-sm text-gray-300 space-y-1">
+                    <div><kbd className="bg-gray-700 px-2 py-1 rounded text-xs">Ctrl+Alt+I</kbd> - Toggle Calculator</div>
+                    <div><kbd className="bg-gray-700 px-2 py-1 rounded text-xs">Ctrl+Alt+O</kbd> - Start OCR Detection</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-300 mb-2">Version</h4>
+                  <div className="text-sm text-gray-300">v0.6.8</div>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-6">
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <footer className="text-center mt-12 text-gray-600 text-sm">
           <p>Created by Involvex</p>
         </footer>

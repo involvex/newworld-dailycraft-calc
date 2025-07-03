@@ -18,8 +18,39 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js')
     },
     title: 'New World Crafting Calculator',
-    show: false
+    show: false,
+    autoHideMenuBar: true
   });
+  
+  // Set custom menu
+  const customMenu = Menu.buildFromTemplate([
+    {
+      label: 'App',
+      submenu: [
+        {
+          label: 'Settings',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => mainWindow.webContents.send('show-settings')
+        },
+        { type: 'separator' },
+        {
+          label: 'About',
+          click: () => mainWindow.webContents.send('show-about')
+        },
+        { type: 'separator' },
+        {
+          label: 'Quit',
+          accelerator: 'CmdOrCtrl+Q',
+          click: () => {
+            app.isQuiting = true;
+            app.quit();
+          }
+        }
+      ]
+    }
+  ]);
+  
+  Menu.setApplicationMenu(customMenu);
 
   // Load the local build files
   mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
@@ -53,6 +84,15 @@ function createTray() {
       label: 'Hide Calculator',
       click: () => {
         mainWindow.hide();
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Settings',
+      click: () => {
+        mainWindow.show();
+        mainWindow.focus();
+        mainWindow.webContents.send('show-settings');
       }
     },
     { type: 'separator' },
@@ -95,13 +135,19 @@ app.whenReady().then(() => {
     return sources;
   });
   
-  // Register global hotkey Ctrl+Alt+I
+  // Register global hotkeys
   globalShortcut.register('CommandOrControl+Alt+I', () => {
     if (mainWindow.isVisible()) {
       mainWindow.hide();
     } else {
       mainWindow.show();
       mainWindow.focus();
+    }
+  });
+  
+  globalShortcut.register('CommandOrControl+Alt+O', () => {
+    if (mainWindow.isVisible()) {
+      mainWindow.webContents.send('trigger-ocr');
     }
   });
   
