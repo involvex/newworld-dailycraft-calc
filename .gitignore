@@ -11,3 +11,5 @@ deploy-github.md
 build-portable.js
 *image*.png
 simple-server.js
+*.py
+dist/
