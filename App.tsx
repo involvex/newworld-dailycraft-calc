@@ -826,9 +826,10 @@ const App: React.FC = () => {
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-2xl w-full mx-4">
               <h3 className="text-lg font-semibold text-white mb-4">OCR Text Editor</h3>
               <p className="text-gray-300 text-sm mb-4">
-                Clean up the OCR text below. Look for item names with numbers and format as:<br/>
+                Clean up the OCR text below. Delete everything and manually type your items as:<br/>
                 <span className="text-yellow-300">Item Name: Quantity</span><br/>
-                Example: Iron Ore: 280, Steel Ingot: 266, Charcoal: 88
+                Example:<br/>
+                <span className="text-green-300">Iron Ore: 1800<br/>Steel Ingot: 266<br/>Charcoal: 88</span>
               </p>
               <textarea
                 value={ocrEditText}
