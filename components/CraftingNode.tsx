@@ -9,9 +9,13 @@ interface CraftingNodeProps {
   isLast?: boolean;
   collapsedNodes: Set<string>;
   onToggle: (nodeId: string) => void;
+  selectedIngredients?: Record<string, string>;
+  onIngredientChange?: (itemId: string, ingredient: string) => void;
+  viewMode?: 'net' | 'gross';
+  summaryData?: any[];
 }
 
-const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = false, isLast = false, collapsedNodes, onToggle }) => {
+const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = false, isLast = false, collapsedNodes, onToggle, selectedIngredients = {}, onIngredientChange, viewMode = 'net', summaryData = [] }) => {
   const hasChildren = node.children?.length > 0;
   const isExpanded = !collapsedNodes.has(node.id);
 
@@ -22,7 +26,15 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
   };
   
   // For intermediate items, show the number of crafts. For raw materials (leaf nodes), show total quantity.
-  const displayQuantity = hasChildren ? node.quantity : Math.ceil(node.totalQuantity);
+  let displayQuantity = hasChildren ? node.quantity : Math.ceil(node.totalQuantity);
+  
+  // Override with summary data for leaf nodes in gross mode
+  if (!hasChildren && viewMode === 'gross' && summaryData.length > 0) {
+    const summaryItem = summaryData.find(item => item.item?.id === node.item?.id);
+    if (summaryItem) {
+      displayQuantity = Math.ceil(summaryItem.quantity);
+    }
+  }
 
   return (
     <div className={`relative ${isRoot ? '' : 'pl-5'}`}>
@@ -52,7 +64,22 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
         )}
 
         <div className="flex items-center space-x-3">
-            <div className={`flex-shrink-0 h-10 w-10 rounded-full bg-gray-900 border-2 ${node.item?.type?.includes('Legendary') ? 'border-yellow-400' : 'border-gray-600'}`}>
+            <div 
+              className={`flex-shrink-0 h-10 w-10 rounded-full bg-gray-900 border-2 ${
+                node.item?.type?.includes('Legendary') ? 'border-yellow-400' : 'border-gray-600'
+              } ${
+                node.item?.id === 'GEMSTONE_DUST' ? 'cursor-pointer hover:border-yellow-500' : ''
+              }`}
+              onClick={() => {
+                if (node.item?.id === 'GEMSTONE_DUST' && onIngredientChange) {
+                  const options = ['PRISTINE_AMBER', 'PRISTINE_DIAMOND', 'PRISTINE_EMERALD'];
+                  const current = selectedIngredients[node.item.id] || 'PRISTINE_AMBER';
+                  const currentIndex = options.indexOf(current);
+                  const nextIndex = (currentIndex + 1) % options.length;
+                  onIngredientChange(node.item.id, options[nextIndex]);
+                }
+              }}
+            >
                 <img
                   src={getIconUrl(node.item?.id || '', node.item?.tier || 0)}
                   alt={node.item?.name || ''}
@@ -71,6 +98,11 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
             <div className="flex flex-col">
                 <p className="font-bold text-white">
                     {(isRoot ? Math.ceil(node.totalQuantity) : displayQuantity).toLocaleString()} x {node.item?.name || 'Unknown Item'}
+                    {node.item?.id === 'GEMSTONE_DUST' && selectedIngredients[node.item.id] && (
+                      <span className="text-xs text-yellow-400 ml-2">
+                        ({selectedIngredients[node.item.id].replace('PRISTINE_', '').toLowerCase()})
+                      </span>
+                    )}
                 </p>
                 {node.yieldBonus > 0 && (
                     <span className="text-sm font-semibold text-green-400">
@@ -91,6 +123,10 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
               isLast={index === (node.children?.length || 0) - 1}
               collapsedNodes={collapsedNodes}
               onToggle={onToggle}
+              selectedIngredients={selectedIngredients}
+              onIngredientChange={onIngredientChange}
+              viewMode={viewMode}
+              summaryData={summaryData}
             />
           ))}
         </div>

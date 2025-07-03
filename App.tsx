@@ -19,10 +19,11 @@ const DEFAULT_BONUSES = {
   Weaving: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
   Tanning: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
   Woodworking: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+  Stonecutting: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
 };
 const PRESETS = [
-  { name: 'Daily Cooldowns', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 },{ id: 'ASMODEUM', qty: 10 }, { id: 'PHOENIXWEAVE', qty: 10 }, { id: 'RUNIC_LEATHER', qty: 10 }, { id: 'GLITTERING_EBONY', qty: 10 }] },
-  { name: 'Prismatic Set', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 }] },
+  { name: 'Daily Cooldowns (10)', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 },{ id: 'ASMODEUM', qty: 10 }, { id: 'PHOENIXWEAVE', qty: 10 }, { id: 'RUNIC_LEATHER', qty: 10 }, { id: 'GLITTERING_EBONY', qty: 10 }] },
+  { name: 'Prismatic Set (10)', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 }] },
 ];
 const ITEM_MAPPINGS = {
   'iron ore': 'IRON_ORE', 'steel ingot': 'STEEL_INGOT', 'starmetal ingot': 'STARMETAL_INGOT',
@@ -87,11 +88,14 @@ const App: React.FC = () => {
   const [ocrEditText, setOCREditText] = useState('');
   const [presetName, setPresetName] = useState('');
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+  const [selectedIngredients, setSelectedIngredients] = useState(() => getInitial('selectedIngredients', {
+    GEMSTONE_DUST: 'PRISTINE_AMBER'
+  }));
 
   const craftingData = useMemo(() => {
     if (multiItems.length > 0) {
       // Create individual trees for each item
-      const trees = multiItems.map(({ id, qty }) => calculateCraftingTree(id, qty, bonuses)).filter(Boolean);
+      const trees = multiItems.map(({ id, qty }) => calculateCraftingTree(id, qty, bonuses, selectedIngredients, viewMode)).filter(Boolean);
       
       if (trees.length === 0) return null;
       if (trees.length === 1) return trees[0];
@@ -106,8 +110,8 @@ const App: React.FC = () => {
         children: trees
       };
     }
-    return selectedItemId && quantity > 0 ? calculateCraftingTree(selectedItemId, quantity, bonuses) : null;
-  }, [selectedItemId, quantity, bonuses, multiItems, viewMode]);
+    return selectedItemId && quantity > 0 ? calculateCraftingTree(selectedItemId, quantity, bonuses, selectedIngredients, viewMode) : null;
+  }, [selectedItemId, quantity, bonuses, multiItems, viewMode, selectedIngredients]);
 
   const handleCollapseAll = useCallback(() => {
     if (!craftingData?.children) return;
@@ -138,6 +142,9 @@ const App: React.FC = () => {
   const getIconUrl = useCallback((itemId: string) => {
     if (itemId === 'MULTI') {
       return 'https://nwdb.info/images/db/icons/filters/itemtypes/all.png';
+    }
+    if (itemId === 'GEMSTONE_DUST') {
+      return 'https://cdn.nwdb.info/db/images/live/v55/icons/items/consumable/gemstonedustt5.png';
     }
     const iconId = ITEMS[itemId]?.iconId || itemId.toLowerCase().replace(/_/g, '');
     return `https://cdn.nwdb.info/db/images/live/v55/icons/items/resource/${iconId}.png`;
@@ -228,9 +235,9 @@ const App: React.FC = () => {
     if (multiItems.length > 0) {
       const totalMaterials = new Map<string, number>();
       multiItems.forEach(({ id, qty }) => {
-        const tree = calculateCraftingTree(id, qty, bonuses);
+        const tree = calculateCraftingTree(id, qty, bonuses, selectedIngredients, viewMode);
         if (tree) {
-          const materials = aggregateRawMaterials(tree, new Set(), viewMode, bonuses);
+          const materials = aggregateRawMaterials(tree, new Set(), viewMode, bonuses, selectedIngredients);
           materials.forEach(material => {
             if (material?.item?.id) {
               const current = totalMaterials.get(material.item.id) || 0;
@@ -253,7 +260,7 @@ const App: React.FC = () => {
     
     return {
       title: viewMode === 'gross' ? 'Gross Requirements' : 'Buy Order',
-      materials: aggregateRawMaterials(craftingData, collapsedNodes, viewMode, bonuses)
+      materials: aggregateRawMaterials(craftingData, collapsedNodes, viewMode, bonuses, selectedIngredients)
     };
   }, [craftingData, summaryMode, collapsedNodes, selectedItemId, viewMode, bonuses, multiItems]);
 
@@ -262,27 +269,9 @@ const App: React.FC = () => {
     Object.entries(items).forEach(([key, value]) => 
       localStorage.setItem(key, JSON.stringify(value))
     );
-    
-    // Update selected preset based on current selection
-    const allPresets = [...PRESETS, ...customPresets];
-    let matchingPreset;
-    
-    if (multiItems.length > 0) {
-      // Match multi-item preset
-      matchingPreset = allPresets.find(p => 
-        p.items.length > 1 && 
-        p.items.length === multiItems.length &&
-        p.items.every(item => multiItems.some(mi => mi.id === item.id && mi.qty === item.qty))
-      );
-    } else {
-      // Match single-item preset
-      matchingPreset = allPresets.find(p => 
-        p.items.length === 1 && p.items[0]?.id === selectedItemId && p.items[0]?.qty === quantity
-      );
-    }
-    
-    setSelectedPreset(matchingPreset?.name || '');
-  }, [selectedItemId, quantity, summaryMode, viewMode, multiItems, customPresets]);
+  }, [selectedItemId, quantity, summaryMode, viewMode, multiItems]);
+  
+  // Only match presets when manually selecting items, not automatically
   
   useEffect(() => {
     if (typeof window !== 'undefined' && window.electronAPI) {
@@ -317,9 +306,9 @@ const App: React.FC = () => {
     const totalMaterials = new Map<string, number>();
     
     PRISMATIC_ITEMS.forEach(itemId => {
-      const tree = calculateCraftingTree(itemId, quantity, bonuses);
+      const tree = calculateCraftingTree(itemId, quantity, bonuses, selectedIngredients, viewMode);
       if (tree) {
-        const materials = aggregateRawMaterials(tree, new Set(), viewMode, bonuses);
+        const materials = aggregateRawMaterials(tree, new Set(), viewMode, bonuses, selectedIngredients);
         
         materials.forEach(material => {
           const current = totalMaterials.get(material.item.id) || 0;
@@ -658,7 +647,7 @@ const App: React.FC = () => {
                           // Multi-item preset
                           setMultiItems(preset.items);
                           setSelectedItemId('');
-                          setQuantity(0);
+                          setQuantity(preset.items[0]?.qty || 10);
                         }
                         
                         if (preset.collapsedNodes) {
@@ -674,13 +663,19 @@ const App: React.FC = () => {
                   className="flex-1 bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
                 >
                   <option value="">Select...</option>
-                  {PRESETS.map(preset => (
-                    <option key={preset.name} value={preset.name}>{preset.name}</option>
-                  ))}
+                  {PRESETS.map(preset => {
+                    const displayName = preset.items.length === 1 
+                      ? `${preset.name} (${preset.items[0].qty})`
+                      : `${preset.name} (${preset.items.length} items)`;
+                    return <option key={preset.name} value={preset.name}>{displayName}</option>;
+                  })}
                   {customPresets.length > 0 && <option disabled>--- Custom ---</option>}
-                  {customPresets.map(preset => (
-                    <option key={preset.name} value={preset.name}>{preset.name}</option>
-                  ))}
+                  {customPresets.map(preset => {
+                    const displayName = preset.items.length === 1 
+                      ? `${preset.name} (${preset.items[0].qty})`
+                      : `${preset.name} (${preset.items.length} items)`;
+                    return <option key={preset.name} value={preset.name}>{displayName}</option>;
+                  })}
                 </select>
                 <button
                   onClick={() => setShowCreatePreset(true)}
@@ -726,7 +721,11 @@ const App: React.FC = () => {
               <label className="block text-xs text-yellow-300 mb-1 font-medium">Item</label>
               <select
                 value={selectedItemId}
-                onChange={(e) => setSelectedItemId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedItemId(e.target.value);
+                  setMultiItems([]); // Clear multi-items to show single item
+                  setSelectedPreset(''); // Clear preset when manually selecting item
+                }}
                 className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
               >
                 {filteredItems.map(item => (
@@ -743,33 +742,73 @@ const App: React.FC = () => {
                   type="number"
                   value={quantity}
                   min="1"
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) => {
+                    const newQty = Math.max(1, parseInt(e.target.value) || 1);
+                    setQuantity(newQty);
+                    // Update multi-item quantities if in multi-item mode
+                    if (multiItems.length > 0) {
+                      const updatedMultiItems = multiItems.map(item => ({ ...item, qty: newQty }));
+                      setMultiItems(updatedMultiItems);
+                      localStorage.setItem('multiItems', JSON.stringify(updatedMultiItems));
+                    }
+                  }}
                   className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
                 />
                 <div className="grid grid-cols-2 gap-1">
                   <button
-                    onClick={() => setQuantity(q => q + 10)}
+                    onClick={() => {
+                      const newQty = quantity + 10;
+                      setQuantity(newQty);
+                      if (multiItems.length > 0) {
+                        const updatedMultiItems = multiItems.map(item => ({ ...item, qty: newQty }));
+                        setMultiItems(updatedMultiItems);
+                        localStorage.setItem('multiItems', JSON.stringify(updatedMultiItems));
+                      }
+                    }}
                     className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
                     title="+10"
                   >
                     +10
                   </button>
                   <button
-                    onClick={() => setQuantity(q => q + 100)}
+                    onClick={() => {
+                      const newQty = quantity + 100;
+                      setQuantity(newQty);
+                      if (multiItems.length > 0) {
+                        const updatedMultiItems = multiItems.map(item => ({ ...item, qty: newQty }));
+                        setMultiItems(updatedMultiItems);
+                        localStorage.setItem('multiItems', JSON.stringify(updatedMultiItems));
+                      }
+                    }}
                     className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
                     title="+100"
                   >
                     +100
                   </button>
                   <button
-                    onClick={() => setQuantity(q => q + 1000)}
+                    onClick={() => {
+                      const newQty = quantity + 1000;
+                      setQuantity(newQty);
+                      if (multiItems.length > 0) {
+                        const updatedMultiItems = multiItems.map(item => ({ ...item, qty: newQty }));
+                        setMultiItems(updatedMultiItems);
+                        localStorage.setItem('multiItems', JSON.stringify(updatedMultiItems));
+                      }
+                    }}
                     className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
                     title="+1000"
                   >
                     +1000
                   </button>
                   <button
-                    onClick={() => setQuantity(1)}
+                    onClick={() => {
+                      setQuantity(1);
+                      if (multiItems.length > 0) {
+                        const updatedMultiItems = multiItems.map(item => ({ ...item, qty: 1 }));
+                        setMultiItems(updatedMultiItems);
+                        localStorage.setItem('multiItems', JSON.stringify(updatedMultiItems));
+                      }
+                    }}
                     className="px-2 py-1 bg-red-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-red-600"
                     title="Reset to 1"
                   >
@@ -784,7 +823,7 @@ const App: React.FC = () => {
         {showAdvanced && (
           <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 mb-6">
             <h3 className="text-lg font-semibold text-white mb-3">Yield Bonuses</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {Object.entries(bonuses).map(([category, config]) => (
                 <div key={category} className="bg-gray-900/50 p-3 rounded-md border border-gray-700/50">
                     <div className="font-bold text-yellow-400 text-center mb-2 text-sm">{category}</div>
@@ -820,6 +859,8 @@ const App: React.FC = () => {
                 </div>
                 ))}
             </div>
+            
+
           </div>
         )}
 
@@ -838,6 +879,14 @@ const App: React.FC = () => {
               isRoot={true} 
               collapsedNodes={collapsedNodes} 
               onToggle={handleToggleNode}
+              selectedIngredients={selectedIngredients}
+              onIngredientChange={(itemId, ingredient) => {
+                const updated = { ...selectedIngredients, [itemId]: ingredient };
+                setSelectedIngredients(updated);
+                localStorage.setItem('selectedIngredients', JSON.stringify(updated));
+              }}
+              viewMode={viewMode}
+              summaryData={summaryData.materials}
             />
           </div>
         )}
@@ -1005,6 +1054,12 @@ const App: React.FC = () => {
               inventory={inventory}
               onInventoryChange={handleInventoryChange}
               showInventory={summaryMode === 'net'}
+              selectedIngredients={selectedIngredients}
+              onIngredientChange={(itemId, ingredient) => {
+                const updated = { ...selectedIngredients, [itemId]: ingredient };
+                setSelectedIngredients(updated);
+                localStorage.setItem('selectedIngredients', JSON.stringify(updated));
+              }}
             />
           </div>
         )}
@@ -1276,7 +1331,7 @@ const App: React.FC = () => {
                 <div className="text-center">
                   <img src="logo.png" alt="Logo" className="mx-auto mb-4 h-16 w-auto" />
                   <h4 className="text-yellow-300 font-bold text-lg">New World Crafting Calculator</h4>
-                  <p className="text-gray-300 text-sm mt-2">Version 0.8.1</p>
+                  <p className="text-gray-300 text-sm mt-2">Version 0.8.2</p>
                 </div>
                 <div className="text-sm text-gray-300">
                   <p>A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>

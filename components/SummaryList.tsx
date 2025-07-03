@@ -15,6 +15,8 @@ interface SummaryListProps {
   inventory?: Record<string, number>;
   onInventoryChange?: (itemId: string, quantity: number) => void;
   showInventory?: boolean;
+  selectedIngredients?: Record<string, string>;
+  onIngredientChange?: (itemId: string, ingredient: string) => void;
 }
 
 const SummaryList: React.FC<SummaryListProps> = ({ 
@@ -23,7 +25,9 @@ const SummaryList: React.FC<SummaryListProps> = ({
   title, 
   inventory = {}, 
   onInventoryChange, 
-  showInventory = false 
+  showInventory = false,
+  selectedIngredients = {},
+  onIngredientChange
 }) => {
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
@@ -69,11 +73,31 @@ const SummaryList: React.FC<SummaryListProps> = ({
           return (
             <div key={item.id} className="flex items-center justify-between p-2 hover:bg-gray-800/50 rounded-md">
               <div className="flex items-center space-x-3">
-                <div className="h-9 w-9 flex-shrink-0 rounded-full bg-gray-800 border border-gray-600">
+                <div 
+                  className={`h-9 w-9 flex-shrink-0 rounded-full bg-gray-800 border border-gray-600 ${
+                    item.id === 'GEMSTONE_DUST' ? 'cursor-pointer hover:border-yellow-500' : ''
+                  }`}
+                  onClick={() => {
+                    if (item.id === 'GEMSTONE_DUST' && onIngredientChange) {
+                      const options = ['PRISTINE_AMBER', 'PRISTINE_DIAMOND', 'PRISTINE_EMERALD'];
+                      const current = selectedIngredients[item.id] || 'PRISTINE_AMBER';
+                      const currentIndex = options.indexOf(current);
+                      const nextIndex = (currentIndex + 1) % options.length;
+                      onIngredientChange(item.id, options[nextIndex]);
+                    }
+                  }}
+                >
                   <img src={getIconUrl(item.id, item.tier)} alt={item.name} className="h-full w-full object-contain" />
                 </div>
                 <div>
-                  <p className="font-semibold text-white">{item.name}</p>
+                  <p className="font-semibold text-white">
+                    {item.name}
+                    {item.id === 'GEMSTONE_DUST' && selectedIngredients[item.id] && (
+                      <span className="text-xs text-yellow-400 ml-2">
+                        ({selectedIngredients[item.id].replace('PRISTINE_', '').toLowerCase()})
+                      </span>
+                    )}
+                  </p>
                   {isXpMode && unitXP && unitXP > 0 && (
                     <p className="text-xs text-gray-400">
                       {unitXP.toLocaleString()} XP per craft

@@ -20,3 +20,4 @@ build-portable.js
 .amazonq/
 _pycache_/
 .mypy_cache/
+data/*.csv

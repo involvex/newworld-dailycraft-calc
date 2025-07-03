@@ -373,5 +373,145 @@ export const RECIPES: Record<string, Recipe> = {
     ingredients: [
       { itemId: 'GREEN_WOOD', quantity: 4 }
     ]
+  },
+    // --- Stonecutting (Fixed based on stonecutting.csv) ---
+  PRISMATIC_BLOCK: {
+    itemId: 'PRISMATIC_BLOCK',
+    baseYield: 1,
+    category: 'Stonecutting',
+    isCooldown: true,
+    baseTier: 5,
+    bonusItemChance: -0.3, // -30% from CSV
+    craftAll: true,
+    ingredients: [
+      { itemId: 'RUNESTONE', quantity: 1 }, // BlockT51
+      { itemId: 'RUNIC_VOIDSTONE', quantity: 5 }, // BlockT52
+      { itemId: 'PURE_SOLVENT', quantity: 4 } // SolventT5
+    ]
+  },
+  RUNESTONE: {
+    itemId: 'RUNESTONE',
+    baseYield: 1,
+    category: 'Stonecutting',
+    isCooldown: true,
+    baseTier: 5,
+    bonusItemChance: -0.25, // -25% from CSV
+    craftAll: true,
+    ingredients: [
+      { itemId: 'OBSIDIAN_VOIDSTONE', quantity: 5 }, // BlockT5
+      { itemId: 'OBSIDIAN_SANDPAPER', quantity: 1 }, // SandpaperT5
+      { itemId: 'MOLTEN_LODESTONE', quantity: 1 } // Molten Lodestone
+    ]
+  },
+  RUNIC_VOIDSTONE: {
+    itemId: 'RUNIC_VOIDSTONE',
+    baseYield: 1,
+    category: 'Stonecutting',
+    baseTier: 5,
+    bonusItemChance: -0.2, // -20% from CSV
+    craftAll: true,
+    ingredients: [
+      { itemId: 'OBSIDIAN_VOIDSTONE', quantity: 1 }, // BlockT5
+      { itemId: 'GEMSTONE_DUST', quantity: 1 }, // GemstoneDustT5
+      { itemId: 'PURE_SOLVENT', quantity: 4 } // SolventT5
+    ]
+  },
+  OBSIDIAN_VOIDSTONE: {
+    itemId: 'OBSIDIAN_VOIDSTONE',
+    baseYield: 1,
+    category: 'Stonecutting',
+    baseTier: 5,
+    bonusItemChance: -0.07, // -7% from CSV
+    craftAll: true,
+    ingredients: [
+      { itemId: 'LODESTONE_BRICK', quantity: 8 }, // BlockT4
+      { itemId: 'LODESTONE', quantity: 2 }, // StoneT4
+      { itemId: 'OBSIDIAN_SANDPAPER', quantity: 1 } // SandpaperT5
+    ]
+  },
+  MOLTEN_LODESTONE: {
+    itemId: 'MOLTEN_LODESTONE',
+    baseYield: 1,
+    category: 'Stonecutting',
+    baseTier: 4,
+    bonusItemChance: -0.05,
+    craftAll: true,
+    ingredients: [
+      { itemId: 'LODESTONE', quantity: 5 }
+    ]
+  },
+  LODESTONE_BRICK: {
+    itemId: 'LODESTONE_BRICK',
+    baseYield: 1,
+    category: 'Stonecutting',
+    baseTier: 4,
+    bonusItemChance: -0.05, // -5% from CSV
+    craftAll: true,
+    ingredients: [
+      { itemId: 'LODESTONE', quantity: 6 }, // StoneT4
+      { itemId: 'STONE_BRICK', quantity: 2 }, // BlockT3
+      { itemId: 'OBSIDIAN_SANDPAPER', quantity: 1 } // SandpaperT5
+    ]
+  },
+  STONE_BRICK: {
+    itemId: 'STONE_BRICK',
+    baseYield: 1,
+    category: 'Stonecutting',
+    baseTier: 3,
+    bonusItemChance: -0.02, // -2% from CSV
+    craftAll: true,
+    ingredients: [
+      { itemId: 'STONE_BLOCK', quantity: 4 }, // BlockT2
+      { itemId: 'OBSIDIAN_SANDPAPER', quantity: 1 } // SandpaperT5
+    ]
+  },
+  STONE_BLOCK: {
+    itemId: 'STONE_BLOCK',
+    baseYield: 1,
+    category: 'Stonecutting',
+    baseTier: 2,
+    bonusItemChance: 0, // 0% from CSV
+    craftAll: true,
+    ingredients: [
+      { itemId: 'STONE', quantity: 4 } // StoneT1
+    ]
+  },
+  CHARGED_SAND: {
+    itemId: 'CHARGED_SAND',
+    baseYield: 1,
+    category: 'Stonecutting',
+    baseTier: 4,
+    bonusItemChance: -0.07, // -7% from CSV
+    craftAll: true,
+    ingredients: [
+      { itemId: 'SANDSTONE', quantity: 5 }, // Sandstone
+      { itemId: 'OBSIDIAN_SANDPAPER', quantity: 1 } // SandpaperT5
+    ]
+  },
+  PRISMATIC_SCARAB: {
+    itemId: 'PRISMATIC_SCARAB',
+    baseYield: 1,
+    category: 'Stonecutting',
+    baseTier: 5,
+    bonusItemChance: -1.0, // -100% from CSV
+    craftAll: true,
+    ingredients: [
+      { itemId: 'PRISMATIC_BLOCK', quantity: 1 }, // BlockT53
+      { itemId: 'GOLDEN_SCARAB', quantity: 10 }, // GoldenScarab
+      { itemId: 'PURE_SOLVENT', quantity: 50 } // SolventT5
+    ]
+  },
+  GEMSTONE_DUST: {
+    itemId: 'GEMSTONE_DUST',
+    baseYield: 1,
+    category: 'Stonecutting',
+    baseTier: 5,
+    bonusItemChance: -0.1, // -10% from CSV
+    craftAll: true,
+    ingredients: [
+      { itemId: 'PRISTINE_AMBER', quantity: 3 },
+      { itemId: 'PRISTINE_DIAMOND', quantity: 3 },
+      { itemId: 'PRISTINE_EMERALD', quantity: 3 }
+    ]
   }
 };

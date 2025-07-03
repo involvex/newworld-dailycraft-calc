@@ -1,6 +1,6 @@
 {
   "name": "new-world-crafting-calculator",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "A comprehensive crafting calculator for Amazon's New World MMO with OCR inventory detection.",
   "author": "Involvex",
   "homepage": "https://involvex.github.io/newworld-dailycraft-calc/",
