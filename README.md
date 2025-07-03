@@ -66,3 +66,9 @@ npm run dev
 - <b>Author:</b> Involvex
 - <b>Based on:</b> [nw-buddy.de](https://nw-buddy.de/)
 - <b>Images from:</b> [nwdb.info](https://nwdb.info/)
+
+---
+## ToDo
+
+- Improve OCR 
+
