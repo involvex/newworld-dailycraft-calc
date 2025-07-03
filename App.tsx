@@ -53,6 +53,7 @@ const App: React.FC = () => {
   const [ocrEditText, setOCREditText] = useState('');
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   const craftingData = useMemo(() => 
     selectedItemId && quantity > 0 ? calculateCraftingTree(selectedItemId, quantity, bonuses) : null
@@ -190,6 +191,9 @@ const App: React.FC = () => {
       });
       window.electronAPI.onShowSettings(() => {
         setShowSettings(true);
+      });
+      window.electronAPI.onShowAbout(() => {
+        setShowAbout(true);
       });
     }
   }, [isProcessingOCR]);
@@ -986,6 +990,33 @@ const App: React.FC = () => {
               <div className="flex gap-2 mt-6">
                 <button
                   onClick={() => setShowSettings(false)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {showAbout && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-white mb-4">About</h3>
+              <div className="space-y-4">
+                <div className="text-center">
+                  <img src="logo.png" alt="Logo" className="mx-auto mb-4 h-16 w-auto" />
+                  <h4 className="text-yellow-300 font-bold text-lg">New World Crafting Calculator</h4>
+                  <p className="text-gray-300 text-sm mt-2">Version 0.7.0</p>
+                </div>
+                <div className="text-sm text-gray-300">
+                  <p>A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
+                  <p className="mt-2">Created by <span className="text-yellow-300">Involvex</span></p>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-6">
+                <button
+                  onClick={() => setShowAbout(false)}
                   className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
                 >
                   Close

@@ -5,7 +5,7 @@
   },
   "description": "A crafting calculator for New World MMORPG.",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.7.1",
   "main": "electron.js",
   "scripts": {
     "dev": "vite --host",
