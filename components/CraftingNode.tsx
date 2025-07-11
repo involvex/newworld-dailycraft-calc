@@ -13,9 +13,10 @@ interface CraftingNodeProps {
   onIngredientChange?: (itemId: string, ingredient: string) => void;
   viewMode?: 'net' | 'gross';
   summaryData?: any[];
+  onNodeContextMenu?: (node: CraftingNodeData, event: React.MouseEvent) => void;
 }
 
-const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = false, isLast = false, collapsedNodes, onToggle, selectedIngredients = {}, onIngredientChange, viewMode = 'net', summaryData = [] }) => {
+const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = false, isLast = false, collapsedNodes, onToggle, selectedIngredients = {}, onIngredientChange, viewMode = 'net', summaryData = [], onNodeContextMenu }) => {
   const hasChildren = node.children?.length > 0;
   const isExpanded = !collapsedNodes.has(node.id);
 
@@ -37,7 +38,10 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
   }
 
   return (
-    <div className={`relative ${isRoot ? '' : 'pl-5'}`}>
+    <div
+      className={`relative ${isRoot ? '' : 'pl-5'}`}
+      onContextMenu={onNodeContextMenu ? (e) => onNodeContextMenu(node, e) : undefined}
+    >
       {!isRoot && (
         <>
           {/* Vertical line connecting to parent */}
@@ -127,6 +131,7 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
               onIngredientChange={onIngredientChange}
               viewMode={viewMode}
               summaryData={summaryData}
+              onNodeContextMenu={onNodeContextMenu}
             />
           ))}
         </div>

@@ -1,10 +1,13 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { calculateCraftingTree, aggregateRawMaterials } from './services/craftingService';
 import { ITEMS } from './data/items';
 import { RECIPES } from './data/recipes';
 import CraftingNode from './components/CraftingNode';
 import SummaryList from './components/SummaryList';
 import { Item, AllBonuses, BonusConfiguration, RawMaterial } from './types';
+import useCraftingTree from './hooks/useCraftingTree';
+import useInventoryOCR from './hooks/useInventoryOCR';
+import usePresets from './hooks/usePresets';
+import { collectAllNodeIds, collectSubtreeNodeIds } from './utils/treeUtils';
 
 // Types
 type SummaryMode = 'net' | 'xp';
@@ -52,12 +55,7 @@ const getInitial = <T,>(key: string, fallback: T): T => {
 };
 
 const App: React.FC = () => {
-  const allCraftableItems = useMemo(() => 
-    Object.keys(RECIPES).map(id => ITEMS[id]).filter(Boolean)
-      .sort((a, b) => a.tier !== b.tier ? b.tier - a.tier : a.name.localeCompare(b.name))
-  , []);
-
-  // Core state
+  // Core state (move all useState above any useEffect)
   const [selectedItemId, setSelectedItemId] = useState(() => getInitial('selectedItemId', FINAL_ITEMS[0].id));
   const [quantity, setQuantity] = useState(() => getInitial('quantity', 10));
   const [multiItems, setMultiItems] = useState(() => getInitial('multiItems', []));
@@ -66,13 +64,13 @@ const App: React.FC = () => {
   const [bonuses, setBonuses] = useState<AllBonuses>(() => getInitial('bonuses', DEFAULT_BONUSES));
   const [collapsedNodes, setCollapsedNodes] = useState(() => new Set(getInitial<string[]>('collapsedNodes', [])));
   const [inventory, setInventory] = useState<Inventory>(() => getInitial('inventory', {}));
-  
+
   // UI state
   const [searchTerm, setSearchTerm] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(() => getInitial('showAdvanced', false));
   const [manualMode, setManualMode] = useState(() => getInitial('manualMode', false));
   const [selectedPreset, setSelectedPreset] = useState('');
-  
+
   // Modal states
   const [showPrismaticList, setShowPrismaticList] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -80,7 +78,7 @@ const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showCreatePreset, setShowCreatePreset] = useState(false);
-  
+
   // Data states
   const [prismaticBuyList, setPrismaticBuyList] = useState<RawMaterial[]>([]);
   const [customPresets, setCustomPresets] = useState(() => getInitial('customPresets', []));
@@ -92,42 +90,80 @@ const App: React.FC = () => {
     GEMSTONE_DUST: 'PRISTINE_AMBER'
   }));
 
-  const craftingData = useMemo(() => {
-    if (multiItems.length > 0) {
-      // Create individual trees for each item
-      const trees = multiItems.map(({ id, qty }) => calculateCraftingTree(id, qty, bonuses, selectedIngredients, viewMode)).filter(Boolean);
-      
-      if (trees.length === 0) return null;
-      if (trees.length === 1) return trees[0];
-      
-      // Create a virtual root node for multiple items
-      return {
-        id: 'ROOT>MULTI',
-        item: { id: 'MULTI', name: 'Multiple Items', tier: 0, type: 'Virtual', types: '', iconId: 'multi', weight: 0, maxStack: 1 },
-        quantity: 1,
-        totalQuantity: multiItems.reduce((sum, item) => sum + item.qty, 0),
-        yieldBonus: 0,
-        children: trees
-      };
+  // --- On app load, initialize collapsedNodes from localStorage if present ---
+  useEffect(() => {
+    const stored = localStorage.getItem('collapsedNodes');
+    if (stored) {
+      try {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr)) {
+          setCollapsedNodes(new Set(arr));
+        }
+      } catch {}
     }
-    return selectedItemId && quantity > 0 ? calculateCraftingTree(selectedItemId, quantity, bonuses, selectedIngredients, viewMode) : null;
-  }, [selectedItemId, quantity, bonuses, multiItems, viewMode, selectedIngredients]);
+    // else leave as default
+    // eslint-disable-next-line
+  }, []);
 
-  const handleCollapseAll = useCallback(() => {
-    if (!craftingData?.children) return;
-    const allNodeIds = new Set<string>();
-    const collectNodeIds = (node: any) => {
-      allNodeIds.add(node.id);
-      node.children?.forEach(collectNodeIds);
-    };
-    craftingData.children.forEach(collectNodeIds);
-    setCollapsedNodes(allNodeIds);
+  // --- Ensure collapsedNodes is always saved to localStorage when it changes ---
+  useEffect(() => {
+    localStorage.setItem('collapsedNodes', JSON.stringify(Array.from(collapsedNodes)));
+  }, [collapsedNodes]);
+
+  // --- Refactored hooks ---
+  const { craftingData, summaryData, allCraftableItems, filteredItems, netRequirementsWithInventory } =
+    useCraftingTree({
+      selectedItemId, quantity, multiItems, bonuses, selectedIngredients, viewMode, summaryMode, collapsedNodes, inventory
+    });
+
+  const { captureAndProcessScreenshot, parseInventoryOCR, isProcessingOCR: ocrProcessing, ocrEditText: ocrText, setOCREditText, setShowOCREdit } =
+    useInventoryOCR({ setInventory, inventory, setOCREditText, setShowOCREdit });
+
+  const { PRESETS, customPresets, setCustomPresets, selectedPreset, setSelectedPreset, showCreatePreset, setShowCreatePreset, presetName, setPresetName } =
+    usePresets({ multiItems, selectedItemId, quantity, collapsedNodes });
+
+  // --- Context menu actions ---
+  const handleContextMenuAction = useCallback((action: 'expand' | 'collapse' | 'remove', node: any) => {
+    switch (action) {
+      case 'expand':
+        handleExpandAll(node);
+        break;
+      case 'collapse':
+        handleCollapseAll(node);
+        break;
+      case 'remove':
+        handleRemoveResource(node.id);
+        break;
+    }
+  }, [handleExpandAll, handleCollapseAll, handleRemoveResource]);
+
+  // --- Expand/collapse helpers ---
+  const handleCollapseAll = useCallback((rootNode?: any) => {
+    const node = rootNode || craftingData;
+    if (!node) return;
+    // Only collapse subtree if rootNode is provided, else whole tree
+    const allNodeIds = rootNode
+      ? collectSubtreeNodeIds(node)
+      : collectAllNodeIds(craftingData);
+    setCollapsedNodes(new Set(allNodeIds));
     localStorage.setItem('collapsedNodes', JSON.stringify([...allNodeIds]));
   }, [craftingData]);
 
-  const handleExpandAll = useCallback(() => {
-    setCollapsedNodes(new Set());
-    localStorage.setItem('collapsedNodes', '[]');
+  const handleExpandAll = useCallback((rootNode?: any) => {
+    if (rootNode) {
+      // Only expand subtree: remove all its nodeIds from collapsedNodes
+      setCollapsedNodes(prev => {
+        const idsToRemove = collectSubtreeNodeIds(rootNode);
+        const newSet = new Set(prev);
+        idsToRemove.forEach(id => newSet.delete(id));
+        localStorage.setItem('collapsedNodes', JSON.stringify([...newSet]));
+        return newSet;
+      });
+    } else {
+      // Expand all: clear collapsedNodes
+      setCollapsedNodes(new Set());
+      localStorage.setItem('collapsedNodes', '[]');
+    }
   }, []);
 
   const handleToggleNode = useCallback((nodeId: string) => {
@@ -139,7 +175,18 @@ const App: React.FC = () => {
     });
   }, []);
 
-  const getIconUrl = useCallback((itemId: string) => {
+  // Remove resource from summary (net mode only)
+  const handleRemoveResource = useCallback((itemId: string) => {
+    // Remove from inventory so it is not counted in net requirements
+    setInventory(prev => {
+      const updated = { ...prev };
+      updated[itemId] = (updated[itemId] || 0) + 9999999; // Mark as 'infinite' so net = 0
+      localStorage.setItem('inventory', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const getIconUrl = useCallback((itemId: string, tier?: number) => {
     if (itemId === 'MULTI') {
       return 'https://nwdb.info/images/db/icons/filters/itemtypes/all.png';
     }
@@ -198,72 +245,6 @@ const App: React.FC = () => {
     localStorage.setItem('collapsedNodes', JSON.stringify([...nodesToCollapse]));
   }, [craftingData]);
 
-  const summaryData = useMemo(() => {
-    if (!craftingData) return { title: '', materials: [] };
-    
-    if (summaryMode === 'xp') {
-      const xpMaterials: (RawMaterial & { xp?: number; unitXP?: number })[] = [];
-      let totalXP = 0;
-      
-      const traverse = (node: any) => {
-        if (node.xp && node.quantity) {
-          const xpValue = node.xp * node.quantity;
-          xpMaterials.push({
-            item: ITEMS[node.id] || {
-              id: node.id, name: node.name || node.id, tier: node.tier || 0,
-              type: node.type || '', types: '', iconId: node.id.toLowerCase().replace(/_/g, ''),
-              weight: 0, maxStack: 1000
-            },
-            quantity: xpValue, xp: xpValue, unitXP: node.xp
-          });
-          totalXP += xpValue;
-        }
-        node.children?.forEach(traverse);
-      };
-      
-      traverse(craftingData);
-      xpMaterials.sort((a, b) => (b.xp || 0) - (a.xp || 0));
-      xpMaterials.unshift({
-        item: { id: 'TOTAL_XP', name: `Total ${ITEMS[selectedItemId]?.type || 'XP'}`, tier: 0, type: 'Total', types: '', iconId: 'total', weight: 0, maxStack: 1 },
-        quantity: totalXP, xp: totalXP, unitXP: 0
-      });
-      
-      return { title: 'Tradeskill XP', materials: xpMaterials };
-    }
-    
-    // Handle multi-item scenarios
-    if (multiItems.length > 0) {
-      const totalMaterials = new Map<string, number>();
-      multiItems.forEach(({ id, qty }) => {
-        const tree = calculateCraftingTree(id, qty, bonuses, selectedIngredients, viewMode);
-        if (tree) {
-          const materials = aggregateRawMaterials(tree, new Set(), viewMode, bonuses, selectedIngredients);
-          materials.forEach(material => {
-            if (material?.item?.id) {
-              const current = totalMaterials.get(material.item.id) || 0;
-              totalMaterials.set(material.item.id, current + material.quantity);
-            }
-          });
-        }
-      });
-      
-      const combinedMaterials = Array.from(totalMaterials.entries())
-        .map(([itemId, qty]) => ({ item: ITEMS[itemId], quantity: qty }))
-        .filter(m => m.item)
-        .sort((a, b) => b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name));
-      
-      return {
-        title: viewMode === 'gross' ? 'Gross Requirements' : 'Buy Order',
-        materials: combinedMaterials
-      };
-    }
-    
-    return {
-      title: viewMode === 'gross' ? 'Gross Requirements' : 'Buy Order',
-      materials: aggregateRawMaterials(craftingData, collapsedNodes, viewMode, bonuses, selectedIngredients)
-    };
-  }, [craftingData, summaryMode, collapsedNodes, selectedItemId, viewMode, bonuses, multiItems]);
-
   useEffect(() => {
     const items = { selectedItemId, quantity, summaryMode, viewMode, multiItems };
     Object.entries(items).forEach(([key, value]) => 
@@ -286,21 +267,6 @@ const App: React.FC = () => {
       });
     }
   }, [isProcessingOCR]);
-
-  const netRequirementsWithInventory = useMemo(() => {
-    if (!craftingData || summaryMode !== 'net') return summaryData.materials;
-    
-    return summaryData.materials.map(material => {
-      const inInventory = inventory[material.item.id] || 0;
-      const needed = Math.max(0, material.quantity - inInventory);
-      return {
-        ...material,
-        quantity: needed,
-        inInventory,
-        originalQuantity: material.quantity
-      };
-    }).filter(m => m.quantity > 0 || m.inInventory > 0);
-  }, [summaryData.materials, inventory, summaryMode, craftingData]);
 
   const generatePrismaticBuyList = useCallback(async () => {
     const totalMaterials = new Map<string, number>();
@@ -587,8 +553,8 @@ const App: React.FC = () => {
           <p className="text-xs text-gray-200 mt-1">A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
         </header>
 
-        <div className="bg-gray-800/30 backdrop-blur-sm p-4 rounded-xl border border-yellow-900/40 mb-6 shadow-lg">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+        <div className="bg-gray-800/30 backdrop-blur-sm p-2 sm:p-4 rounded-xl border border-yellow-900/40 mb-6 shadow-lg w-full max-w-full">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 w-full">
             <h3 className="text-lg font-semibold text-yellow-300 flex items-center gap-2">
               ⚙️ Settings
             </h3>
@@ -624,53 +590,55 @@ const App: React.FC = () => {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full">
             <div>
               <label className="block text-xs text-yellow-300 mb-1 font-medium">Presets</label>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap items-center">
                 <select
                   value={selectedPreset}
                   onChange={(e) => {
                     const presetName = e.target.value;
                     setSelectedPreset(presetName);
-                    
                     if (presetName) {
                       const allPresets = [...PRESETS, ...customPresets];
                       const preset = allPresets.find(p => p.name === presetName);
                       if (preset?.items) {
                         if (preset.items.length === 1) {
-                          // Single item preset
                           setSelectedItemId(preset.items[0].id);
                           setQuantity(preset.items[0].qty);
                           setMultiItems([]);
                         } else {
-                          // Multi-item preset
                           setMultiItems(preset.items);
                           setSelectedItemId('');
                           setQuantity(preset.items[0]?.qty || 10);
                         }
-                        
-                        if (preset.collapsedNodes) {
+                        // Only restore collapsedNodes if present in the preset (custom presets)
+                        if (
+                          Object.prototype.hasOwnProperty.call(preset, 'collapsedNodes') &&
+                          Array.isArray(preset.collapsedNodes)
+                        ) {
                           const nodeSet = new Set(preset.collapsedNodes);
                           setCollapsedNodes(nodeSet);
                           localStorage.setItem('collapsedNodes', JSON.stringify(preset.collapsedNodes));
+                        } else {
+                          setCollapsedNodes(new Set());
+                          localStorage.setItem('collapsedNodes', '[]');
                         }
-                        
                         localStorage.setItem('multiItems', JSON.stringify(preset.items.length > 1 ? preset.items : []));
                       }
                     }
                   }}
-                  className="flex-1 bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
+                  className="flex-1 min-w-0 bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
                 >
                   <option value="">Select...</option>
-                  {PRESETS.map(preset => {
+                  {PRESETS.map((preset: any) => {
                     const displayName = preset.items.length === 1 
                       ? `${preset.name} (${preset.items[0].qty})`
                       : `${preset.name} (${preset.items.length} items)`;
                     return <option key={preset.name} value={preset.name}>{displayName}</option>;
                   })}
                   {customPresets.length > 0 && <option disabled>--- Custom ---</option>}
-                  {customPresets.map(preset => {
+                  {customPresets.map((preset: any) => {
                     const displayName = preset.items.length === 1 
                       ? `${preset.name} (${preset.items[0].qty})`
                       : `${preset.name} (${preset.items.length} items)`;
@@ -679,7 +647,7 @@ const App: React.FC = () => {
                 </select>
                 <button
                   onClick={() => setShowCreatePreset(true)}
-                  className="px-2 py-1 bg-green-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-green-600"
+                  className="px-2 py-1 bg-green-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-green-600 flex-shrink-0"
                   title="Create Preset"
                 >
                   +
@@ -700,7 +668,7 @@ const App: React.FC = () => {
                       alert(`No preset found for current selection: ${currentPreset}`);
                     }
                   }}
-                  className="px-2 py-1 bg-red-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-red-600"
+                  className="px-2 py-1 bg-red-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-red-600 flex-shrink-0"
                   title="Delete Current Selection Preset"
                 >
                   -
@@ -887,6 +855,53 @@ const App: React.FC = () => {
               }}
               viewMode={viewMode}
               summaryData={summaryData.materials}
+              onNodeContextMenu={(node: any, event: React.MouseEvent) => {
+                event.preventDefault();
+                // Show a custom context menu at mouse position
+                const menu = document.createElement('div');
+                menu.style.position = 'fixed';
+                menu.style.left = `${event.clientX}px`;
+                menu.style.top = `${event.clientY}px`;
+                menu.style.background = '#222';
+                menu.style.color = '#fff';
+                menu.style.border = '1px solid #444';
+                menu.style.borderRadius = '6px';
+                menu.style.zIndex = '9999';
+                menu.style.boxShadow = '0 2px 12px #0008';
+                menu.style.padding = '0.5em 0';
+                menu.style.minWidth = '160px';
+                menu.style.fontSize = '14px';
+                menu.innerHTML = `
+                  <div style='padding:8px 16px;cursor:pointer;'>Expand All</div>
+                  <div style='padding:8px 16px;cursor:pointer;'>Collapse All</div>
+                  <div style='padding:8px 16px;cursor:pointer;'>Remove Resource</div>
+                `;
+                const [expand, collapse, remove] = Array.from(menu.children);
+                expand.addEventListener('click', () => {
+                  handleExpandAll(node);
+                  document.body.removeChild(menu);
+                });
+                collapse.addEventListener('click', () => {
+                  handleCollapseAll(node);
+                  document.body.removeChild(menu);
+                });
+                remove.addEventListener('click', () => {
+                  handleRemoveResource(node.id);
+                  document.body.removeChild(menu);
+                });
+                document.body.appendChild(menu);
+                const removeMenu = () => {
+                  if (document.body.contains(menu)) document.body.removeChild(menu);
+                  window.removeEventListener('click', removeMenu);
+                  window.removeEventListener('contextmenu', removeMenu);
+                  window.removeEventListener('scroll', removeMenu);
+                };
+                setTimeout(() => {
+                  window.addEventListener('click', removeMenu);
+                  window.addEventListener('contextmenu', removeMenu);
+                  window.addEventListener('scroll', removeMenu);
+                }, 10);
+              }}
             />
           </div>
         )}
@@ -1197,7 +1212,7 @@ const App: React.FC = () => {
 
         {showSettings && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-lg w-full mx-4">
+            <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700 w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl mx-2 sm:mx-4 overflow-y-auto max-h-[90vh] shadow-2xl">
               <h3 className="text-lg font-semibold text-white mb-4">Settings</h3>
               <div className="space-y-4">
                 <div>
@@ -1406,12 +1421,84 @@ const App: React.FC = () => {
                     if (presetName.trim()) {
                       const trimmedName = presetName.trim();
                       const existingIndex = customPresets.findIndex(p => p.name === trimmedName);
-                      
                       if (existingIndex !== -1) {
                         if (confirm(`Preset "${trimmedName}" already exists. Overwrite?`)) {
                           const newPreset = {
                             name: trimmedName,
-                            items: [{ id: selectedItemId, qty: quantity }],
+                            items: multiItems.length > 0 ? multiItems : [{ id: selectedItemId, qty: quantity }],
+                            collapsedNodes: [...collapsedNodes]
+                          };
+                          const updatedPresets = [...customPresets];
+                          updatedPresets[existingIndex] = newPreset;
+                          setCustomPresets(updatedPresets);
+                          localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
+                          setShowCreatePreset(false);
+                          setPresetName('');
+                        }
+                      } else {
+                        const newPreset = {
+                          name: trimmedName,
+                          items: multiItems.length > 0 ? multiItems : [{ id: selectedItemId, qty: quantity }],
+                          collapsedNodes: [...collapsedNodes]
+                        };
+                        const updatedPresets = [...customPresets, newPreset];
+                        setCustomPresets(updatedPresets);
+                        localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
+                        setShowCreatePreset(false);
+                        setPresetName('');
+                      }
+                    }
+                  }}
+                  disabled={!presetName.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:bg-gray-500"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCreatePreset(false);
+                    setPresetName('');
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <footer className="text-center mt-12 text-gray-600 text-sm">
+          <p><img src="logo.png" alt="Logo" className="mx-auto mb-2 h-16 w-auto" /></p>
+          <p>Created by Involvex</p>
+          <p>Data from <a href="https://nw-buddy.de" className="text-blue-500 hover:underline">nw-buddy.de</a></p>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+export default App;
+                      {multiItems.map((item, i) => (
+                        <div key={i}>{ITEMS[item.id]?.name} x{item.qty}</div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-yellow-300">{ITEMS[selectedItemId]?.name} x{quantity}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2 mt-6">
+                <button
+                  onClick={() => {
+                    if (presetName.trim()) {
+                      const trimmedName = presetName.trim();
+                      const existingIndex = customPresets.findIndex(p => p.name === trimmedName);
+                      if (existingIndex !== -1) {
+                        if (confirm(`Preset "${trimmedName}" already exists. Overwrite?`)) {
+                          const newPreset = {
+                            name: trimmedName,
+                            items: multiItems.length > 0 ? multiItems : [{ id: selectedItemId, qty: quantity }],
                             collapsedNodes: [...collapsedNodes]
                           };
                           const updatedPresets = [...customPresets];
