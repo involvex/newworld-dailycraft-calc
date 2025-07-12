@@ -1,8 +1,10 @@
-const { app, BrowserWindow, Tray, Menu, session, desktopCapturer, ipcMain, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, session, desktopCapturer, ipcMain, globalShortcut, dialog } = require('electron');
 const path = require('path');
+const ConfigService = require('./services/configService');
 
 let tray = null;
 let mainWindow = null;
+let configService = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -146,6 +148,9 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
+  // Initialize config service
+  configService = new ConfigService();
+  
   // Handle screen capture permissions
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(true);
@@ -166,26 +171,105 @@ app.whenReady().then(() => {
     app.isQuiting = true;
     app.quit();
   });
-  
-  // Register global hotkeys
-  globalShortcut.register('CommandOrControl+Alt+I', () => {
-    if (mainWindow.isVisible()) {
-      mainWindow.hide();
-    } else {
-      mainWindow.show();
-      mainWindow.focus();
+
+  // Config management handlers
+  ipcMain.handle('load-config', () => {
+    return configService.loadConfig();
+  });
+
+  ipcMain.handle('save-config', (event, config) => {
+    return configService.saveConfig(config);
+  });
+
+  ipcMain.handle('get-config-path', () => {
+    return configService.getConfigPath();
+  });
+
+  ipcMain.handle('export-config', async () => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export Configuration',
+      defaultPath: 'new-world-crafting-config.json',
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    if (!result.canceled && result.filePath) {
+      return configService.exportConfig(result.filePath);
     }
+    return false;
+  });
+
+  ipcMain.handle('import-config', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Import Configuration',
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      return configService.importConfig(result.filePaths[0]);
+    }
+    return false;
+  });
+
+  // Hotkey management
+  ipcMain.handle('register-hotkeys', (event, hotkeys) => {
+    return registerHotkeys(hotkeys);
   });
   
-  globalShortcut.register('CommandOrControl+Alt+O', () => {
-    if (mainWindow.isVisible()) {
-      mainWindow.webContents.send('trigger-ocr');
-    }
-  });
+  // Load initial config and register hotkeys
+  const config = configService.loadConfig();
+  registerHotkeys(config.hotkeys);
   
   createWindow();
   createTray();
 });
+
+function registerHotkeys(hotkeys) {
+  try {
+    // Unregister all existing hotkeys
+    globalShortcut.unregisterAll();
+    
+    // Register new hotkeys
+    if (hotkeys.toggleCalculator) {
+      globalShortcut.register(hotkeys.toggleCalculator, () => {
+        if (mainWindow.isVisible()) {
+          mainWindow.hide();
+        } else {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      });
+    }
+    
+    if (hotkeys.triggerOCR) {
+      globalShortcut.register(hotkeys.triggerOCR, () => {
+        if (mainWindow.isVisible()) {
+          mainWindow.webContents.send('trigger-ocr');
+        }
+      });
+    }
+
+    if (hotkeys.openSettings) {
+      globalShortcut.register(hotkeys.openSettings, () => {
+        if (mainWindow.isVisible()) {
+          mainWindow.webContents.send('show-settings');
+        }
+      });
+    }
+    
+    console.log('Hotkeys registered:', hotkeys);
+    return true;
+  } catch (error) {
+    console.error('Error registering hotkeys:', error);
+    return false;
+  }
+}
 
 app.on('window-all-closed', () => {
   // Keep app running in tray

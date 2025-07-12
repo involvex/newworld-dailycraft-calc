@@ -17,5 +17,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Return cleanup function
     return () => ipcRenderer.removeListener('show-about', callback);
   },
-  exitApp: () => ipcRenderer.invoke('app-exit')
+  exitApp: () => ipcRenderer.invoke('app-exit'),
+  
+  // Configuration management
+  config: {
+    load: () => ipcRenderer.invoke('load-config'),
+    save: (config) => ipcRenderer.invoke('save-config', config),
+    getPath: () => ipcRenderer.invoke('get-config-path'),
+    export: () => ipcRenderer.invoke('export-config'),
+    import: () => ipcRenderer.invoke('import-config'),
+    registerHotkeys: (hotkeys) => ipcRenderer.invoke('register-hotkeys', hotkeys)
+  }
 });

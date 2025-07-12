@@ -70,6 +70,27 @@ export interface AllBonuses {
   [category: string]: BonusConfiguration;
 }
 
+// Electron API types
+declare global {
+  interface Window {
+    electronAPI?: {
+      getDesktopSources: () => Promise<any[]>;
+      onTriggerOCR: (callback: () => void) => (() => void);
+      onShowSettings: (callback: () => void) => (() => void);
+      onShowAbout: (callback: () => void) => (() => void);
+      exitApp: () => Promise<void>;
+      config: {
+        load: () => Promise<any>;
+        save: (config: any) => Promise<boolean>;
+        getPath: () => Promise<string>;
+        export: () => Promise<boolean>;
+        import: () => Promise<any | false>;
+        registerHotkeys: (hotkeys: any) => Promise<boolean>;
+      };
+    };
+  }
+}
+
 export interface Preset {
   name: string;
   items: { id: string; qty: number }[];

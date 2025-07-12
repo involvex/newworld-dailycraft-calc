@@ -6,11 +6,13 @@ import CraftingNode from './components/CraftingNode';
 import SummaryList from './components/SummaryList';
 import XPSummaryList from './components/XPSummaryList';
 import ContextMenu from './components/ContextMenu';
+import { SettingsModal } from './components/SettingsModal';
 import { Item, AllBonuses, BonusConfiguration } from './types';
 import useCraftingTree from './hooks/useCraftingTree';
 import useInventoryOCR from './hooks/useInventoryOCR';
 import usePresets from './hooks/usePresets';
 import useTreeCollapse from './hooks/useTreeCollapse';
+import { useConfig } from './hooks/useConfig';
 
 // Types
 type SummaryMode = 'net' | 'xp';
@@ -34,7 +36,10 @@ const getInitial = <T,>(key: string, fallback: T): T => {
 };
 
 const App: React.FC = () => {
-  // Core state (move all useState above any useEffect) - Fixed hook rendering issue and preset state management
+  // Config management
+  const { config, updateConfig, saveConfig, isLoading: configLoading } = useConfig();
+
+  // App state
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(() => getInitial('collapsedNodes', new Set()));
   const [selectedItemId, setSelectedItemId] = useState<string>(() => getInitial('selectedItemId', ''));
   const [quantity, setQuantity] = useState<number>(() => getInitial('quantity', 10));
@@ -749,67 +754,16 @@ const filteredCraftableItems = useMemo(() => {
             </div>
           )}
 
-          {showSettings && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
-                <h2 className="text-2xl font-bold text-yellow-300 mb-4 flex-shrink-0">Settings</h2>
-                <div className="space-y-6 overflow-y-auto pr-2">
-                  {/* Interface Options */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Interface Options</h3>
-                    <div className="flex items-center gap-4">
-                      {/* OCR and Manual Entry buttons moved to main UI */}
-                    </div>
-                  </div>
-
-                  {/* Data Management */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Data Management</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={handleExportData} className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-500">💾 Export Data</button>
-                      <button onClick={handleImportData} className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-500">📁 Import Data</button>
-                      <button onClick={() => setShowDeleteAllPresets(true)} className="px-3 py-1 bg-red-700 rounded text-sm hover:bg-red-600">🗑️ Delete Presets</button>
-                      <button onClick={() => setShowEraseAllData(true)} className="px-3 py-1 bg-red-800 rounded text-sm hover:bg-red-700">🗑️ Erase All Data</button>
-                    </div>
-                  </div>
-
-                  {/* Global Hotkeys */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Global Hotkeys</h3>
-                    <div className="text-sm text-gray-400">
-                      <p>Ctrl+Alt+I - Toggle Calculator</p>
-                      <p>Ctrl+Alt+O - Start OCR Detection</p>
-                    </div>
-                  </div>
-
-                  {/* Bonus Settings */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Bonus Settings</h3>
-                    {Object.entries(bonuses).map(([category, config]) => (
-                      <div key={category} className="p-4 bg-gray-700 rounded mb-2">
-                        <h4 className="font-bold text-md text-white mb-2">{category}</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-300">Skill Level</label>
-                            <input type="number" aria-label={`${category} skill level`} value={config.skillLevel} onChange={(e) => handleBonusChange(category, 'skillLevel', e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-300">Gear Bonus (%)</label>
-                            <input type="number" aria-label={`${category} gear bonus`} value={config.gearBonus * 100} onChange={(e) => handleBonusChange(category, 'gearBonus', e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white" />
-                          </div>
-                          <div className="col-span-2 flex items-center">
-                            <input type="checkbox" aria-label={`${category} fort active`} checked={config.fortActive} onChange={(e) => handleBonusChange(category, 'fortActive', e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500" />
-                            <label className="ml-2 block text-sm text-gray-300">Fort Bonus Active</label>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <button onClick={() => setShowSettings(false)} className="mt-6 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded flex-shrink-0">Close</button>
-              </div>
-            </div>
-          )}
+          <SettingsModal
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+            bonuses={bonuses}
+            onBonusChange={handleBonusChange}
+            onExportData={handleExportData}
+            onImportData={handleImportData}
+            onDeleteAllPresets={() => setShowDeleteAllPresets(true)}
+            onEraseAllData={() => setShowEraseAllData(true)}
+          />
           {contextMenu && (
             <ContextMenu
               x={contextMenu.x}
