@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { ITEMS } from './data/items';
 import { RECIPES } from './data/recipes';
 import CraftingNode from './components/CraftingNode';
@@ -45,9 +45,10 @@ const App: React.FC = () => {
   const [inventory, setInventory] = useState<Inventory>(() => getInitial('inventory', {}));
   const [selectedPreset, setSelectedPreset] = useState<string>(() => getInitial('selectedPreset', '')); // Moved selectedPreset state here
 
-// UI state
+  // UI state
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [showBackToTop, setShowBackToTop] = useState<boolean>(false);
 
   // Modal states
   const [showManualEntry, setShowManualEntry] = useState<boolean>(false);
@@ -255,6 +256,20 @@ const filteredCraftableItems = useMemo(() => {
     localStorage.removeItem('inventory');
   };
 
+  // Scroll tracking for back to top button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 500);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <React.Fragment>
       <div className="bg-gray-900 text-gray-300 min-h-screen font-sans app-gradient-bg">
@@ -264,6 +279,43 @@ const filteredCraftableItems = useMemo(() => {
             <h1 className="text-3xl font-bold text-yellow-300 mb-2">New World Crafting Calculator</h1>
             <p className="text-gray-400 text-sm">Plan your crafting efficiently with advanced material calculations</p>
           </header>
+
+          {/* Navigation Bar */}
+          <div className="mb-6 bg-gray-800/30 p-3 rounded-xl border border-gray-600/30 backdrop-blur-sm">
+            <div className="flex flex-wrap gap-2 items-center justify-center">
+              <span className="text-sm text-gray-300 font-medium mr-2">Jump to:</span>
+              <button
+                onClick={() => document.getElementById('presets-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-3 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 rounded-md text-xs text-yellow-300 transition-all duration-200"
+              >
+                📋 Presets
+              </button>
+              <button
+                onClick={() => document.getElementById('selection-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-3 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 rounded-md text-xs text-yellow-300 transition-all duration-200"
+              >
+                🎯 Item Selection
+              </button>
+              <button
+                onClick={() => document.getElementById('inventory-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-md text-xs text-blue-300 transition-all duration-200"
+              >
+                🎒 Inventory
+              </button>
+              <button
+                onClick={() => document.getElementById('crafting-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-3 py-1 bg-green-600/20 hover:bg-green-600/40 border border-green-500/30 rounded-md text-xs text-green-300 transition-all duration-200"
+              >
+                🌳 Crafting Tree
+              </button>
+              <button
+                onClick={() => document.getElementById('summary-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-3 py-1 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 rounded-md text-xs text-purple-300 transition-all duration-200"
+              >
+                📊 Summary
+              </button>
+            </div>
+          </div>
 
           {/* Quick Controls Bar */}
           <div className="mb-6 bg-gray-800/50 p-4 rounded-xl border border-yellow-900/30 backdrop-blur-sm">
@@ -312,7 +364,7 @@ const filteredCraftableItems = useMemo(() => {
             </div>
           </div>
           {/* Presets Section */}
-          <div className="mb-6 bg-gradient-to-r from-gray-800 to-gray-700 p-4 rounded-xl border border-yellow-900/40 shadow-lg">
+          <div id="presets-section" className="mb-6 bg-gradient-to-r from-gray-800 to-gray-700 p-4 rounded-xl border border-yellow-900/40 shadow-lg">
             <h3 className="text-lg font-semibold text-yellow-300 mb-3 flex items-center">
               <span className="mr-2">📋</span>
               Crafting Presets
@@ -369,7 +421,7 @@ const filteredCraftableItems = useMemo(() => {
           </div>
 
           {/* Main Content */}
-          <div className="mb-6">
+          <div id="selection-section" className="mb-6">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
               {/* Left Side: Item Selection */}
               <div className="lg:col-span-3 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-yellow-900/40 shadow-lg">
@@ -506,12 +558,12 @@ const filteredCraftableItems = useMemo(() => {
           </div>
 
           {/* Inventory Tools */}
-          <div className="mb-6 bg-gradient-to-r from-blue-900/20 to-purple-900/20 p-6 rounded-xl border border-blue-500/30 shadow-lg">
+          <div id="inventory-section" className="mb-6 bg-gradient-to-r from-blue-900/20 to-purple-900/20 p-6 rounded-xl border border-blue-500/30 shadow-lg">
             <h3 className="text-lg font-semibold text-blue-300 mb-4 flex items-center">
               <span className="mr-2">🎒</span>
               Inventory Management
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <button 
                 onClick={captureAndProcessScreenshot} 
                 className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center ${
@@ -541,13 +593,52 @@ const filteredCraftableItems = useMemo(() => {
                 Manual Entry
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-3 text-center">
+            <p className="text-xs text-gray-400 mb-4 text-center">
               Use OCR to automatically detect your inventory from screenshots, or enter items manually
             </p>
+
+            {/* Current Inventory */}
+            <div className="bg-gray-800/50 p-4 rounded-lg border border-blue-500/20">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-md font-semibold text-blue-300 flex items-center">
+                  <span className="mr-2">📦</span>
+                  Current Inventory ({Object.keys(inventory).length} items)
+                </h4>
+                <button 
+                  onClick={handleClearInventory} 
+                  className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-xs text-white transition-all duration-200"
+                  title="Clear all inventory"
+                >
+                  🗑️ Clear All
+                </button>
+              </div>
+              {Object.keys(inventory).length === 0 ? (
+                <p className="text-gray-400 text-sm text-center py-4">
+                  No items in inventory. Use OCR scan or manual entry to add items.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                  {Object.entries(inventory).sort(([, qtyA], [, qtyB]) => qtyB - qtyA).map(([itemId, qty]) => (
+                    <div key={itemId} className="flex justify-between items-center p-2 bg-gray-700/50 rounded text-sm">
+                      <span className="text-gray-300 truncate mr-2" title={ITEMS[itemId]?.name || itemId}>
+                        {ITEMS[itemId]?.name || itemId}: {qty.toLocaleString()}
+                      </span>
+                      <button
+                        onClick={() => handleInventoryChange(itemId, 0)}
+                        className="text-red-400 hover:text-red-300 text-xs ml-1 flex-shrink-0"
+                        title="Remove item from inventory"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {craftingData && (
-            <div className="mb-6">
+            <div id="crafting-section" className="mb-6">
               <div className="bg-gradient-to-r from-green-900/20 to-emerald-900/20 p-6 rounded-xl border border-green-500/30 shadow-lg">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold text-green-300 flex items-center">
@@ -583,7 +674,7 @@ const filteredCraftableItems = useMemo(() => {
           )}
 
           {summaryData && (summaryData.materials || summaryData.xpGains) && (
-            <div className="mb-6">
+            <div id="summary-section" className="mb-6">
               <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 p-6 rounded-xl border border-purple-500/30 shadow-lg">
                 <h2 className="text-xl font-bold text-purple-300 mb-4 flex items-center">
                   <span className="mr-2">📊</span>
@@ -656,30 +747,6 @@ const filteredCraftableItems = useMemo(() => {
                     </div>
                   </div>
 
-                  {/* Inventory View */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Current Inventory</h3>
-                    {Object.keys(inventory).length === 0 ? (
-                      <p className="text-gray-400 text-sm">Inventory is empty.</p>
-                    ) : (
-                      <ul className="max-h-48 overflow-y-auto bg-gray-700 p-2 rounded text-sm text-gray-300">
-                        {Object.entries(inventory).sort(([, qtyA], [, qtyB]) => qtyB - qtyA).map(([itemId, qty]) => (
-                          <li key={itemId} className="flex justify-between items-center py-0.5">
-                            <span>{ITEMS[itemId]?.name || itemId}: {qty}</span>
-                            <button
-                              onClick={() => handleInventoryChange(itemId, 0)}
-                              className="text-red-400 hover:text-red-300 text-xs ml-2"
-                              title="Remove item from inventory"
-                            >
-                              &times;
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <button onClick={handleClearInventory} className="mt-2 px-3 py-1 bg-red-700 rounded text-sm hover:bg-red-600 w-full">Clear Inventory</button>
-                  </div>
-
                   {/* Bonus Settings */}
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-2">Bonus Settings</h3>
@@ -736,7 +803,7 @@ const filteredCraftableItems = useMemo(() => {
               <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
                 <h2 className="text-2xl font-bold text-yellow-300 mb-4">About</h2>
                 <p className="text-gray-300">This New World Crafting Calculator is an open-source project designed to help players plan their crafting efficiently.</p>
-                <p className="text-gray-300 mt-2">Version: 0.9.7</p>
+                <p className="text-gray-300 mt-2">Version: 0.9.8</p>
                 <button onClick={() => setShowAbout(false)} className="mt-6 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Close</button>
               </div>
             </div>
@@ -878,10 +945,21 @@ const filteredCraftableItems = useMemo(() => {
                 </a>
               </p>
               <p className="text-xs text-gray-500">
-                New World Crafting Calculator v0.9.7 • Open Source
+                New World Crafting Calculator v0.9.8 • Open Source
               </p>
             </div>
           </footer>
+
+          {/* Back to Top Button */}
+          {showBackToTop && (
+            <button
+              onClick={scrollToTop}
+              className="fixed bottom-6 right-6 bg-yellow-600 hover:bg-yellow-700 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40"
+              title="Back to Top"
+            >
+              <span className="text-lg">⬆️</span>
+            </button>
+          )}
         </div>
       </div>
     </React.Fragment>
