@@ -25,3 +25,4 @@ data/*.csv
 .github/
 AppKopie.tsx
 build-prod.ps1
+.vscode/
