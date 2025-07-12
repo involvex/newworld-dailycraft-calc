@@ -1,33 +1,86 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: Node.js CI
+name: Build & Release
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:  
-    
-    
+  workflow_dispatch: # Manual trigger button
+  schedule:
+    - cron: '0 */6 * * *' # Every 6 hours
+
 jobs:
   build:
-
     runs-on: windows-latest
-
-    strategy:
-      matrix:
-        node-version: ['22.17']
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm install
-    - run: npm run build:prod
-    - run: npm run build-all
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22.17
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.17'
+          cache: 'npm'
+      - run: npm install
+      - run: npm run build:prod
+      - run: npm run build-all
+      - name: Upload Electron Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-build
+          path: dist-electron/
+
+  release:
+    # Only run this job if the workflow was triggered manually
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Set up Node and install dependencies for version bump
+      - name: Use Node.js 22.17
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.17'
+          cache: 'npm'
+      - run: npm install
+
+      # Bump patch version, commit, and tag (customize for minor/major if needed)
+      - name: Bump version and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          npm version patch -m "ci: bump version to %s [skip ci]"
+          git push --follow-tags
+
+      # Get new version from package.json
+      - id: get_version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      # Download build artifact from build job
+      - name: Download Electron Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: electron-build
+          path: dist-electron/
+
+      # Create GitHub Release
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          body: |
+            Automated release from manual workflow_dispatch.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload Electron build(s) as release asset(s)
+      # Adjust the asset_path and asset_name to your actual file(s)
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist-electron/your-electron-build.exe
+          asset_name: your-electron-build.exe
+          asset_content_type: application/octet-stream
