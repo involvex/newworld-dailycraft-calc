@@ -5,6 +5,7 @@ const ConfigService = require('./services/configService');
 let tray = null;
 let mainWindow = null;
 let configService = null;
+let isDev = false; // Will be set when app is ready
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -61,8 +62,6 @@ function createWindow() {
   Menu.setApplicationMenu(customMenu);
 
   // Load from dev server in development, build files in production
-  const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
-  
   if (isDev) {
     console.log('Loading development server at http://localhost:3000');
     mainWindow.loadURL('http://localhost:3000');
@@ -70,10 +69,7 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   } else {
     const indexPath = path.join(__dirname, 'dist', 'index.html');
-    console.log('Loading production build from:', indexPath);
     mainWindow.loadFile(indexPath);
-    // Open DevTools in production for debugging
-    mainWindow.webContents.openDevTools();
   }
   
   // Add error handling
@@ -82,19 +78,21 @@ function createWindow() {
   });
   
   mainWindow.webContents.on('did-finish-load', () => {
-    console.log('Page loaded successfully');
+    if (isDev) console.log('Page loaded successfully');
     mainWindow.show();
   });
   
-  // Add console message listener
-  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-    console.log(`Console [${level}]: ${message}`);
-  });
-  
-  // Add DOM ready listener
-  mainWindow.webContents.on('dom-ready', () => {
-    console.log('DOM is ready');
-  });
+  // Add console message listener (dev only)
+  if (isDev) {
+    mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+      console.log(`Console [${level}]: ${message}`);
+    });
+    
+    // Add DOM ready listener (dev only)
+    mainWindow.webContents.on('dom-ready', () => {
+      console.log('DOM is ready');
+    });
+  }
 
   // Hide to tray instead of closing (if tray exists)
   mainWindow.on('close', (event) => {
@@ -166,12 +164,17 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
-  console.log('Electron app is ready');
+  // Set development mode detection
+  isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev') || !app.isPackaged;
+  
+  if (isDev) {
+    console.log('Electron app is ready (Development Mode)');
+  }
   
   // Initialize config service with error handling
   try {
     configService = new ConfigService();
-    console.log('ConfigService initialized successfully');
+    if (isDev) console.log('ConfigService initialized successfully');
   } catch (error) {
     console.error('Failed to initialize ConfigService:', error);
     // Continue without config service for now
@@ -293,16 +296,16 @@ app.whenReady().then(() => {
   try {
     const config = configService ? configService.loadConfig() : { hotkeys: {} };
     registerHotkeys(config.hotkeys);
-    console.log('Config loaded and hotkeys registered');
+    if (isDev) console.log('Config loaded and hotkeys registered');
   } catch (error) {
     console.error('Failed to load config:', error);
     registerHotkeys({});
   }
   
-  console.log('Creating window and tray...');
+  if (isDev) console.log('Creating window and tray...');
   createWindow();
   createTray();
-  console.log('Window and tray created');
+  if (isDev) console.log('Window and tray created');
 }).catch(error => {
   console.error('Failed to start Electron app:', error);
 });
@@ -340,7 +343,7 @@ function registerHotkeys(hotkeys) {
       });
     }
     
-    console.log('Hotkeys registered:', hotkeys);
+    if (isDev) console.log('Hotkeys registered:', hotkeys);
     return true;
   } catch (error) {
     console.error('Error registering hotkeys:', error);

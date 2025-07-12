@@ -28,11 +28,13 @@
     "dev": "vite --host",
     "build": "vite build",
     "build:electron": "vite build --mode electron",
-    "build:pages": "VITE_BASE_URL=/newworld-dailycraft-calc/ vite build",
+    "build:electron:prod": "cross-env NODE_ENV=production vite build --mode electron",
+    "build:pages": "cross-env VITE_BASE_URL=/newworld-dailycraft-calc/ vite build",
     "preview": "vite preview",
     "electron-dev": "concurrently \"vite\" \"wait-on http://localhost:3000 && electron .\"",
     "electron": "npm run build:electron && electron .",
-    "dist": "npm run build:electron && electron-builder",
+    "electron:prod": "npm run build:electron:prod && cross-env NODE_ENV=production electron .",
+    "dist": "npm run build:electron:prod && cross-env NODE_ENV=production electron-builder --config.compression=maximum --config.win.target=portable",
     "deploy": "npm run build:pages && copy dist\\index.html docs\\index.html && xcopy dist\\assets docs\\assets /E /I /Y",
     "build:prod": "powershell -ExecutionPolicy Bypass -File .\\build-prod.ps1",
     "push-pages": "npm run deploy && git add docs/ && git commit -m \"Deploy to GitHub Pages\" && git push origin main",
@@ -52,6 +54,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "concurrently": "^9.2.0",
+    "cross-env": "^7.0.3",
     "electron": "^37.2.1",
     "electron-builder": "^26.0.12",
     "gh-pages": "^6.3.0",
@@ -83,7 +86,8 @@
           "x64"
         ]
       },
-      "icon": "logo.png"
+      "icon": "logo.png",
+      "forceCodeSigning": false
     },
     "publish": null,
     "nsis": {
