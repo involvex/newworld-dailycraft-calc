@@ -22,3 +22,9 @@ data/*.csv
 .clinerules/
 AppKopie.tsx
 .vscode/
+README-SIGNING.md
+.env.example
+*.plx
+*.cer
+cert
+*.pfx

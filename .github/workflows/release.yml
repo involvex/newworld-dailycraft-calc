@@ -1,0 +1,209 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.5.1)'
+        required: true
+        type: string
+      tag_name:
+        description: 'Tag name (e.g., v1.5.1)'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes'
+        required: false
+        type: string
+
+jobs:
+  create-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Get version info
+      id: version
+      run: |
+        if ("${{ github.event.inputs.version }}" -ne "") {
+          $VERSION = "${{ github.event.inputs.version }}"
+          $TAG_NAME = "${{ github.event.inputs.tag_name }}"
+        } else {
+          $TAG_NAME = "${{ github.ref_name }}"
+          $VERSION = $TAG_NAME -replace '^v', ''
+        }
+        
+        echo "version=$VERSION" >> $env:GITHUB_OUTPUT
+        echo "tag_name=$TAG_NAME" >> $env:GITHUB_OUTPUT
+        
+        Write-Host "Version: $VERSION"
+        Write-Host "Tag: $TAG_NAME"
+      shell: pwsh
+      
+    - name: Update version in package.json
+      run: |
+        $pkg = Get-Content package.json | ConvertFrom-Json
+        $pkg.version = "${{ steps.version.outputs.version }}"
+        $pkg | ConvertTo-Json -Depth 100 | Set-Content package.json
+        
+        Write-Host "Updated package.json version to ${{ steps.version.outputs.version }}"
+      shell: pwsh
+      
+    - name: Build production web assets
+      run: npm run build:electron:prod
+      
+    - name: Create code signing certificate
+      run: |
+        # Create a certificate for release signing
+        $certName = "CN=Involvex Release Certificate"
+        $password = "release-cert-password-${{ steps.version.outputs.version }}"
+        $pfxPath = "release-cert.pfx"
+        
+        # Create self-signed certificate
+        $cert = New-SelfSignedCertificate -Subject $certName -Type CodeSigningCert -KeyUsage DigitalSignature -FriendlyName "Involvex Release Code Signing" -CertStoreLocation Cert:\CurrentUser\My
+        
+        # Export to PFX file
+        $securePassword = ConvertTo-SecureString -String $password -Force -AsPlainText
+        Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $securePassword
+        
+        Write-Host "Release certificate created: $pfxPath"
+        
+        # Set environment variables for signing
+        echo "CSC_LINK=$pfxPath" >> $env:GITHUB_ENV
+        echo "CSC_KEY_PASSWORD=$password" >> $env:GITHUB_ENV
+      shell: pwsh
+      
+    - name: Build and sign application
+      run: node build-signed.js
+      env:
+        NODE_ENV: production
+        
+    - name: Prepare release assets
+      run: |
+        # Create release directory
+        New-Item -ItemType Directory -Force -Path "release-assets"
+        
+        # Copy the signed installer
+        $setupFile = Get-ChildItem -Path "dist-electron" -Filter "*Setup*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($setupFile) {
+          $newName = "New-World-Crafting-Calculator-v${{ steps.version.outputs.version }}-Setup.exe"
+          Copy-Item $setupFile.FullName "release-assets\$newName"
+          Write-Host "Copied setup file: $newName"
+        }
+        
+        # Copy the portable executable if it exists
+        $portableFile = Get-ChildItem -Path "dist-electron" -Filter "*.exe" -Exclude "*Setup*", "*uninstaller*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($portableFile) {
+          $newName = "New-World-Crafting-Calculator-v${{ steps.version.outputs.version }}-Portable.exe"
+          Copy-Item $portableFile.FullName "release-assets\$newName"
+          Write-Host "Copied portable file: $newName"
+        }
+        
+        # List all files in release assets
+        Write-Host "Release assets:"
+        Get-ChildItem "release-assets" | ForEach-Object { Write-Host "  - $($_.Name) ($([math]::Round($_.Length/1MB, 2)) MB)" }
+      shell: pwsh
+      
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        $notes = @"
+        ## 🎮 New World Crafting Calculator v${{ steps.version.outputs.version }}
+        
+        ${{ github.event.inputs.release_notes }}
+        
+        ### 📦 Downloads
+        
+        - **🖥️ Desktop Installer**: `New-World-Crafting-Calculator-v${{ steps.version.outputs.version }}-Setup.exe`
+        - **💻 Portable Version**: `New-World-Crafting-Calculator-v${{ steps.version.outputs.version }}-Portable.exe`
+        - **🌐 Web Version**: [Try it online](https://involvex.github.io/newworld-dailycraft-calc/)
+        
+        ### 🔐 Security & Installation
+        
+        - ✅ **Code Signed**: All executables are digitally signed for security
+        - 🛡️ **Safe Installation**: Windows Defender and antivirus software may scan the files initially
+        - 📋 **System Requirements**: Windows 10/11 (64-bit)
+        
+        ### 🛠️ Technical Details
+        
+        - **Framework**: Electron with React & TypeScript
+        - **Build Date**: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC")
+        - **Architecture**: x64
+        - **Code Signing**: Self-signed certificate (test environment)
+        
+        ### 📖 Usage
+        
+        1. **Installer**: Run the Setup.exe for a full installation with shortcuts
+        2. **Portable**: Run the Portable.exe directly without installation
+        3. **Web**: Access the calculator directly in your browser
+        
+        ---
+        
+        **Full Changelog**: https://github.com/involvex/newworld-dailycraft-calc/compare/v${{ steps.version.outputs.version }}...main
+        "@
+        
+        # Save to file and output
+        $notes | Set-Content "RELEASE_NOTES.md"
+        
+        # Set multiline output for GitHub Actions
+        $delimiter = "EOF_RELEASE_NOTES"
+        echo "notes<<$delimiter" >> $env:GITHUB_OUTPUT
+        echo $notes >> $env:GITHUB_OUTPUT
+        echo $delimiter >> $env:GITHUB_OUTPUT
+      shell: pwsh
+      
+    - name: Create or update Git tag
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Check if tag exists
+        if (git tag -l "${{ steps.version.outputs.tag_name }}") {
+          Write-Host "Tag ${{ steps.version.outputs.tag_name }} already exists, deleting..."
+          git tag -d "${{ steps.version.outputs.tag_name }}"
+          git push origin ":refs/tags/${{ steps.version.outputs.tag_name }}" 2>$null || Write-Host "Remote tag did not exist"
+        }
+        
+        # Create new tag
+        git add package.json
+        git commit -m "chore: release v${{ steps.version.outputs.version }}" || Write-Host "No changes to commit"
+        git tag -a "${{ steps.version.outputs.tag_name }}" -m "Release v${{ steps.version.outputs.version }}"
+        git push origin "${{ steps.version.outputs.tag_name }}"
+      shell: pwsh
+      
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.tag_name }}
+        name: "🎮 New World Crafting Calculator v${{ steps.version.outputs.version }}"
+        body: ${{ steps.release_notes.outputs.notes }}
+        files: release-assets/*
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-v${{ steps.version.outputs.version }}
+        path: release-assets/
+        retention-days: 90

@@ -41,7 +41,9 @@
     "serve": "npm run build && node simple-server.js",
     "portable": "npm run build:electron && node build-portable.js",
     "build-all": "node build-all.js",
-    "build-web": "node build-web-only.js"
+    "build-web": "node build-web-only.js",
+    "build:signed": "npm run build:electron:prod && node build-signed.js",
+    "release": "npm run build:signed"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.6.0",
@@ -56,43 +58,45 @@
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
     "electron": "^37.2.1",
-    "electron-builder": "^26.0.12",
+    "electron-builder": "^26.0.18",
     "gh-pages": "^6.3.0",
     "typescript": "^5.8.3",
     "vite": "^7.0.4",
     "wait-on": "^8.0.3"
   },
   "build": {
-    "appId": "com.involvex.newworld-calculator",
+    "appId": "com.involvex.newworldcraftingcalculator",
     "productName": "New World Crafting Calculator",
     "directories": {
-      "output": "dist-electron",
-      "buildResources": "build"
+      "output": "dist-electron"
     },
     "files": [
+      "dist/**/*",
       "electron.js",
       "preload.js",
-      "logo.png",
       "services/**/*",
-      "dist/**/*",
-      "!dist/**/*.map"
+      "logo.png",
+      "package.json"
     ],
-    "icon": "logo.png",
-    "compression": "maximum",
     "win": {
-      "target": {
-        "target": "portable",
-        "arch": [
-          "x64"
-        ]
-      },
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "logo.png",
-      "forceCodeSigning": false
+      "verifyUpdateCodeSignature": false,
+      "signAndEditExecutable": true,
+      "cscLink": "${env.CSC_LINK}",
+      "cscKeyPassword": "${env.CSC_KEY_PASSWORD}"
     },
-    "publish": null,
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+    "publish": {
+      "provider": "github",
+      "owner": "involvex",
+      "repo": "newworld-dailycraft-calc"
     }
   }
 }

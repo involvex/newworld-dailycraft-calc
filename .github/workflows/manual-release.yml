@@ -1,0 +1,114 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.5.1)'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes (optional)'
+        required: false
+        type: string
+        default: 'New release with bug fixes and improvements'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Update package.json version
+      run: |
+        $pkg = Get-Content package.json | ConvertFrom-Json
+        $pkg.version = "${{ github.event.inputs.version }}"
+        $pkg | ConvertTo-Json -Depth 100 | Set-Content package.json
+      shell: pwsh
+      
+    - name: Build and sign application
+      run: npm run build:signed
+      env:
+        CSC_LINK: test-cert.pfx
+        CSC_KEY_PASSWORD: testpassword123
+        
+    - name: Prepare release assets
+      run: |
+        New-Item -ItemType Directory -Force -Path "release-assets"
+        
+        # Copy setup installer
+        $setupFile = Get-ChildItem -Path "dist-electron" -Filter "*Setup*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($setupFile) {
+          $newName = "New-World-Crafting-Calculator-v${{ github.event.inputs.version }}-Setup.exe"
+          Copy-Item $setupFile.FullName "release-assets\$newName"
+          Write-Host "✅ Prepared: $newName"
+        }
+        
+        # Copy latest.yml for auto-updater
+        Get-ChildItem -Path "dist-electron" -Filter "latest*.yml" | ForEach-Object {
+          Copy-Item $_.FullName "release-assets\"
+          Write-Host "✅ Prepared: $($_.Name)"
+        }
+      shell: pwsh
+      
+    - name: Commit version bump
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add package.json
+        git commit -m "chore: bump version to v${{ github.event.inputs.version }}"
+        git push
+      shell: pwsh
+      
+    - name: Create release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        name: "🎮 New World Crafting Calculator v${{ github.event.inputs.version }}"
+        body: |
+          ## 🎮 New World Crafting Calculator v${{ github.event.inputs.version }}
+          
+          ${{ github.event.inputs.release_notes }}
+          
+          ### 📦 Downloads
+          
+          - **🖥️ Desktop Installer**: `New-World-Crafting-Calculator-v${{ github.event.inputs.version }}-Setup.exe`
+          - **🌐 Web Version**: [Try it online](https://involvex.github.io/newworld-dailycraft-calc/)
+          
+          ### 🔐 Security & Installation
+          
+          - ✅ **Code Signed**: Executable is digitally signed for security
+          - 🛡️ **Safe Installation**: Windows may scan the file initially (normal behavior)
+          - 📋 **System Requirements**: Windows 10/11 (64-bit)
+          
+          ### 📖 Installation
+          
+          1. Download the Setup.exe file
+          2. Run the installer (Windows may show a security dialog - this is normal)
+          3. Follow the installation wizard
+          4. Launch from Start Menu or Desktop shortcut
+          
+          ---
+          
+          **Full Changelog**: https://github.com/involvex/newworld-dailycraft-calc/releases
+        files: release-assets/*
+        draft: false
+        prerelease: false
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

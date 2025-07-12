@@ -15,9 +15,9 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false, // Temporarily disable for local file loading
-      experimentalFeatures: true,
-      sandbox: false, // Required for preload script functionality
+      webSecurity: true, // Enable for production builds
+      experimentalFeatures: false, // Disable for security
+      sandbox: true, // Enable sandbox for security
       preload: path.join(__dirname, 'preload.js')
     },
     title: 'New World Crafting Calculator',
@@ -29,6 +29,14 @@ function createWindow() {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     console.log('Blocked attempt to open external URL:', url);
     return { action: 'deny' };
+  });
+  
+  // Disable navigation to external URLs for security
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    const parsedUrl = new URL(navigationUrl);
+    if (parsedUrl.origin !== 'http://localhost:3000' && !navigationUrl.startsWith('file://')) {
+      event.preventDefault();
+    }
   });
   
   // Set custom menu

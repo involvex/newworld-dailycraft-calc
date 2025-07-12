@@ -74,11 +74,30 @@ jobs:
     - name: Build web assets first
       run: npm run build:electron:prod
       
-    - name: Build Electron application
-      run: npm run dist
+    - name: Create test certificate for signing
+      run: |
+        # Create a test certificate for GitHub Actions
+        $certName = "CN=Involvex GitHub Actions"
+        $password = "github-actions-cert-password"
+        $pfxPath = "github-actions-cert.pfx"
+        
+        # Create self-signed certificate
+        $cert = New-SelfSignedCertificate -Subject $certName -Type CodeSigningCert -KeyUsage DigitalSignature -FriendlyName "Involvex GitHub Actions Code Signing" -CertStoreLocation Cert:\CurrentUser\My
+        
+        # Export to PFX file
+        $securePassword = ConvertTo-SecureString -String $password -Force -AsPlainText
+        Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $securePassword
+        
+        Write-Host "GitHub Actions certificate created: $pfxPath"
+      shell: pwsh
+      
+    - name: Build and sign Electron application
+      run: node build-signed.js
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         NODE_ENV: production
+        CSC_LINK: github-actions-cert.pfx
+        CSC_KEY_PASSWORD: github-actions-cert-password
         
     - name: Upload Electron build artifacts
       uses: actions/upload-artifact@v4
