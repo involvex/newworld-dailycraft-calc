@@ -1210,7 +1210,6 @@ const filteredCraftableItems = useMemo(() => {
           </footer>
         </div>
       </div>
-      </div>
     </React.Fragment>
   );
 }
