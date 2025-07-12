@@ -96,28 +96,45 @@ jobs:
         
     - name: Prepare release assets
       run: |
-        # Create release directory
+        # The build-signed.js script already organized files in release/release-v{version}
+        # Copy them to release-assets for GitHub release upload
         New-Item -ItemType Directory -Force -Path "release-assets"
         
-        # Copy the signed installer
-        $setupFile = Get-ChildItem -Path "dist-electron" -Filter "*Setup*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        if ($setupFile) {
-          $newName = "New-World-Crafting-Calculator-v${{ steps.version.outputs.version }}-Setup.exe"
-          Copy-Item $setupFile.FullName "release-assets\$newName"
-          Write-Host "Copied setup file: $newName"
-        }
-        
-        # Copy the portable executable if it exists
-        $portableFile = Get-ChildItem -Path "dist-electron" -Filter "*.exe" -Exclude "*Setup*", "*uninstaller*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        if ($portableFile) {
-          $newName = "New-World-Crafting-Calculator-v${{ steps.version.outputs.version }}-Portable.exe"
-          Copy-Item $portableFile.FullName "release-assets\$newName"
-          Write-Host "Copied portable file: $newName"
+        $releaseDir = "release\release-v${{ steps.version.outputs.version }}"
+        if (Test-Path $releaseDir) {
+          Write-Host "Found organized release directory: $releaseDir"
+          
+          # Copy all files from the organized release directory
+          Get-ChildItem -Path $releaseDir -File | ForEach-Object {
+            Copy-Item $_.FullName "release-assets\"
+            $size = [math]::Round($_.Length / 1MB, 2)
+            Write-Host "Copied: $($_.Name) ($size MB)"
+          }
+        } else {
+          Write-Host "Organized release directory not found, copying from dist-electron..."
+          
+          # Fallback: copy from dist-electron
+          $setupFile = Get-ChildItem -Path "dist-electron" -Filter "*Setup*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if ($setupFile) {
+            $newName = "New-World-Crafting-Calculator-v${{ steps.version.outputs.version }}-Setup.exe"
+            Copy-Item $setupFile.FullName "release-assets\$newName"
+            Write-Host "Copied setup file: $newName"
+          }
+          
+          # Copy other important files
+          Get-ChildItem -Path "dist-electron" -Filter "*.yml" | ForEach-Object {
+            Copy-Item $_.FullName "release-assets\"
+            Write-Host "Copied: $($_.Name)"
+          }
         }
         
         # List all files in release assets
-        Write-Host "Release assets:"
-        Get-ChildItem "release-assets" | ForEach-Object { Write-Host "  - $($_.Name) ($([math]::Round($_.Length/1MB, 2)) MB)" }
+        Write-Host ""
+        Write-Host "Final release assets:"
+        Get-ChildItem "release-assets" | ForEach-Object { 
+          $size = [math]::Round($_.Length/1MB, 2)
+          Write-Host "  📄 $($_.Name) ($size MB)" 
+        }
       shell: pwsh
       
     - name: Generate release notes

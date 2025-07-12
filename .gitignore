@@ -28,3 +28,7 @@ README-SIGNING.md
 *.cer
 cert
 *.pfx
+
+# Release directories
+release/
+release-v*/

@@ -68,26 +68,33 @@ if (-not $DryRun) {
 # Create release directory and copy assets
 Write-Host "📦 Preparing release assets..." -ForegroundColor Green
 if (-not $DryRun) {
-    New-Item -ItemType Directory -Force -Path "release-v$Version" | Out-Null
+    $ReleaseDir = "release\release-v$Version"
+    New-Item -ItemType Directory -Force -Path $ReleaseDir | Out-Null
     
-    # Copy the setup file
-    $setupFile = Get-ChildItem -Path "dist-electron" -Filter "*Setup*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if ($setupFile) {
-        $newSetupName = "New-World-Crafting-Calculator-v$Version-Setup.exe"
-        Copy-Item $setupFile.FullName "release-v$Version\$newSetupName"
-        Write-Host "  ✅ Copied: $newSetupName"
+    # The build:signed script already organized files in the release directory
+    # So we just need to verify they exist and optionally rename them
+    
+    if (Test-Path $ReleaseDir) {
+        Write-Host "  ✅ Release directory created: $ReleaseDir"
+        
+        # List files in the release directory
+        $releaseFiles = Get-ChildItem -Path $ReleaseDir -File
+        if ($releaseFiles.Count -gt 0) {
+            Write-Host "  📁 Release files:"
+            $releaseFiles | ForEach-Object {
+                $size = [math]::Round($_.Length / 1MB, 2)
+                Write-Host "    📄 $($_.Name) ($size MB)"
+            }
+        } else {
+            Write-Warning "  ⚠️ No files found in release directory. Build may have failed."
+        }
+    } else {
+        Write-Warning "  ⚠️ Release directory not found. Build may have failed."
     }
     
-    # Copy other exe files if they exist
-    Get-ChildItem -Path "dist-electron" -Filter "*.exe" -Exclude "*Setup*", "*uninstaller*" | ForEach-Object {
-        $newName = "New-World-Crafting-Calculator-v$Version-$($_.BaseName).exe"
-        Copy-Item $_.FullName "release-v$Version\$newName"
-        Write-Host "  ✅ Copied: $newName"
-    }
-    
-    Write-Host "  📁 Release assets prepared in: release-v$Version"
+    Write-Host "  📁 Release assets prepared in: $ReleaseDir"
 } else {
-    Write-Host "  Would create release-v$Version directory and copy build artifacts"
+    Write-Host "  Would create release\release-v$Version directory and copy build artifacts"
 }
 
 # Commit and tag
@@ -133,4 +140,4 @@ if (-not $DryRun) {
 }
 
 Write-Host ""
-Write-Host "📁 Local release assets are in: release-v$Version" -ForegroundColor Cyan
+Write-Host "📁 Local release assets are in: release\release-v$Version" -ForegroundColor Cyan

@@ -51,18 +51,33 @@ jobs:
       run: |
         New-Item -ItemType Directory -Force -Path "release-assets"
         
-        # Copy setup installer
-        $setupFile = Get-ChildItem -Path "dist-electron" -Filter "*Setup*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        if ($setupFile) {
-          $newName = "New-World-Crafting-Calculator-v${{ github.event.inputs.version }}-Setup.exe"
-          Copy-Item $setupFile.FullName "release-assets\$newName"
-          Write-Host "✅ Prepared: $newName"
-        }
-        
-        # Copy latest.yml for auto-updater
-        Get-ChildItem -Path "dist-electron" -Filter "latest*.yml" | ForEach-Object {
-          Copy-Item $_.FullName "release-assets\"
-          Write-Host "✅ Prepared: $($_.Name)"
+        # Check if organized release directory exists (created by build-signed.js)
+        $releaseDir = "release\release-v${{ github.event.inputs.version }}"
+        if (Test-Path $releaseDir) {
+          Write-Host "Found organized release directory: $releaseDir"
+          
+          # Copy all files from the organized release directory
+          Get-ChildItem -Path $releaseDir -File | ForEach-Object {
+            Copy-Item $_.FullName "release-assets\"
+            $size = [math]::Round($_.Length / 1MB, 2)
+            Write-Host "✅ Prepared: $($_.Name) ($size MB)"
+          }
+        } else {
+          Write-Host "Organized release directory not found, copying from dist-electron..."
+          
+          # Fallback: copy setup installer
+          $setupFile = Get-ChildItem -Path "dist-electron" -Filter "*Setup*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if ($setupFile) {
+            $newName = "New-World-Crafting-Calculator-v${{ github.event.inputs.version }}-Setup.exe"
+            Copy-Item $setupFile.FullName "release-assets\$newName"
+            Write-Host "✅ Prepared: $newName"
+          }
+          
+          # Copy latest.yml for auto-updater
+          Get-ChildItem -Path "dist-electron" -Filter "latest*.yml" | ForEach-Object {
+            Copy-Item $_.FullName "release-assets\"
+            Write-Host "✅ Prepared: $($_.Name)"
+          }
         }
       shell: pwsh
       
