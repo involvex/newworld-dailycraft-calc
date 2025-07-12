@@ -13,18 +13,18 @@ class ConfigService {
         summaryMode: 'net',
         showAdvanced: false,
         bonuses: {
-          Smelting: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Leatherworking: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Weaving: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Woodworking: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Stonecutting: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Engineering: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Armoring: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Weaponsmithing: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Jewelcrafting: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Arcana: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Cooking: { skillLevel: 200, gearBonus: 0, fortActive: false },
-          Furnishing: { skillLevel: 200, gearBonus: 0, fortActive: false }
+          Smelting: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Leatherworking: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Weaving: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Woodworking: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Stonecutting: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Engineering: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Armoring: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Weaponsmithing: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Jewelcrafting: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Arcana: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Cooking: { skillLevel: 250, gearBonus: 10, fortActive: true },
+          Furnishing: { skillLevel: 250, gearBonus: 10, fortActive: true }
         }
       },
       hotkeys: {
