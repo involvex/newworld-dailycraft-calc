@@ -24,3 +24,4 @@ data/*.csv
 .clinerules/
 .github/
 AppKopie.tsx
+build-prod.ps1

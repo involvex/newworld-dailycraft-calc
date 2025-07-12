@@ -1,6 +1,7 @@
 {
   "name": "new-world-crafting-calculator",
   "version": "1.1.0",
+  "type": "module",
   "description": "A comprehensive crafting calculator for Amazon's New World MMO with advanced OCR inventory detection, customizable hotkeys, persistent configuration system, and interactive crafting tree visualization.",
   "author": "Involvex",
   "homepage": "https://involvex.github.io/newworld-dailycraft-calc/",
@@ -31,9 +32,11 @@
     "electron-dev": "concurrently \"vite\" \"wait-on http://localhost:3000 && electron .\"",
     "electron": "npm run build && electron .",
     "dist": "electron-builder",
-    "deploy": "npm run build && copy dist\\index.html docs\\index.html && xcopy dist\\assets docs\\assets /E /I /Y",
+    "deploy": "npm run build:prod && copy dist\\index.html docs\\index.html && xcopy dist\\assets docs\\assets /E /I /Y",
+    "build:prod": "powershell -ExecutionPolicy Bypass -File .\\build-prod.ps1",
     "push-pages": "npm run deploy && git add docs/ && git commit -m \"Deploy to GitHub Pages\" && git push origin main",
     "serve": "npm run build && node simple-server.js",
+    "portable": "npm run build && node build-portable.js",
     "build-all": "node build-all.js",
     "build-web": "node build-web-only.js"
   },
@@ -44,13 +47,16 @@
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.11",
     "@types/node": "^24.0.13",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.0",
     "electron": "^37.2.1",
     "electron-builder": "^26.0.12",
     "gh-pages": "^6.3.0",
+    "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11",
     "typescript": "^5.8.3",
     "vite": "^7.0.4",

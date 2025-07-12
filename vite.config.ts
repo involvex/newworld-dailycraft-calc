@@ -4,7 +4,10 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
-  base: './',
+  base: process.env.NODE_ENV === 'production' ? '/newworld-dailycraft-calc/' : './',
+  css: {
+    postcss: './postcss.config.js',
+  },
   server: {
     host: true, // Listen on all addresses
     port: 3000, // Default port
@@ -13,6 +16,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    sourcemap: false, // Disable sourcemaps for production
     rollupOptions: {
       input: './index.html'
     }

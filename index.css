@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Custom gradient background */
 .app-gradient-bg {
   background: radial-gradient(ellipse at top, #232526 0%, #414345 100%);
