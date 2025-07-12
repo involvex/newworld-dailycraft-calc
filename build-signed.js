@@ -43,7 +43,8 @@ async function buildSigned() {
           signAndEditExecutable: true,
           verifyUpdateCodeSignature: false,
           cscLink: process.env.CSC_LINK,
-          cscKeyPassword: process.env.CSC_KEY_PASSWORD
+          cscKeyPassword: process.env.CSC_KEY_PASSWORD,
+          artifactName: 'New-World-Crafting-Calculator-Setup-${version}.${ext}'
         },
         nsis: {
           oneClick: false,

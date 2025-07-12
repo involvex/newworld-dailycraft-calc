@@ -1,6 +1,6 @@
 {
   "name": "new-world-crafting-calculator",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "A comprehensive crafting calculator for Amazon's New World MMO with advanced OCR inventory detection, customizable hotkeys, persistent configuration system, and interactive crafting tree visualization.",
   "author": "Involvex",
   "homepage": "https://involvex.github.io/newworld-dailycraft-calc/",
@@ -93,7 +93,8 @@
       "verifyUpdateCodeSignature": false,
       "signAndEditExecutable": true,
       "cscLink": "${env.CSC_LINK}",
-      "cscKeyPassword": "${env.CSC_KEY_PASSWORD}"
+      "cscKeyPassword": "${env.CSC_KEY_PASSWORD}",
+      "artifactName": "New-World-Crafting-Calculator-Setup-${version}.${ext}"
     },
     "publish": {
       "provider": "github",
