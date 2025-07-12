@@ -5,9 +5,6 @@ export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
   base: process.env.NODE_ENV === 'production' ? '/newworld-dailycraft-calc/' : './',
-  css: {
-    postcss: './postcss.config.js',
-  },
   server: {
     host: true, // Listen on all addresses
     port: 3000, // Default port
