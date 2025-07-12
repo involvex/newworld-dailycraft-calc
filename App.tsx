@@ -11,8 +11,8 @@ import { Item, AllBonuses, BonusConfiguration } from './types';
 import useCraftingTree from './hooks/useCraftingTree';
 import useInventoryOCR from './hooks/useInventoryOCR';
 import usePresets from './hooks/usePresets';
-import useTreeCollapse from './hooks/useTreeCollapse';
 import { useConfig } from './hooks/useConfig';
+import useTreeCollapse from './hooks/useTreeCollapse';
 
 // Types
 type SummaryMode = 'net' | 'xp';
