@@ -54,11 +54,25 @@ const App: React.FC = () => {
   const [showOCREdit, setShowOCREdit] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showAbout, setShowAbout] = useState<boolean>(false);
+  const [showCreatePreset, setShowCreatePreset] = useState<boolean>(false);
+  const [showDeletePreset, setShowDeletePreset] = useState<boolean>(false);
+  const [showDeleteAllPresets, setShowDeleteAllPresets] = useState<boolean>(false);
+  const [showEraseAllData, setShowEraseAllData] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string>('');
+  const [showToast, setShowToast] = useState<boolean>(false);
+
+  // Toast notification helper
+  const showToastMessage = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
 
   // Data states
   const [manualEntryText, setManualEntryText] = useState<string>('');
   const [ocrEditText, setOCREditText] = useState<string>('');
   const [isProcessingOCR, setIsProcessingOCR] = useState<boolean>(false);
+  const [presetNameInput, setPresetNameInput] = useState<string>('');
   const [selectedIngredients, setSelectedIngredients] = useState<Record<string, string>>({
     GEMSTONE_DUST: 'PRISTINE_AMBER'
   });
@@ -91,14 +105,12 @@ const App: React.FC = () => {
     selectedItemId,
     quantity,
     collapsedNodes,
-    setCollapsedNodes,
     setMultiItems,
     setSelectedItemId,
     setQuantity,
     restoreCollapsedNodes: treeRestoreCollapsedNodes,
     selectedPreset, // Pass selectedPreset from App.tsx
     setSelectedPreset, // Pass setSelectedPreset from App.tsx
-    setInventory, // Pass setInventory from App.tsx
   });
 
   // --- Refactored hooks ---
@@ -239,9 +251,9 @@ const filteredCraftableItems = useMemo(() => {
             if (data.inventory) setInventory(data.inventory);
             if (data.bonuses) setBonuses(data.bonuses);
             if (data.collapsedNodes) setCollapsedNodes(new Set(data.collapsedNodes));
-            alert('Data imported successfully!');
+            showToastMessage('Data imported successfully!');
           } catch (error) {
-            alert('Failed to import data. The file may be corrupted.');
+            showToastMessage('Failed to import data. The file may be corrupted.');
           }
         };
         reader.readAsText(file);
@@ -264,6 +276,43 @@ const filteredCraftableItems = useMemo(() => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Electron event listeners for hotkeys and menu actions
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      // Set up OCR hotkey listener
+      const handleTriggerOCR = () => {
+        if (!isProcessingOCR) {
+          captureAndProcessScreenshot();
+        }
+      };
+
+      // Set up settings hotkey listener
+      const handleShowSettings = () => {
+        setShowSettings(true);
+      };
+
+      // Set up about menu listener
+      const handleShowAbout = () => {
+        setShowAbout(true);
+      };
+
+      // Register the listeners and get cleanup functions
+      const cleanupOCR = window.electronAPI.onTriggerOCR(handleTriggerOCR);
+      const cleanupSettings = window.electronAPI.onShowSettings(handleShowSettings);
+      const cleanupAbout = window.electronAPI.onShowAbout(handleShowAbout);
+
+      console.log('Electron event listeners registered');
+
+      // Return cleanup function
+      return () => {
+        if (typeof cleanupOCR === 'function') cleanupOCR();
+        if (typeof cleanupSettings === 'function') cleanupSettings();
+        if (typeof cleanupAbout === 'function') cleanupAbout();
+        console.log('Electron event listeners cleaned up');
+      };
+    }
+  }, [captureAndProcessScreenshot, isProcessingOCR]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -393,12 +442,7 @@ const filteredCraftableItems = useMemo(() => {
                 })}
               </select>
               <button
-                onClick={() => {
-                  const name = prompt('Enter preset name:');
-                  if (name !== null) {
-                    handlePresetCreate(name);
-                  }
-                }}
+                onClick={() => setShowCreatePreset(true)}
                 className="px-3 py-2 bg-green-600 hover:bg-green-700 border border-green-500 rounded-lg text-sm text-white hover:shadow-lg transition-all duration-200 flex-shrink-0"
                 title="Create Preset"
               >
@@ -406,9 +450,10 @@ const filteredCraftableItems = useMemo(() => {
               </button>
               <button
                 onClick={() => {
-                  if (selectedPreset && confirm(`Are you sure you want to delete the preset "${selectedPreset}"?`)) {
-                    handlePresetDelete(selectedPreset);
-                    setSelectedPreset('');
+                  if (selectedPreset) {
+                    setShowDeletePreset(true);
+                  } else {
+                    showToastMessage('Please select a preset to delete.');
                   }
                 }}
                 className="px-3 py-2 bg-red-600 hover:bg-red-700 border border-red-500 rounded-lg text-sm text-white hover:shadow-lg transition-all duration-200 flex-shrink-0"
@@ -722,18 +767,8 @@ const filteredCraftableItems = useMemo(() => {
                     <div className="grid grid-cols-2 gap-2">
                       <button onClick={handleExportData} className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-500">💾 Export Data</button>
                       <button onClick={handleImportData} className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-500">📁 Import Data</button>
-                      <button onClick={() => {
-                        if (confirm('Are you sure you want to delete all custom presets?')) {
-                          setCustomPresets([]);
-                          localStorage.removeItem('customPresets');
-                        }
-                      }} className="px-3 py-1 bg-red-700 rounded text-sm hover:bg-red-600">🗑️ Delete Presets</button>
-                      <button onClick={() => {
-                        if (confirm('Are you sure you want to erase ALL data? This cannot be undone.')) {
-                          localStorage.clear();
-                          window.location.reload();
-                        }
-                      }} className="px-3 py-1 bg-red-800 rounded text-sm hover:bg-red-700">🗑️ Erase All Data</button>
+                      <button onClick={() => setShowDeleteAllPresets(true)} className="px-3 py-1 bg-red-700 rounded text-sm hover:bg-red-600">🗑️ Delete Presets</button>
+                      <button onClick={() => setShowEraseAllData(true)} className="px-3 py-1 bg-red-800 rounded text-sm hover:bg-red-700">🗑️ Erase All Data</button>
                     </div>
                   </div>
 
@@ -844,7 +879,7 @@ const filteredCraftableItems = useMemo(() => {
                         setShowManualEntry(false);
                         setManualEntryText('');
                       } else {
-                        alert('No valid items found. Please check your format: "Item Name: Quantity"');
+                        showToastMessage('No valid items found. Please check your format: "Item Name: Quantity"');
                       }
                     }}
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
@@ -895,7 +930,7 @@ const filteredCraftableItems = useMemo(() => {
                         setShowOCREdit(false);
                         setOCREditText('');
                       } else {
-                        alert('No valid items found. Please check your format: "Item Name: Quantity"');
+                        showToastMessage('No valid items found. Please check your format: "Item Name: Quantity"');
                       }
                     }}
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
@@ -923,6 +958,192 @@ const filteredCraftableItems = useMemo(() => {
             </div>
           )}
 
+          {/* Create Preset Modal */}
+          {showCreatePreset && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-2xl font-bold text-yellow-300 mb-4">Create New Preset</h2>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Preset Name</label>
+                  <input
+                    type="text"
+                    value={presetNameInput}
+                    onChange={(e) => setPresetNameInput(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+                    placeholder="Enter preset name..."
+                    maxLength={50}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && presetNameInput.trim()) {
+                        handlePresetCreate(presetNameInput.trim());
+                        setPresetNameInput('');
+                        setShowCreatePreset(false);
+                      } else if (e.key === 'Escape') {
+                        setPresetNameInput('');
+                        setShowCreatePreset(false);
+                      }
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (presetNameInput.trim()) {
+                        handlePresetCreate(presetNameInput.trim());
+                        setPresetNameInput('');
+                        setShowCreatePreset(false);
+                      }
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                    disabled={!presetNameInput.trim()}
+                  >
+                    ✅ Create Preset
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPresetNameInput('');
+                      setShowCreatePreset(false);
+                    }}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Preset Modal */}
+          {showDeletePreset && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-2xl font-bold text-red-300 mb-4">Delete Preset</h2>
+                <p className="text-gray-300 mb-6">
+                  Are you sure you want to delete the preset <span className="font-bold text-yellow-300">"{selectedPreset}"</span>?
+                  <br />
+                  <span className="text-red-400 text-sm">This action cannot be undone.</span>
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (selectedPreset) {
+                        handlePresetDelete(selectedPreset);
+                        setSelectedPreset('');
+                        setShowDeletePreset(false);
+                      }
+                    }}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                  >
+                    🗑️ Delete
+                  </button>
+                  <button
+                    onClick={() => setShowDeletePreset(false)}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete All Presets Modal */}
+          {showDeleteAllPresets && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-2xl font-bold text-red-300 mb-4">Delete All Custom Presets</h2>
+                <p className="text-gray-300 mb-6">
+                  Are you sure you want to delete <span className="font-bold text-yellow-300">all custom presets</span>?
+                  <br />
+                  <span className="text-red-400 text-sm">This action cannot be undone.</span>
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setCustomPresets([]);
+                      localStorage.removeItem('customPresets');
+                      setShowDeleteAllPresets(false);
+                    }}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                  >
+                    🗑️ Delete All
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteAllPresets(false)}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Erase All Data Modal */}
+          {showEraseAllData && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-2xl font-bold text-red-300 mb-4">⚠️ Erase All Data</h2>
+                <p className="text-gray-300 mb-6">
+                  Are you sure you want to <span className="font-bold text-red-400">erase ALL data</span>?
+                  <br />
+                  This will delete:
+                  <ul className="list-disc list-inside mt-2 text-sm text-gray-400">
+                    <li>All custom presets</li>
+                    <li>Inventory data</li>
+                    <li>Bonus settings</li>
+                    <li>All other saved data</li>
+                  </ul>
+                  <span className="text-red-400 text-sm font-bold">This action cannot be undone and will reload the page.</span>
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      localStorage.clear();
+                      window.location.reload();
+                    }}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                  >
+                    🗑️ Erase Everything
+                  </button>
+                  <button
+                    onClick={() => setShowEraseAllData(false)}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Toast Notification */}
+          {showToast && (
+            <div className="fixed top-4 right-4 bg-gray-800 border border-yellow-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm">
+              <div className="flex items-center">
+                <span className="mr-2">ℹ️</span>
+                <span className="text-sm">{toastMessage}</span>
+                <button
+                  onClick={() => setShowToast(false)}
+                  className="ml-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Back to Top Button */}
+          {showBackToTop && (
+            <button
+              onClick={scrollToTop}
+              className="fixed bottom-6 right-6 bg-yellow-600 hover:bg-yellow-700 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40"
+              title="Back to Top"
+            >
+              <span className="text-lg">⬆️</span>
+            </button>
+          )}
+
           {/* Footer */}
           <footer className="text-center mt-12 py-8 bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-600/30">
             <div className="mb-4">
@@ -946,17 +1167,6 @@ const filteredCraftableItems = useMemo(() => {
               </p>
             </div>
           </footer>
-
-          {/* Back to Top Button */}
-          {showBackToTop && (
-            <button
-              onClick={scrollToTop}
-              className="fixed bottom-6 right-6 bg-yellow-600 hover:bg-yellow-700 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40"
-              title="Back to Top"
-            >
-              <span className="text-lg">⬆️</span>
-            </button>
-          )}
         </div>
       </div>
     </React.Fragment>

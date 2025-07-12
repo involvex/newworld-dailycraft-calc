@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { ITEMS } from '../data/items';
 
 interface Preset {
   name: string;
@@ -12,14 +11,12 @@ interface UsePresetsProps {
   selectedItemId: string;
   quantity: number;
   collapsedNodes: Set<string>;
-  setCollapsedNodes: (nodes: Set<string>) => void;
   setMultiItems: (items: any[]) => void;
   setSelectedItemId: (itemId: string) => void;
   setQuantity: (quantity: number) => void;
   restoreCollapsedNodes: (nodes: string[] | Set<string>) => void;
   selectedPreset: string; // Add selectedPreset to props
   setSelectedPreset: (presetName: string) => void; // Add setSelectedPreset to props
-  setInventory: (inventory: Record<string, number>) => void; // Add setInventory to props
 }
 
 const PRESETS: Preset[] = [
@@ -39,14 +36,12 @@ export default function usePresets({
   selectedItemId,
   quantity,
   collapsedNodes,
-  setCollapsedNodes,
   setMultiItems,
   setSelectedItemId,
   setQuantity,
   restoreCollapsedNodes,
   selectedPreset, // Destructure from props
   setSelectedPreset, // Destructure from props
-  setInventory, // Destructure from props
 }: UsePresetsProps) {
   const [customPresets, setCustomPresets] = useState<Preset[]>(() => getInitial('customPresets', []));
   const [showCreatePreset, setShowCreatePreset] = useState(false);
@@ -89,13 +84,39 @@ export default function usePresets({
   // Create or overwrite a preset
   const handlePresetCreate = (name: string) => {
     if (!name.trim()) return;
+    
+    // Validate that there's something to save
+    if (multiItems.length === 0 && !selectedItemId) {
+      alert('Please select an item or add items to your list before creating a preset.');
+      return;
+    }
+    
     const trimmedName = name.trim();
     const existingIndex = customPresets.findIndex(p => p.name === trimmedName);
+    
+    // Prepare items array with validation
+    let items: { id: string; qty: number }[];
+    if (multiItems.length > 0) {
+      items = multiItems.filter(item => item.id && item.qty > 0); // Filter out invalid items
+    } else if (selectedItemId) {
+      items = [{ id: selectedItemId, qty: quantity }];
+    } else {
+      alert('Please select an item or add items to your list before creating a preset.');
+      return;
+    }
+    
+    // Ensure we have valid items
+    if (items.length === 0) {
+      alert('No valid items found. Please check your selections.');
+      return;
+    }
+    
     const newPreset: Preset = {
       name: trimmedName,
-      items: multiItems.length > 0 ? multiItems : [{ id: selectedItemId, qty: quantity }],
+      items: items,
       collapsedNodes: [...collapsedNodes]
     };
+    
     let updatedPresets;
     if (existingIndex !== -1) {
       updatedPresets = [...customPresets];

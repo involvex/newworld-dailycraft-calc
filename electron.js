@@ -56,14 +56,23 @@ function createWindow() {
   const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
   
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    console.log('Loading development server at http://localhost:3000');
+    mainWindow.loadURL('http://localhost:3000');
     // Open DevTools in development
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+    const indexPath = path.join(__dirname, 'dist', 'index.html');
+    console.log('Loading production build from:', indexPath);
+    mainWindow.loadFile(indexPath);
   }
   
+  // Add error handling
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('Failed to load:', validatedURL, 'Error:', errorDescription);
+  });
+  
   mainWindow.webContents.on('did-finish-load', () => {
+    console.log('Page loaded successfully');
     mainWindow.show();
   });
 

@@ -1,6 +1,6 @@
 {
   "name": "new-world-crafting-calculator",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "A comprehensive crafting calculator for Amazon's New World MMO with OCR inventory detection.",
   "author": "Involvex",
   "homepage": "https://involvex.github.io/newworld-dailycraft-calc/",
@@ -22,7 +22,7 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "electron-dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron-dev": "concurrently \"vite\" \"wait-on http://localhost:3000 && electron .\"",
     "electron": "npm run build && electron .",
     "dist": "electron-builder",
     "portable": "npm run build && node build-portable.js",

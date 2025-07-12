@@ -7,9 +7,9 @@ declare global {
   interface Window {
     electronAPI?: {
       getDesktopSources: () => Promise<any[]>;
-      onTriggerOCR: (callback: () => void) => void;
-      onShowSettings: (callback: () => void) => void;
-      onShowAbout: (callback: () => void) => void;
+      onTriggerOCR: (callback: () => void) => (() => void) | void;
+      onShowSettings: (callback: () => void) => (() => void) | void;
+      onShowAbout: (callback: () => void) => (() => void) | void;
     };
   }
 }

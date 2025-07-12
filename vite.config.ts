@@ -6,7 +6,7 @@ export default defineConfig({
   publicDir: 'public',
   base: './',
   server: {
-    host: '192.168.178.69', // Replace with your local IP address
+    host: true, // Listen on all addresses
     port: 3000, // Default port
     strictPort: true // Fail if port is already in use
   },
