@@ -14,14 +14,20 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: true,
-      webSecurity: false,
-      allowRunningInsecureContent: true,
+      webSecurity: true,
       experimentalFeatures: true,
+      sandbox: false, // Required for preload script functionality
       preload: path.join(__dirname, 'preload.js')
     },
     title: 'New World Crafting Calculator',
     show: false,
     autoHideMenuBar: true
+  });
+  
+  // Additional security: Prevent new window creation
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    console.log('Blocked attempt to open external URL:', url);
+    return { action: 'deny' };
   });
   
   // Set custom menu
@@ -151,9 +157,35 @@ app.whenReady().then(() => {
   // Initialize config service
   configService = new ConfigService();
   
-  // Handle screen capture permissions
+  // Enhanced security: Set secure session defaults
+  session.defaultSession.webSecurity = true;
+  
+  // Set Content Security Policy
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://esm.sh https://unpkg.com; " +
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://esm.sh https://unpkg.com; " +
+          "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; " +
+          "font-src 'self' data: https://fonts.gstatic.com; " +
+          "img-src 'self' data: blob:; " +
+          "connect-src 'self' blob:;"
+        ]
+      }
+    });
+  });
+  
+  // Handle screen capture permissions securely
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    callback(true);
+    // Only allow desktop capture for OCR functionality
+    if (permission === 'media') {
+      callback(true);
+    } else {
+      console.log('Permission request denied:', permission);
+      callback(false);
+    }
   });
   
   // Handle desktop capture
