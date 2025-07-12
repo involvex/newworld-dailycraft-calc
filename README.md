@@ -1,15 +1,29 @@
-# New World Crafting Calculator
+# ⚒️ New World Crafting Calculator ⚔️
+
+<div align="center">
 
 ![Project Logo](logo.png)
 
-**A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR**
+**🎮 The Ultimate Crafting Calculator for Amazon's New World MMO 🎮**  
+*With AI-Powered OCR Inventory Detection & Advanced Planning Tools*
 
-[![Version](https://img.shields.io/github/package-json/v/involvex/newworld-dailycraft-calc?label=version&style=for-the-badge)](https://github.com/involvex/newworld-dailycraft-calc/blob/main/package.json)
-[![Downloads](https://img.shields.io/github/downloads/involvex/newworld-dailycraft-calc/total?style=for-the-badge&color=brightgreen)](https://github.com/involvex/newworld-dailycraft-calc/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Web-blue?style=for-the-badge)](#installation)
-[![License](https://img.shields.io/github/license/involvex/newworld-dailycraft-calc?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/badge/version-v1.6.0-gold?style=for-the-badge&logo=github)](https://github.com/involvex/newworld-dailycraft-calc/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/involvex/newworld-dailycraft-calc/total?style=for-the-badge&color=brightgreen&logo=download)](https://github.com/involvex/newworld-dailycraft-calc/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Web%20%7C%20Auto--Update-blue?style=for-the-badge&logo=electron)](#installation)
+[![License](https://img.shields.io/github/license/involvex/newworld-dailycraft-calc?style=for-the-badge&logo=github)](LICENSE)
 
 [🚀 **Try Live Demo**](https://involvex.github.io/newworld-dailycraft-calc/) • [📥 **Download Desktop App**](https://github.com/involvex/newworld-dailycraft-calc/releases/latest) • [📖 **Documentation**](docs/documentation.html) • [🐛 **Report Issues**](https://github.com/involvex/newworld-dailycraft-calc/issues)
+
+---
+
+### 🎯 **What Makes This Special?**
+
+🔥 **Smart OCR Technology** - Scan your inventory with AI-powered text recognition  
+⚡ **Auto-Updates** - Always get the latest features and game data  
+🌳 **Interactive Trees** - Beautiful crafting visualization with expand/collapse  
+💾 **Smart Presets** - Save complex crafting scenarios for instant recall  
+🎛️ **Advanced Controls** - Yield bonuses, skill levels, and territory buffs  
+🔒 **Code-Signed** - Trusted and secure Windows application  
 
 </div>
 
@@ -17,59 +31,65 @@
 
 ## 🎯 Overview
 
-The **New World Crafting Calculator** is a sophisticated tool designed to streamline your crafting experience in Amazon's New World MMO. Whether you're planning complex gear upgrades or optimizing resource gathering, this calculator provides everything you need with advanced features like OCR inventory scanning, customizable hotkeys, and persistent configuration management.
+The **New World Crafting Calculator** revolutionizes your crafting experience in Amazon's New World MMO. From simple material calculations to complex endgame gear optimization, this tool provides everything you need with cutting-edge features that save time and resources.
 
-### 🎮 **Perfect for:**
-- **Endgame Crafters** planning expensive gear upgrades
-- **Company Leaders** organizing crafting sessions
-- **Casual Players** optimizing resource usage
-- **Traders** calculating material costs and profits
+### � **Perfect for Every Player:**
+- 🛡️ **Endgame Crafters** planning legendary gear upgrades
+- 👥 **Company Leaders** organizing massive crafting sessions  
+- 🎮 **Casual Players** optimizing daily resource usage
+- 💰 **Traders & Economists** calculating material costs and profits
+- 📊 **Min-Maxers** squeezing every point of efficiency
 
 ---
 
-## ✨ Core Features
+## ✨ Revolutionary Features
 
 <details>
-<summary><b>🌳 Advanced Crafting System</b></summary>
+<summary><b>🌳 Next-Gen Crafting System</b></summary>
 
-- **Interactive Tree Visualization** – Navigate complex crafting hierarchies with expandable nodes
-- **Yield Bonus Integration** – Factor in skill levels, gear bonuses, and territory buffs
-- **Multi-Item Planning** – Plan entire gear sets or multiple items simultaneously
-- **Real-time Calculations** – Instant updates as you modify quantities or bonuses
-- **Context Actions** – Right-click nodes for quick expand/collapse/remove operations
+- **🎨 Interactive Tree Visualization** – Navigate complex crafting hierarchies with beautiful, expandable nodes
+- **⚡ Real-time Calculations** – Instant updates as you modify quantities, skills, or bonuses  
+- **📋 Multi-Item Planning** – Plan entire gear sets or multiple items simultaneously
+- **🎯 Context Actions** – Right-click nodes for quick expand/collapse/remove operations
+- **🔄 Yield Bonus Integration** – Factor in skill levels, gear bonuses, and territory buffs automatically
+- **📊 Smart Material Tracking** – Net vs. Gross calculations with inventory consideration
 
 </details>
 
 <details>
-<summary><b>📸 Intelligent OCR Technology</b></summary>
+<summary><b>🤖 AI-Powered OCR Technology</b></summary>
 
-- **Auto-Screenshot Capture** – Scan your in-game inventory with a single hotkey
-- **Smart Text Recognition** – Advanced parsing handles OCR errors and variations
-- **Multiple Input Methods** – Screenshot capture, manual text entry, or clipboard import
-- **Real-time Preview** – Review and edit OCR results before applying changes
-- **Cross-Storage Support** – Works with inventory, storage sheds, and company storage
-
-</details>
-
-<details>
-<summary><b>⚡ Desktop Power Features</b></summary>
-
-- **Global Hotkeys** – Customizable keyboard shortcuts work from anywhere
-- **System Tray Integration** – Quick access without cluttering your taskbar
-- **AppData Persistence** – Settings survive updates and system changes
-- **Configuration Backup** – Import/export complete settings for sharing or backup
-- **Background Operation** – Runs silently until you need it
+- **📸 One-Click Inventory Scan** – Capture your in-game inventory with a single hotkey (Ctrl+Shift+C)
+- **🧠 Smart Text Recognition** – Advanced AI parsing handles OCR errors and variations automatically
+- **📝 Multiple Input Methods** – Screenshot capture, manual text entry, or clipboard import
+- **👁️ Real-time Preview** – Review and edit OCR results before applying changes
+- **🏪 Cross-Storage Support** – Works with inventory, storage sheds, and company storage
+- **⚡ Instant Processing** – Lightning-fast recognition and parsing
 
 </details>
 
 <details>
-<summary><b>🎛️ Smart Configuration</b></summary>
+<summary><b>🖥️ Desktop Power Features</b></summary>
 
-- **Preset Management** – Save complex crafting scenarios for instant recall
-- **Skill Profiles** – Multiple character configurations with different skill levels
-- **Bonus Tracking** – Gear, food, and territory buff management
-- **Material Substitution** – Handle gemstone dust and other interchangeable materials
-- **Toast Notifications** – Clear feedback for all actions and updates
+- **🎹 Global Hotkeys** – Customizable keyboard shortcuts work from anywhere in Windows
+- **🔔 System Tray Integration** – Quick access without cluttering your taskbar
+- **💾 Persistent Storage** – All settings and data survive updates and system changes
+- **📤 Configuration Backup** – Import/export complete settings for sharing or backup
+- **🔄 Auto-Updater** – Seamless updates delivered automatically in the background
+- **🔒 Code Signing** – Digitally signed for Windows security and trust
+- **🌙 Background Operation** – Runs silently until you need it
+
+</details>
+
+<details>
+<summary><b>🎛️ Smart Configuration Management</b></summary>
+
+- **📋 Advanced Preset System** – Save complex crafting scenarios with one click
+- **👤 Multiple Character Profiles** – Different skill levels and configurations per character
+- **🍖 Comprehensive Bonus Tracking** – Gear, food, territory buffs, and company bonuses
+- **💎 Material Substitution** – Handle gemstone dust and other interchangeable materials
+- **🎨 Modern UI/UX** – Beautiful gradients, animations, and responsive design
+- **📱 Toast Notifications** – Clear, non-intrusive feedback for all actions
 
 </details>
 
@@ -79,19 +99,23 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 
 ### 🖥️ **Desktop Application** *(Recommended)*
 
-**Latest Release:** [Download v1.1.1](https://github.com/involvex/newworld-dailycraft-calc/releases/latest)
+**Latest Release:** [Download v1.6.0](https://github.com/involvex/newworld-dailycraft-calc/releases/latest) 🔥
 
 ```bash
-# No installation required - portable executable
-1. Download "New World Crafting Calculator 1.1.1.exe"
-2. Run the executable
-3. Configure hotkeys in Settings (default: Ctrl+Shift+C to toggle)
+# 🚀 FEATURES: Auto-updates, Code-signed, Portable
+1. Download "New World Crafting Calculator Setup 1.6.0.exe"
+2. Run installer (or use portable version)
+3. App auto-updates in background ⚡
+4. Configure hotkeys in Settings (default: Ctrl+Shift+C)
 ```
 
-**System Requirements:**
-- Windows 10/11 (x64)
-- 100MB free disk space
-- Screen capture permissions for OCR
+**✅ System Requirements:**
+- 🖥️ Windows 10/11 (x64 architecture)
+- 💾 150MB free disk space  
+- 📸 Screen capture permissions for OCR features
+- 🌐 Internet connection for auto-updates and external images
+
+**🔒 Security:** Digitally signed and verified by Microsoft SmartScreen
 
 ### 🌐 **Web Application**
 

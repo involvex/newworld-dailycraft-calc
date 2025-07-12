@@ -337,62 +337,108 @@ const filteredCraftableItems = useMemo(() => {
       {/* Auto-updater notification */}
       <UpdateNotification />
       
-      <div className="bg-gray-900 text-gray-300 min-h-screen font-sans app-gradient-bg">
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-6xl">
-          <header className="mb-6 text-center">
-            <img src="logo.png" alt="New World Crafting Calculator" className="mx-auto mb-4 h-20 w-auto" />
-            <h1 className="text-3xl font-bold text-yellow-300 mb-2">New World Crafting Calculator</h1>
-            <p className="text-gray-400 text-sm">Plan your crafting efficiently with advanced material calculations</p>
+      <div className="bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 text-gray-300 min-h-screen font-sans relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-transparent to-blue-500/5"></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-yellow-500/3 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/3 rounded-full blur-3xl"></div>
+        
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-6xl relative z-10">
+          <header className="mb-8 text-center">
+            <div className="relative inline-block">
+              <img 
+                src="logo.png" 
+                alt="New World Crafting Calculator" 
+                className="mx-auto mb-6 h-24 w-auto drop-shadow-2xl hover:scale-105 transition-transform duration-300" 
+              />
+              <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400/20 to-blue-400/20 rounded-full blur-xl opacity-75"></div>
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-yellow-300 via-yellow-200 to-yellow-300 bg-clip-text text-transparent mb-3 tracking-tight">
+              New World Crafting Calculator
+            </h1>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+              ⚒️ Plan your crafting efficiently with advanced material calculations and OCR inventory detection
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2 justify-center text-xs">
+              <span className="bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full border border-yellow-500/30">
+                🔍 OCR Detection
+              </span>
+              <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">
+                ⚡ Real-time Calculations
+              </span>
+              <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full border border-green-500/30">
+                💾 Auto-save Presets
+              </span>
+            </div>
           </header>
 
           {/* Navigation Bar */}
-          <div className="mb-6 bg-gray-800/30 p-3 rounded-xl border border-gray-600/30 backdrop-blur-sm">
-            <div className="flex flex-wrap gap-2 items-center justify-center">
-              <span className="text-sm text-gray-300 font-medium mr-2">Jump to:</span>
+          <div className="mb-8 bg-gray-800/30 p-4 rounded-2xl border border-gray-600/30 backdrop-blur-sm shadow-2xl">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
+                🚀 Quick Navigation
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-3 items-center justify-center">
               <button
                 onClick={() => document.getElementById('presets-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 rounded-md text-xs text-yellow-300 transition-all duration-200"
+                className="px-4 py-2 bg-gradient-to-r from-yellow-600/20 to-yellow-500/20 hover:from-yellow-600/40 hover:to-yellow-500/40 border border-yellow-500/30 rounded-xl text-sm text-yellow-300 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
               >
-                📋 Presets
+                <span className="flex items-center gap-2">
+                  📋 <span className="font-medium">Presets</span>
+                </span>
               </button>
               <button
                 onClick={() => document.getElementById('selection-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 rounded-md text-xs text-yellow-300 transition-all duration-200"
+                className="px-4 py-2 bg-gradient-to-r from-orange-600/20 to-red-500/20 hover:from-orange-600/40 hover:to-red-500/40 border border-orange-500/30 rounded-xl text-sm text-orange-300 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
               >
-                🎯 Item Selection
+                <span className="flex items-center gap-2">
+                  🎯 <span className="font-medium">Item Selection</span>
+                </span>
               </button>
               <button
                 onClick={() => document.getElementById('inventory-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-md text-xs text-blue-300 transition-all duration-200"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600/20 to-cyan-500/20 hover:from-blue-600/40 hover:to-cyan-500/40 border border-blue-500/30 rounded-xl text-sm text-blue-300 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
               >
-                🎒 Inventory
+                <span className="flex items-center gap-2">
+                  🎒 <span className="font-medium">Inventory</span>
+                </span>
               </button>
               <button
                 onClick={() => document.getElementById('crafting-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 bg-green-600/20 hover:bg-green-600/40 border border-green-500/30 rounded-md text-xs text-green-300 transition-all duration-200"
+                className="px-4 py-2 bg-gradient-to-r from-green-600/20 to-emerald-500/20 hover:from-green-600/40 hover:to-emerald-500/40 border border-green-500/30 rounded-xl text-sm text-green-300 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
               >
-                🌳 Crafting Tree
+                <span className="flex items-center gap-2">
+                  🌳 <span className="font-medium">Crafting Tree</span>
+                </span>
               </button>
               <button
                 onClick={() => document.getElementById('summary-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 rounded-md text-xs text-purple-300 transition-all duration-200"
+                className="px-4 py-2 bg-gradient-to-r from-purple-600/20 to-pink-500/20 hover:from-purple-600/40 hover:to-pink-500/40 border border-purple-500/30 rounded-xl text-sm text-purple-300 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
               >
-                📊 Summary
+                <span className="flex items-center gap-2">
+                  📊 <span className="font-medium">Summary</span>
+                </span>
               </button>
             </div>
           </div>
 
-          {/* Quick Controls Bar */}
-          <div className="mb-6 bg-gray-800/50 p-4 rounded-xl border border-yellow-900/30 backdrop-blur-sm">
-            <div className="flex flex-wrap gap-3 items-center justify-center">
-              <div className="flex items-center gap-2 bg-gray-700/50 rounded-lg px-3 py-2">
-                <span className="text-sm text-gray-300 font-medium">View:</span>
+          {/* Enhanced Quick Controls Bar */}
+          <div className="mb-8 bg-gradient-to-r from-gray-800/50 via-gray-800/60 to-gray-800/50 backdrop-blur-sm p-6 rounded-2xl border border-gray-600/40 shadow-2xl">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
+                ⚙️ Control Center
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-4 items-center justify-center">
+              <div className="flex items-center gap-3 bg-gray-700/60 rounded-xl px-4 py-3 border border-gray-600/40">
+                <span className="text-sm text-gray-300 font-semibold">🎛️ View Mode:</span>
                 <button
                   onClick={() => handleViewModeChange(viewMode === 'net' ? 'gross' : 'net')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
                     viewMode === 'net' 
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : 'bg-blue-600 text-white shadow-lg'
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25' 
+                      : 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'
                   }`}
                   title={`Switch to ${viewMode === 'net' ? 'Gross' : 'Net'} mode`}
                 >
@@ -400,14 +446,14 @@ const filteredCraftableItems = useMemo(() => {
                 </button>
               </div>
               
-              <div className="flex items-center gap-2 bg-gray-700/50 rounded-lg px-3 py-2">
-                <span className="text-sm text-gray-300 font-medium">Summary:</span>
+              <div className="flex items-center gap-3 bg-gray-700/60 rounded-xl px-4 py-3 border border-gray-600/40">
+                <span className="text-sm text-gray-300 font-semibold">📋 Summary:</span>
                 <button
                   onClick={() => handleSummaryModeChange(summaryMode === 'net' ? 'xp' : 'net')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
                     summaryMode === 'net' 
-                      ? 'bg-purple-600 text-white shadow-lg' 
-                      : 'bg-orange-600 text-white shadow-lg'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25' 
+                      : 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/25'
                   }`}
                   title={`Switch to ${summaryMode === 'net' ? 'XP' : 'Materials'} summary`}
                 >
@@ -415,24 +461,25 @@ const filteredCraftableItems = useMemo(() => {
                 </button>
               </div>
 
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ${
-                  showAdvanced 
-                    ? 'bg-yellow-600 text-white shadow-lg' 
-                    : 'bg-gray-600 text-gray-200 hover:bg-gray-500'
-                }`}
-                title="Toggle advanced options"
-              >
-                {showAdvanced ? '🔧 Hide Advanced' : '⚙️ Advanced Options'}
-              </button>
-            </div>
-          </div>
+              <div className="flex items-center gap-3 bg-gray-700/60 rounded-xl px-4 py-3 border border-gray-600/40">
+                <span className="text-sm text-gray-300 font-semibold">🔧 Advanced:</span>
+                <button
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                    showAdvanced 
+                      ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-lg shadow-yellow-500/25' 
+                      : 'bg-gray-600 text-gray-200 hover:bg-gray-500'
+                  }`}
+                  title="Toggle advanced options"
+                >
+                  {showAdvanced ? '🔍 Hide Options' : '⚙️ Show Options'}
+                </button>
+              </div>
           {/* Presets Section */}
-          <div id="presets-section" className="mb-6 bg-gradient-to-r from-gray-800 to-gray-700 p-4 rounded-xl border border-yellow-900/40 shadow-lg">
-            <h3 className="text-lg font-semibold text-yellow-300 mb-3 flex items-center">
-              <span className="mr-2">📋</span>
-              Crafting Presets
+          <div id="presets-section" className="mb-8 bg-gradient-to-r from-gray-800/80 via-gray-700/80 to-gray-800/80 backdrop-blur-sm p-6 rounded-2xl border border-yellow-900/40 shadow-2xl">
+            <h3 className="text-xl font-bold bg-gradient-to-r from-yellow-300 via-yellow-200 to-yellow-300 bg-clip-text text-transparent mb-4 flex items-center">
+              <span className="mr-3 text-2xl">📋</span>
+              Crafting Presets & Quick Sets
             </h3>
             <div className="flex gap-2 flex-wrap items-center">
               <select
@@ -482,13 +529,13 @@ const filteredCraftableItems = useMemo(() => {
           </div>
 
           {/* Main Content */}
-          <div id="selection-section" className="mb-6">
+          <div id="selection-section" className="mb-8">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
               {/* Left Side: Item Selection */}
-              <div className="lg:col-span-3 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-yellow-900/40 shadow-lg">
-                <h3 className="text-lg font-semibold text-yellow-300 mb-4 flex items-center">
-                  <span className="mr-2">🎯</span>
-                  Item Selection
+              <div className="lg:col-span-3 bg-gradient-to-br from-gray-800/80 via-gray-700/80 to-gray-800/80 backdrop-blur-sm p-6 rounded-2xl border border-yellow-900/40 shadow-2xl">
+                <h3 className="text-xl font-bold bg-gradient-to-r from-yellow-300 via-yellow-200 to-yellow-300 bg-clip-text text-transparent mb-4 flex items-center">
+                  <span className="mr-3 text-2xl">🎯</span>
+                  Item Selection & Search
                 </h3>
                 <div className="relative mb-4">
                   <input
@@ -584,7 +631,7 @@ const filteredCraftableItems = useMemo(() => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-gray-700/50 p-4 rounded-lg">
-                    <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center">
+                    <label className="flex text-sm font-medium text-gray-300 mb-2 items-center">
                       <span className="mr-2">👁️</span>
                       View Mode
                     </label>
@@ -599,7 +646,7 @@ const filteredCraftableItems = useMemo(() => {
                     </select>
                   </div>
                   <div className="bg-gray-700/50 p-4 rounded-lg">
-                    <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center">
+                    <label className="flex text-sm font-medium text-gray-300 mb-2 items-center">
                       <span className="mr-2">📋</span>
                       Summary Mode
                     </label>
@@ -699,12 +746,12 @@ const filteredCraftableItems = useMemo(() => {
           </div>
 
           {craftingData && (
-            <div id="crafting-section" className="mb-6">
-              <div className="bg-gradient-to-r from-green-900/20 to-emerald-900/20 p-6 rounded-xl border border-green-500/30 shadow-lg">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-green-300 flex items-center">
-                    <span className="mr-2">🌳</span>
-                    Crafting Tree
+            <div id="crafting-section" className="mb-8">
+              <div className="bg-gradient-to-r from-green-900/30 via-emerald-900/30 to-green-900/30 backdrop-blur-sm p-6 rounded-2xl border border-green-500/40 shadow-2xl">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-green-300 via-emerald-200 to-green-300 bg-clip-text text-transparent flex items-center">
+                    <span className="mr-3 text-3xl">🌳</span>
+                    Interactive Crafting Tree
                   </h2>
                   <div className="flex gap-2">
                     <button 
@@ -735,11 +782,11 @@ const filteredCraftableItems = useMemo(() => {
           )}
 
           {summaryData && (summaryData.materials || summaryData.xpGains) && (
-            <div id="summary-section" className="mb-6">
-              <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 p-6 rounded-xl border border-purple-500/30 shadow-lg">
-                <h2 className="text-xl font-bold text-purple-300 mb-4 flex items-center">
-                  <span className="mr-2">📊</span>
-                  {summaryData.title || "Summary"}
+            <div id="summary-section" className="mb-8">
+              <div className="bg-gradient-to-r from-purple-900/30 via-pink-900/30 to-purple-900/30 backdrop-blur-sm p-6 rounded-2xl border border-purple-500/40 shadow-2xl">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-300 via-pink-200 to-purple-300 bg-clip-text text-transparent mb-6 flex items-center">
+                  <span className="mr-3 text-3xl">📊</span>
+                  {summaryData.title || "Material & XP Summary"}
                 </h2>
                 {summaryMode === 'xp' && summaryData.xpGains ? (
                   <XPSummaryList xpGains={summaryData.xpGains} />
@@ -808,7 +855,7 @@ const filteredCraftableItems = useMemo(() => {
                   <button
                     onClick={async () => {
                       try {
-                        await window.electronAPI.updater.checkForUpdates();
+                        await window.electronAPI?.updater.checkForUpdates();
                       } catch (err) {
                         console.error('Failed to check for updates:', err);
                       }
