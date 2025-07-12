@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Tray, Menu, session, desktopCapturer, ipcMain, globalShortcut, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const ConfigService = require('./services/configService');
 
@@ -191,6 +192,9 @@ app.whenReady().then(() => {
   // Enhanced security: Set secure session defaults
   session.defaultSession.webSecurity = false; // Disabled for local files
   
+  // Initialize auto-updater
+  initializeAutoUpdater();
+  
   // Set Content Security Policy (more permissive for local files)
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
@@ -316,6 +320,137 @@ app.whenReady().then(() => {
   if (isDev) console.log('Window and tray created');
 }).catch(error => {
   console.error('Failed to start Electron app:', error);
+});
+
+// Auto-updater configuration and initialization
+function initializeAutoUpdater() {
+  if (isDev) {
+    console.log('Auto-updater disabled in development mode');
+    return;
+  }
+
+  // Configure auto-updater
+  autoUpdater.autoDownload = false; // Don't auto-download, ask user first
+  autoUpdater.autoInstallOnAppQuit = false; // Don't auto-install, ask user first
+  
+  // Set update server (GitHub releases)
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'involvex',
+    repo: 'newworld-dailycraft-calc',
+    private: false
+  });
+
+  // Auto-updater event handlers
+  autoUpdater.on('checking-for-update', () => {
+    console.log('Checking for updates...');
+    if (mainWindow) {
+      mainWindow.webContents.send('updater-checking');
+    }
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('Update available:', info.version);
+    if (mainWindow) {
+      mainWindow.webContents.send('updater-update-available', {
+        version: info.version,
+        releaseNotes: info.releaseNotes,
+        releaseDate: info.releaseDate,
+        downloadUrl: `https://github.com/involvex/newworld-dailycraft-calc/releases/tag/v${info.version}`
+      });
+    }
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('No updates available');
+    if (mainWindow) {
+      mainWindow.webContents.send('updater-no-update');
+    }
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('Auto-updater error:', err);
+    if (mainWindow) {
+      mainWindow.webContents.send('updater-error', err.message);
+    }
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    console.log(`Download progress: ${Math.round(progress.percent)}%`);
+    if (mainWindow) {
+      mainWindow.webContents.send('updater-download-progress', {
+        percent: Math.round(progress.percent),
+        transferred: progress.transferred,
+        total: progress.total,
+        bytesPerSecond: progress.bytesPerSecond
+      });
+    }
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('Update downloaded:', info.version);
+    if (mainWindow) {
+      mainWindow.webContents.send('updater-update-downloaded', {
+        version: info.version
+      });
+    }
+  });
+
+  // Check for updates on startup (after a delay)
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify().catch(err => {
+      console.error('Error checking for updates:', err);
+    });
+  }, 5000); // Wait 5 seconds after startup
+
+  // Set up periodic update checks (every 4 hours)
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(err => {
+      console.error('Error in periodic update check:', err);
+    });
+  }, 4 * 60 * 60 * 1000); // 4 hours
+}
+
+// Auto-updater IPC handlers
+ipcMain.handle('check-for-updates', async () => {
+  if (isDev) {
+    return { message: 'Updates disabled in development mode' };
+  }
+  
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { success: true, updateInfo: result.updateInfo };
+  } catch (error) {
+    console.error('Error checking for updates:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('download-update', async () => {
+  if (isDev) {
+    return { message: 'Updates disabled in development mode' };
+  }
+  
+  try {
+    await autoUpdater.downloadUpdate();
+    return { success: true };
+  } catch (error) {
+    console.error('Error downloading update:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('install-update', () => {
+  if (isDev) {
+    return { message: 'Updates disabled in development mode' };
+  }
+  
+  // This will restart the app and install the update
+  autoUpdater.quitAndInstall();
+});
+
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
 });
 
 function registerHotkeys(hotkeys) {

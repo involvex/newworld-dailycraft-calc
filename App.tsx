@@ -7,6 +7,7 @@ import SummaryList from './components/SummaryList';
 import XPSummaryList from './components/XPSummaryList';
 import ContextMenu from './components/ContextMenu';
 import { SettingsModal } from './components/SettingsModal';
+import UpdateNotification from './components/UpdateNotification';
 import { Item, AllBonuses, BonusConfiguration } from './types';
 import useCraftingTree from './hooks/useCraftingTree';
 import useInventoryOCR from './hooks/useInventoryOCR';
@@ -326,6 +327,9 @@ const filteredCraftableItems = useMemo(() => {
 
   return (
     <React.Fragment>
+      {/* Auto-updater notification */}
+      <UpdateNotification />
+      
       <div className="bg-gray-900 text-gray-300 min-h-screen font-sans app-gradient-bg">
         <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-6xl">
           <header className="mb-6 text-center">
@@ -791,6 +795,23 @@ const filteredCraftableItems = useMemo(() => {
                 <h2 className="text-2xl font-bold text-yellow-300 mb-4">About</h2>
                 <p className="text-gray-300">This New World Crafting Calculator is an open-source project designed to help players plan their crafting efficiently.</p>
                 <p className="text-gray-300 mt-2">Version: {APP_VERSION}</p>
+                
+                {/* Update check button for Electron app */}
+                {window.electronAPI?.updater && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await window.electronAPI.updater.checkForUpdates();
+                      } catch (err) {
+                        console.error('Failed to check for updates:', err);
+                      }
+                    }}
+                    className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                  >
+                    🔄 Check for Updates
+                  </button>
+                )}
+                
                 <button onClick={() => setShowAbout(false)} className="mt-6 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Close</button>
               </div>
             </div>

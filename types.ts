@@ -70,6 +70,26 @@ export interface AllBonuses {
   [category: string]: BonusConfiguration;
 }
 
+// Auto-updater types
+export interface UpdateInfo {
+  version: string;
+  releaseNotes?: string;
+  downloadProgress?: number;
+}
+
+export interface UpdaterAPI {
+  checkForUpdates: () => Promise<void>;
+  downloadUpdate: () => Promise<void>;
+  installUpdate: () => Promise<void>;
+  getAppVersion: () => Promise<string>;
+  onChecking: (callback: () => void) => (() => void);
+  onUpdateAvailable: (callback: (event: any, info: UpdateInfo) => void) => (() => void);
+  onNoUpdate: (callback: () => void) => (() => void);
+  onError: (callback: (event: any, error: any) => void) => (() => void);
+  onDownloadProgress: (callback: (event: any, progress: any) => void) => (() => void);
+  onUpdateDownloaded: (callback: () => void) => (() => void);
+}
+
 // Electron API types
 declare global {
   interface Window {
@@ -87,6 +107,7 @@ declare global {
         import: () => Promise<any | false>;
         registerHotkeys: (hotkeys: any) => Promise<boolean>;
       };
+      updater: UpdaterAPI;
     };
   }
 }

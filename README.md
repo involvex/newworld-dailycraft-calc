@@ -168,22 +168,22 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 
 ## 💡 Usage Examples
 
-### 📋 **Planning a Void Gauntlet**
+### 📋 **Planning Prismaticcrafts**
 
 ```
-1. Select "Void Gauntlet" from item list
-2. Set quantity to 1, desired gear score
-3. Configure your Arcana skill level and bonuses
-4. OCR scan your arcane repository storage
+1. Select "Prismatic Set" from item list
+2. Set quantity to 1
+3. Configure your Refining skill level and bonuses
+4. OCR scan your storage
 5. View crafting tree and buy order for missing materials
 ```
 
-### 🏰 **Company Crafting Session**
+### 🏰 **Daily Crafting Session**
 
 ```
 1. Create preset for "Daily Crafting Goals"
-2. Add multiple items (tools, consumables, gear)
-3. Export configuration to share with company members
+2. Add multiple items
+3. Export configuration to share with your mates
 4. Import individual inventory scans
 5. Generate consolidated material shopping list
 ```

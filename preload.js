@@ -27,5 +27,39 @@ contextBridge.exposeInMainWorld('electronAPI', {
     export: () => ipcRenderer.invoke('export-config'),
     import: () => ipcRenderer.invoke('import-config'),
     registerHotkeys: (hotkeys) => ipcRenderer.invoke('register-hotkeys', hotkeys)
+  },
+  
+  // Auto-updater functionality
+  updater: {
+    checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+    downloadUpdate: () => ipcRenderer.invoke('download-update'),
+    installUpdate: () => ipcRenderer.invoke('install-update'),
+    getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+    
+    // Event listeners for updater events
+    onChecking: (callback) => {
+      ipcRenderer.on('updater-checking', callback);
+      return () => ipcRenderer.removeListener('updater-checking', callback);
+    },
+    onUpdateAvailable: (callback) => {
+      ipcRenderer.on('updater-update-available', callback);
+      return () => ipcRenderer.removeListener('updater-update-available', callback);
+    },
+    onNoUpdate: (callback) => {
+      ipcRenderer.on('updater-no-update', callback);
+      return () => ipcRenderer.removeListener('updater-no-update', callback);
+    },
+    onError: (callback) => {
+      ipcRenderer.on('updater-error', callback);
+      return () => ipcRenderer.removeListener('updater-error', callback);
+    },
+    onDownloadProgress: (callback) => {
+      ipcRenderer.on('updater-download-progress', callback);
+      return () => ipcRenderer.removeListener('updater-download-progress', callback);
+    },
+    onUpdateDownloaded: (callback) => {
+      ipcRenderer.on('updater-update-downloaded', callback);
+      return () => ipcRenderer.removeListener('updater-update-downloaded', callback);
+    }
   }
 });
