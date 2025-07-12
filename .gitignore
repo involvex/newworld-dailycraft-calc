@@ -20,6 +20,5 @@ _pycache_/
 .mypy_cache/
 data/*.csv
 .clinerules/
-.github/
 AppKopie.tsx
 .vscode/
