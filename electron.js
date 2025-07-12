@@ -12,9 +12,9 @@ function createWindow() {
     height: 800,
     icon: path.join(__dirname, 'logo.png'),
     webPreferences: {
-      nodeIntegration: true,
+      nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true,
+      webSecurity: false, // Temporarily disable for local file loading
       experimentalFeatures: true,
       sandbox: false, // Required for preload script functionality
       preload: path.join(__dirname, 'preload.js')
@@ -72,6 +72,8 @@ function createWindow() {
     const indexPath = path.join(__dirname, 'dist', 'index.html');
     console.log('Loading production build from:', indexPath);
     mainWindow.loadFile(indexPath);
+    // Open DevTools in production for debugging
+    mainWindow.webContents.openDevTools();
   }
   
   // Add error handling
@@ -82,6 +84,16 @@ function createWindow() {
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('Page loaded successfully');
     mainWindow.show();
+  });
+  
+  // Add console message listener
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`Console [${level}]: ${message}`);
+  });
+  
+  // Add DOM ready listener
+  mainWindow.webContents.on('dom-ready', () => {
+    console.log('DOM is ready');
   });
 
   // Hide to tray instead of closing (if tray exists)
@@ -154,24 +166,32 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
-  // Initialize config service
-  configService = new ConfigService();
+  console.log('Electron app is ready');
+  
+  // Initialize config service with error handling
+  try {
+    configService = new ConfigService();
+    console.log('ConfigService initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize ConfigService:', error);
+    // Continue without config service for now
+  }
   
   // Enhanced security: Set secure session defaults
-  session.defaultSession.webSecurity = true;
+  session.defaultSession.webSecurity = false; // Disabled for local files
   
-  // Set Content Security Policy
+  // Set Content Security Policy (more permissive for local files)
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://esm.sh https://unpkg.com; " +
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://esm.sh https://unpkg.com; " +
-          "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; " +
-          "font-src 'self' data: https://fonts.gstatic.com; " +
-          "img-src 'self' data: blob:; " +
-          "connect-src 'self' blob:;"
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file: https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://esm.sh https://unpkg.com; " +
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: file: https://cdn.tailwindcss.com https://esm.sh https://unpkg.com; " +
+          "style-src 'self' 'unsafe-inline' data: file: https://cdn.tailwindcss.com https://fonts.googleapis.com; " +
+          "font-src 'self' data: file: https://fonts.gstatic.com; " +
+          "img-src 'self' data: blob: file:; " +
+          "connect-src 'self' blob: file:;"
         ]
       }
     });
@@ -206,15 +226,30 @@ app.whenReady().then(() => {
 
   // Config management handlers
   ipcMain.handle('load-config', () => {
-    return configService.loadConfig();
+    try {
+      return configService ? configService.loadConfig() : {};
+    } catch (error) {
+      console.error('Error loading config:', error);
+      return {};
+    }
   });
 
   ipcMain.handle('save-config', (event, config) => {
-    return configService.saveConfig(config);
+    try {
+      return configService ? configService.saveConfig(config) : false;
+    } catch (error) {
+      console.error('Error saving config:', error);
+      return false;
+    }
   });
 
   ipcMain.handle('get-config-path', () => {
-    return configService.getConfigPath();
+    try {
+      return configService ? configService.getConfigPath() : '';
+    } catch (error) {
+      console.error('Error getting config path:', error);
+      return '';
+    }
   });
 
   ipcMain.handle('export-config', async () => {
@@ -255,11 +290,21 @@ app.whenReady().then(() => {
   });
   
   // Load initial config and register hotkeys
-  const config = configService.loadConfig();
-  registerHotkeys(config.hotkeys);
+  try {
+    const config = configService ? configService.loadConfig() : { hotkeys: {} };
+    registerHotkeys(config.hotkeys);
+    console.log('Config loaded and hotkeys registered');
+  } catch (error) {
+    console.error('Failed to load config:', error);
+    registerHotkeys({});
+  }
   
+  console.log('Creating window and tray...');
   createWindow();
   createTray();
+  console.log('Window and tray created');
+}).catch(error => {
+  console.error('Failed to start Electron app:', error);
 });
 
 function registerHotkeys(hotkeys) {
