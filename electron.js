@@ -370,8 +370,23 @@ function initializeAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     console.error('Auto-updater error:', err);
+    
+    // Check if it's a "no releases" error or network error
+    const errorMessage = err.message || err.toString();
+    let userFriendlyMessage = errorMessage;
+    
+    if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+      userFriendlyMessage = 'No releases found on GitHub yet. Check back later for updates.';
+      console.log('No GitHub releases found - this is normal for a new repository');
+      return; // Don't show error to user for missing releases
+    } else if (errorMessage.includes('network') || errorMessage.includes('ENOTFOUND')) {
+      userFriendlyMessage = 'Unable to check for updates. Please check your internet connection.';
+    } else if (errorMessage.includes('timeout')) {
+      userFriendlyMessage = 'Update check timed out. Please try again later.';
+    }
+    
     if (mainWindow) {
-      mainWindow.webContents.send('updater-error', err.message);
+      mainWindow.webContents.send('updater-error', userFriendlyMessage);
     }
   });
 
@@ -398,8 +413,14 @@ function initializeAutoUpdater() {
 
   // Check for updates on startup (after a delay)
   setTimeout(() => {
+    console.log('Checking for updates...');
     autoUpdater.checkForUpdatesAndNotify().catch(err => {
       console.error('Error checking for updates:', err);
+      // Don't show error notifications for common issues like no releases
+      const errorMessage = err.message || err.toString();
+      if (!errorMessage.includes('404') && !errorMessage.includes('Not Found')) {
+        console.warn('Update check failed, but continuing normally');
+      }
     });
   }, 5000); // Wait 5 seconds after startup
 
@@ -414,21 +435,35 @@ function initializeAutoUpdater() {
 // Auto-updater IPC handlers
 ipcMain.handle('check-for-updates', async () => {
   if (isDev) {
-    return { message: 'Updates disabled in development mode' };
+    return { success: false, error: 'Updates disabled in development mode' };
   }
   
   try {
+    console.log('Manual update check initiated');
     const result = await autoUpdater.checkForUpdates();
     return { success: true, updateInfo: result.updateInfo };
   } catch (error) {
     console.error('Error checking for updates:', error);
-    return { success: false, error: error.message };
+    
+    // Provide user-friendly error messages
+    const errorMessage = error.message || error.toString();
+    let userMessage = errorMessage;
+    
+    if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+      userMessage = 'No releases available on GitHub yet. This app will check for updates automatically when releases are published.';
+    } else if (errorMessage.includes('network') || errorMessage.includes('ENOTFOUND')) {
+      userMessage = 'Unable to check for updates. Please check your internet connection and try again.';
+    } else if (errorMessage.includes('timeout')) {
+      userMessage = 'Update check timed out. Please try again later.';
+    }
+    
+    return { success: false, error: userMessage };
   }
 });
 
 ipcMain.handle('download-update', async () => {
   if (isDev) {
-    return { message: 'Updates disabled in development mode' };
+    return { success: false, error: 'Updates disabled in development mode' };
   }
   
   try {
@@ -436,7 +471,8 @@ ipcMain.handle('download-update', async () => {
     return { success: true };
   } catch (error) {
     console.error('Error downloading update:', error);
-    return { success: false, error: error.message };
+    const errorMessage = error.message || error.toString();
+    return { success: false, error: errorMessage };
   }
 });
 

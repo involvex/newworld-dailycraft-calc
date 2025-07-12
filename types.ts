@@ -78,8 +78,8 @@ export interface UpdateInfo {
 }
 
 export interface UpdaterAPI {
-  checkForUpdates: () => Promise<void>;
-  downloadUpdate: () => Promise<void>;
+  checkForUpdates: () => Promise<{ success: boolean; error?: string; updateInfo?: any }>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
   installUpdate: () => Promise<void>;
   getAppVersion: () => Promise<string>;
   onChecking: (callback: () => void) => (() => void);

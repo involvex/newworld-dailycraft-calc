@@ -44,7 +44,15 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ className = '' 
 
     const removeError = updater.onError((_event: any, error: any) => {
       console.error('Update error:', error);
-      setError(error.message || 'An error occurred while checking for updates');
+      const errorMessage = error.message || error;
+      
+      // Don't show notification for "no releases" errors - this is normal
+      if (errorMessage.includes('No releases found') || errorMessage.includes('404')) {
+        console.log('No GitHub releases available yet - this is normal');
+        return;
+      }
+      
+      setError(errorMessage || 'An error occurred while checking for updates');
       setUpdateState('error');
       setIsVisible(true);
     });
@@ -84,9 +92,14 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ className = '' 
     try {
       setUpdateState('downloading');
       setDownloadProgress(0);
-      await window.electronAPI.updater.downloadUpdate();
-    } catch (err) {
-      setError('Failed to download update');
+      const result = await window.electronAPI.updater.downloadUpdate();
+      
+      if (!result.success && result.error) {
+        setError(result.error);
+        setUpdateState('error');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to download update');
       setUpdateState('error');
     }
   };
@@ -112,9 +125,25 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ className = '' 
     
     try {
       setError(null);
-      await window.electronAPI.updater.checkForUpdates();
-    } catch (err) {
-      setError('Failed to check for updates');
+      console.log('Manual update check initiated');
+      const result = await window.electronAPI.updater.checkForUpdates();
+      
+      if (!result.success && result.error) {
+        // Show user-friendly error message
+        setError(result.error);
+        setUpdateState('error');
+        setIsVisible(true);
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to check for updates';
+      
+      // Don't show notification for missing releases
+      if (errorMessage.includes('No releases found') || errorMessage.includes('404')) {
+        console.log('No releases available yet - this is normal');
+        return;
+      }
+      
+      setError(errorMessage);
       setUpdateState('error');
       setIsVisible(true);
     }
