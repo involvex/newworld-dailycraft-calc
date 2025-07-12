@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { APP_VERSION } from './src/version';
 import { ITEMS } from './data/items';
 import { RECIPES } from './data/recipes';
 import CraftingNode from './components/CraftingNode';
@@ -835,7 +836,7 @@ const filteredCraftableItems = useMemo(() => {
               <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
                 <h2 className="text-2xl font-bold text-yellow-300 mb-4">About</h2>
                 <p className="text-gray-300">This New World Crafting Calculator is an open-source project designed to help players plan their crafting efficiently.</p>
-                <p className="text-gray-300 mt-2">Version: 1.0.1</p>
+                <p className="text-gray-300 mt-2">Version: {APP_VERSION}</p>
                 <button onClick={() => setShowAbout(false)} className="mt-6 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Close</button>
               </div>
             </div>
@@ -1163,7 +1164,7 @@ const filteredCraftableItems = useMemo(() => {
                 </a>
               </p>
               <p className="text-xs text-gray-500">
-                New World Crafting Calculator v1.0.1 • Open Source
+                New World Crafting Calculator v{APP_VERSION} • Open Source
               </p>
             </div>
           </footer>
