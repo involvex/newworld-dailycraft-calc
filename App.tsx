@@ -37,7 +37,7 @@ const getInitial = <T,>(key: string, fallback: T): T => {
 
 const App: React.FC = () => {
   // Config management
-  const { config, updateConfig, saveConfig, isLoading: configLoading } = useConfig();
+  useConfig();
 
   // App state
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(() => getInitial('collapsedNodes', new Set()));

@@ -1,7 +1,7 @@
 {
   "name": "new-world-crafting-calculator",
   "version": "1.1.0",
-  "description": "A comprehensive crafting calculator for Amazon's New World MMO with OCR inventory detection.",
+  "description": "A comprehensive crafting calculator for Amazon's New World MMO with advanced OCR inventory detection, customizable hotkeys, persistent configuration system, and interactive crafting tree visualization.",
   "author": "Involvex",
   "homepage": "https://involvex.github.io/newworld-dailycraft-calc/",
   "repository": {
@@ -14,7 +14,13 @@
     "crafting",
     "calculator",
     "gaming",
-    "ocr"
+    "ocr",
+    "electron",
+    "typescript",
+    "react",
+    "configuration",
+    "hotkeys",
+    "presets"
   ],
   "private": true,
   "main": "electron.js",
