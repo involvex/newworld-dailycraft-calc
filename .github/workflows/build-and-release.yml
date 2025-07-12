@@ -176,10 +176,14 @@ jobs:
         if [ -d "artifacts/electron-build" ]; then
           find artifacts/electron-build -name "*.exe" -exec cp {} release-assets/ \;
           
-          # Rename the exe to include version
+          # Rename the exe to standardize version format (remove duplicate versions)
           for file in release-assets/*.exe; do
             if [ -f "$file" ]; then
-              newname=$(echo "$file" | sed "s/\.exe$/-v${{ steps.version.outputs.new_version }}.exe/")
+              # Extract just the base name and add clean version
+              basename=$(basename "$file" .exe)
+              # Remove any existing version numbers (pattern: space + numbers + dots)
+              cleanname=$(echo "$basename" | sed 's/ [0-9]\+\.[0-9]\+\.[0-9]\+//')
+              newname="release-assets/${cleanname} v${{ steps.version.outputs.new_version }}.exe"
               mv "$file" "$newname"
             fi
           done
@@ -215,7 +219,7 @@ jobs:
         echo "" >> CHANGELOG.md
         echo "### 📦 Downloads" >> CHANGELOG.md
         echo "" >> CHANGELOG.md
-        echo "- **🖥️ Desktop App**: \`New World Crafting Calculator-v${{ steps.version.outputs.new_version }}.exe\` (Windows)" >> CHANGELOG.md
+        echo "- **🖥️ Desktop App**: \`New World Crafting Calculator v${{ steps.version.outputs.new_version }}.exe\` (Windows)" >> CHANGELOG.md
         echo "- **🌐 Web App**: \`new-world-crafting-calculator-web-v${{ steps.version.outputs.new_version }}.zip\`" >> CHANGELOG.md
         echo "- **📖 Live Demo**: [Try it online](https://involvex.github.io/newworld-dailycraft-calc/)" >> CHANGELOG.md
         echo "" >> CHANGELOG.md

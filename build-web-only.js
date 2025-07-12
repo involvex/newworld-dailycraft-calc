@@ -1,6 +1,6 @@
 // Build web version only (skip problematic Electron build)
-import { execSync } from 'child_process';
-import fs from 'fs';
+const { execSync } = require('child_process');
+const fs = require('fs');
 
 console.log('🚀 Building web version...\n');
 

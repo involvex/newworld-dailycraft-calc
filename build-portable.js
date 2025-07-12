@@ -1,6 +1,6 @@
 // Simple working portable HTML builder
-import fs from 'fs';
-import path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 function createPortableHTML() {
   console.log('🚀 Creating portable HTML...');
