@@ -3,118 +3,459 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New World Crafting Calculator</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-  <meta name="description" content="A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR." />
+  <title>New World Crafting Calculator - Documentation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'inter': ['Inter', 'sans-serif'],
+          },
+          colors: {
+            'nw-gold': '#F4E5A6',
+            'nw-bronze': '#CD7F32',
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="description" content="Comprehensive documentation for the New World Crafting Calculator - featuring OCR inventory detection, customizable hotkeys, persistent configuration, and advanced crafting tree visualization." />
   <style>
     body {
-      font-family: 'Montserrat', Arial, sans-serif;
-      background: linear-gradient(135deg, #232526 0%, #414345 100%);
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(ellipse at top, #232526 0%, #414345 100%);
     }
     .nw-title {
       font-family: 'UnifrakturCook', cursive;
       letter-spacing: 2px;
-      color: #e2b857;
-      text-shadow: 2px 2px 8px #000, 0 0 8px #e2b85799;
+      color: #F4E5A6;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 12px rgba(244,229,166,0.6);
     }
     .nw-section {
-      background: rgba(34, 32, 28, 0.85);
+      background: rgba(31, 41, 55, 0.9);
       border-radius: 1rem;
-      box-shadow: 0 4px 24px #0008;
-      border: 1.5px solid #e2b85744;
-      padding: 2rem;
-      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      border: 1px solid rgba(244,229,166,0.2);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
     }
-    .nw-list li::marker {
-      color: #e2b857;
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
     }
-    .nw-link {
-      color: #e2b857;
-      text-decoration: underline;
-      transition: color 0.2s;
+    .feature-card {
+      background: rgba(55, 65, 81, 0.8);
+      border: 1px solid rgba(244,229,166,0.15);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
     }
-    .nw-link:hover {
-      color: #fffbe6;
+    .feature-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(244,229,166,0.1);
+      border-color: rgba(244,229,166,0.3);
     }
-    .nw-footer {
-      color: #bfa76a;
-      font-size: 1rem;
-      margin-top: 2rem;
+    .version-badge {
+      background: linear-gradient(135deg, #F4E5A6, #CD7F32);
+      color: #1f2937;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
     }
-    .nw-credits {
-      color: #bfa76a;
-      font-size: 0.95rem;
-      margin-top: 1.5rem;
-      text-align: center;
-    }
-    .nw-logo {
-      width: 80px;
-      margin-bottom: 1rem;
-      filter: drop-shadow(0 0 12px #e2b85788);
+    .tech-tag {
+      background: rgba(244,229,166,0.1);
+      border: 1px solid rgba(244,229,166,0.3);
+      color: #F4E5A6;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
     }
   </style>
 </head>
-<body>
-  <div class="max-w-3xl mx-auto p-6">
-    <header class="mb-8 text-center">
-      <img src="logo.png" alt="Involvex Logo" class="nw-logo mx-auto" />
-      <h1 class="text-5xl font-bold nw-title mb-2">New World Crafting Calculator</h1>
-      <p class="text-lg text-gray-200">A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
+<body class="min-h-screen text-gray-100">
+  <div class="max-w-6xl mx-auto p-6 lg:p-8">
+    <!-- Header -->
+    <header class="text-center mb-12">
+      <img src="logo.png" alt="New World Crafting Calculator" class="mx-auto mb-6 h-20 w-auto opacity-90 filter drop-shadow-lg" />
+      <h1 class="text-6xl font-bold nw-title mb-4">New World Crafting Calculator</h1>
+      <div class="flex items-center justify-center gap-4 mb-4">
+        <span class="version-badge">v1.1.1</span>
+        <span class="text-gray-400">•</span>
+        <span class="text-gray-300">Comprehensive Documentation</span>
+      </div>
+      <p class="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+        A sophisticated crafting calculator for Amazon's New World MMO featuring advanced OCR inventory detection, 
+        customizable hotkeys, persistent configuration system, and interactive crafting tree visualization.
+      </p>
     </header>
-    <section class="nw-section">
-      <h2 class="text-2xl font-semibold mb-2 text-yellow-400">Features</h2>
-      <ul class="nw-list list-disc list-inside space-y-1 text-gray-100">
-        <li><strong>Crafting Tree Visualization</strong> - Interactive tree showing all required materials</li>
-        <li><strong>Yield Bonus Calculations</strong> - Factor in skill levels, gear bonuses, and fort buffs</li>
-        <li><strong>Inventory Management</strong> - Track your current materials</li>
-        <li><strong>Auto OCR Detection</strong> - Screenshot your inventory/storage for automatic import</li>
-        <li><strong>Buy Order Generation</strong> - Calculate exactly what you need to purchase</li>
-        <li><strong>XP Calculations</strong> - See total tradeskill XP from crafting</li>
-        <li><strong>Prismatic Materials</strong> - Combined shopping lists for all prismatic items</li>
-      </ul>
+
+    <!-- Quick Start -->
+    <section class="nw-section p-8 mb-8">
+      <h2 class="text-3xl font-bold text-yellow-300 mb-6 flex items-center">
+        <span class="mr-3">🚀</span>
+        Quick Start
+      </h2>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div>
+          <h3 class="text-xl font-semibold text-yellow-400 mb-4">🌐 Web Version</h3>
+          <ol class="space-y-3 text-gray-200">
+            <li class="flex items-start">
+              <span class="bg-yellow-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">1</span>
+              <span>Visit <a href="https://involvex.github.io/newworld-dailycraft-calc/" class="text-yellow-400 hover:text-yellow-300 underline">involvex.github.io/newworld-dailycraft-calc</a></span>
+            </li>
+            <li class="flex items-start">
+              <span class="bg-yellow-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">2</span>
+              <span>Select your item and quantity</span>
+            </li>
+            <li class="flex items-start">
+              <span class="bg-yellow-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">3</span>
+              <span>Import your inventory using OCR or manual entry</span>
+            </li>
+          </ol>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold text-blue-400 mb-4">💻 Desktop App</h3>
+          <ol class="space-y-3 text-gray-200">
+            <li class="flex items-start">
+              <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">1</span>
+              <span>Download the latest <code class="bg-gray-700 px-2 py-1 rounded text-yellow-300">.exe</code> from releases</span>
+            </li>
+            <li class="flex items-start">
+              <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">2</span>
+              <span>Run the portable executable</span>
+            </li>
+            <li class="flex items-start">
+              <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">3</span>
+              <span>Use global hotkeys for instant OCR scanning</span>
+            </li>
+          </ol>
+        </div>
+      </div>
     </section>
-    <section class="nw-section">
-      <h2 class="text-2xl font-semibold mb-2 text-yellow-400">Run Locally</h2>
-      <ol class="list-decimal list-inside space-y-1 text-gray-100">
-        <li>Install dependencies:<br><code class="text-yellow-300 bg-gray-800 px-2 py-1 rounded">npm install</code></li>
-        <li>Run the app:<br><code class="text-yellow-300 bg-gray-800 px-2 py-1 rounded">npm run dev</code></li>
-        <li>Open <a href="http://localhost:3000" class="nw-link">http://localhost:3000</a></li>
-      </ol>
+
+    <!-- Key Features -->
+    <section class="nw-section p-8 mb-8">
+      <h2 class="text-3xl font-bold text-yellow-300 mb-6 flex items-center">
+        <span class="mr-3">✨</span>
+        Key Features
+      </h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="text-2xl mb-3">🌳</div>
+          <h3 class="text-lg font-semibold text-yellow-400 mb-2">Interactive Crafting Tree</h3>
+          <p class="text-gray-300 text-sm">Visual tree showing all required materials with expand/collapse functionality and contextual controls.</p>
+        </div>
+        <div class="feature-card">
+          <div class="text-2xl mb-3">📸</div>
+          <h3 class="text-lg font-semibold text-yellow-400 mb-2">OCR Inventory Detection</h3>
+          <p class="text-gray-300 text-sm">Automatically scan your in-game inventory and storage using advanced OCR technology with error correction.</p>
+        </div>
+        <div class="feature-card">
+          <div class="text-2xl mb-3">⚙️</div>
+          <h3 class="text-lg font-semibold text-yellow-400 mb-2">Customizable Hotkeys</h3>
+          <p class="text-gray-300 text-sm">Global keyboard shortcuts for instant access to OCR scanning, settings, and calculator toggle.</p>
+        </div>
+        <div class="feature-card">
+          <div class="text-2xl mb-3">💾</div>
+          <h3 class="text-lg font-semibold text-yellow-400 mb-2">Persistent Configuration</h3>
+          <p class="text-gray-300 text-sm">AppData storage with import/export functionality, maintaining your settings across sessions.</p>
+        </div>
+        <div class="feature-card">
+          <div class="text-2xl mb-3">📊</div>
+          <h3 class="text-lg font-semibold text-yellow-400 mb-2">Yield Bonus Calculations</h3>
+          <p class="text-gray-300 text-sm">Factor in skill levels, gear bonuses, and territory fort buffs for accurate material calculations.</p>
+        </div>
+        <div class="feature-card">
+          <div class="text-2xl mb-3">📋</div>
+          <h3 class="text-lg font-semibold text-yellow-400 mb-2">Preset Management</h3>
+          <p class="text-gray-300 text-sm">Save and load crafting configurations with built-in and custom presets for common scenarios.</p>
+        </div>
+        <div class="feature-card">
+          <div class="text-2xl mb-3">⭐</div>
+          <h3 class="text-lg font-semibold text-yellow-400 mb-2">XP Calculations</h3>
+          <p class="text-gray-300 text-sm">Calculate total tradeskill experience gained from crafting operations across all professions.</p>
+        </div>
+        <div class="feature-card">
+          <div class="text-2xl mb-3">💎</div>
+          <h3 class="text-lg font-semibold text-yellow-400 mb-2">Material Substitution</h3>
+          <p class="text-gray-300 text-sm">Intelligent handling of gemstone dust and other substitutable materials with preference selection.</p>
+        </div>
+      </div>
     </section>
-    <section class="nw-section">
-      <h2 class="text-2xl font-semibold mb-2 text-yellow-400">Usage</h2>
-      <ol class="list-decimal list-inside space-y-1 text-gray-100">
-        <li><strong>Select Item & Quantity</strong> - Choose what you want to craft</li>
-        <li><strong>Set Bonuses</strong> - Configure your skill levels and gear bonuses</li>
-        <li><strong>Import Inventory</strong> - Use Auto OCR or manual import</li>
-        <li><strong>View Results</strong> - See crafting tree and buy order</li>
-      </ol>
+
+    <!-- Desktop Features -->
+    <section class="nw-section p-8 mb-8">
+      <h2 class="text-3xl font-bold text-blue-300 mb-6 flex items-center">
+        <span class="mr-3">🖥️</span>
+        Desktop Application Features
+      </h2>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div>
+          <h3 class="text-xl font-semibold text-blue-400 mb-4">System Integration</h3>
+          <ul class="space-y-2 text-gray-300">
+            <li class="flex items-center"><span class="text-green-400 mr-2">✓</span>System tray with show/hide functionality</li>
+            <li class="flex items-center"><span class="text-green-400 mr-2">✓</span>Global hotkeys (customizable)</li>
+            <li class="flex items-center"><span class="text-green-400 mr-2">✓</span>Screen capture for OCR</li>
+            <li class="flex items-center"><span class="text-green-400 mr-2">✓</span>AppData configuration storage</li>
+            <li class="flex items-center"><span class="text-green-400 mr-2">✓</span>Auto-start with Windows (optional)</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold text-blue-400 mb-4">Default Hotkeys</h3>
+          <div class="space-y-2 text-gray-300">
+            <div class="flex justify-between items-center">
+              <span>Toggle Calculator</span>
+              <code class="bg-gray-700 px-2 py-1 rounded text-yellow-300">Ctrl+Shift+C</code>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Trigger OCR Scan</span>
+              <code class="bg-gray-700 px-2 py-1 rounded text-yellow-300">Ctrl+Shift+S</code>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Open Settings</span>
+              <code class="bg-gray-700 px-2 py-1 rounded text-yellow-300">Ctrl+,</code>
+            </div>
+          </div>
+          <p class="text-sm text-gray-400 mt-3">All hotkeys are customizable in Settings → Configuration</p>
+        </div>
+      </div>
     </section>
-    <section class="nw-section">
-      <h2 class="text-2xl font-semibold mb-2 text-yellow-400">OCR Features</h2>
-      <ul class="nw-list list-disc list-inside space-y-1 text-gray-100">
-        <li><strong>Auto OCR</strong> - Take screenshot of New World inventory/storage</li>
-        <li><strong>Import OCR</strong> - Manually paste OCR text</li>
-        <li>Supports various text formats and OCR misreadings</li>
-      </ul>
+
+    <!-- Usage Guide -->
+    <section class="nw-section p-8 mb-8">
+      <h2 class="text-3xl font-bold text-green-300 mb-6 flex items-center">
+        <span class="mr-3">📖</span>
+        Usage Guide
+      </h2>
+      <div class="grid lg:grid-cols-2 gap-8">
+        <div>
+          <h3 class="text-xl font-semibold text-green-400 mb-4">Basic Workflow</h3>
+          <ol class="space-y-4 text-gray-300">
+            <li class="flex items-start">
+              <span class="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-4 mt-1">1</span>
+              <div>
+                <strong class="text-green-400">Item Selection</strong>
+                <p class="text-sm mt-1">Choose what you want to craft and set the quantity. Use the search function to quickly find items.</p>
+              </div>
+            </li>
+            <li class="flex items-start">
+              <span class="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-4 mt-1">2</span>
+              <div>
+                <strong class="text-green-400">Configure Bonuses</strong>
+                <p class="text-sm mt-1">Set your skill levels, gear bonuses, and territory fort buffs in Settings for accurate yield calculations.</p>
+              </div>
+            </li>
+            <li class="flex items-start">
+              <span class="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-4 mt-1">3</span>
+              <div>
+                <strong class="text-green-400">Import Inventory</strong>
+                <p class="text-sm mt-1">Use OCR scanning or manual entry to import your current materials and see what you need to gather/buy.</p>
+              </div>
+            </li>
+            <li class="flex items-start">
+              <span class="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-4 mt-1">4</span>
+              <div>
+                <strong class="text-green-400">Analyze Results</strong>
+                <p class="text-sm mt-1">Review the crafting tree and material summary to plan your gathering and purchasing strategy.</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold text-green-400 mb-4">Advanced Features</h3>
+          <div class="space-y-4">
+            <div>
+              <h4 class="font-semibold text-yellow-400 mb-2">View Modes</h4>
+              <ul class="text-sm text-gray-300 space-y-1">
+                <li><strong>Net Mode:</strong> Shows materials needed after considering your inventory</li>
+                <li><strong>Gross Mode:</strong> Shows total materials required regardless of inventory</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-yellow-400 mb-2">Summary Modes</h4>
+              <ul class="text-sm text-gray-300 space-y-1">
+                <li><strong>Material Summary:</strong> Lists all required raw materials and quantities</li>
+                <li><strong>XP Summary:</strong> Shows experience gained across all tradeskills</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-yellow-400 mb-2">Tree Controls</h4>
+              <ul class="text-sm text-gray-300 space-y-1">
+                <li><strong>Expand/Collapse:</strong> Right-click nodes for context menu</li>
+                <li><strong>Bulk Operations:</strong> Expand All / Collapse All buttons</li>
+                <li><strong>Remove Nodes:</strong> Temporarily hide specific crafting branches</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
-    <section class="nw-section">
-      <h2 class="text-2xl font-semibold mb-2 text-yellow-400">Technologies</h2>
-      <ul class="nw-list list-disc list-inside space-y-1 text-gray-100">
-        <li>React + TypeScript</li>
-        <li>Tailwind CSS</li>
-        <li>Tesseract.js (OCR)</li>
-        <li>New World game data</li>
-      </ul>
+
+    <!-- Development -->
+    <section class="nw-section p-8 mb-8">
+      <h2 class="text-3xl font-bold text-purple-300 mb-6 flex items-center">
+        <span class="mr-3">⚡</span>
+        Development & Building
+      </h2>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div>
+          <h3 class="text-xl font-semibold text-purple-400 mb-4">Local Development</h3>
+          <div class="space-y-3">
+            <div>
+              <p class="text-sm text-gray-400 mb-2">Install dependencies:</p>
+              <code class="block bg-gray-800 text-yellow-300 p-3 rounded font-mono text-sm">npm install</code>
+            </div>
+            <div>
+              <p class="text-sm text-gray-400 mb-2">Start development server:</p>
+              <code class="block bg-gray-800 text-yellow-300 p-3 rounded font-mono text-sm">npm run dev</code>
+            </div>
+            <div>
+              <p class="text-sm text-gray-400 mb-2">Run Electron app in development:</p>
+              <code class="block bg-gray-800 text-yellow-300 p-3 rounded font-mono text-sm">npm run electron-dev</code>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold text-purple-400 mb-4">Building & Distribution</h3>
+          <div class="space-y-3">
+            <div>
+              <p class="text-sm text-gray-400 mb-2">Build web version:</p>
+              <code class="block bg-gray-800 text-yellow-300 p-3 rounded font-mono text-sm">npm run build</code>
+            </div>
+            <div>
+              <p class="text-sm text-gray-400 mb-2">Build Electron app:</p>
+              <code class="block bg-gray-800 text-yellow-300 p-3 rounded font-mono text-sm">npm run dist</code>
+            </div>
+            <div>
+              <p class="text-sm text-gray-400 mb-2">Build everything:</p>
+              <code class="block bg-gray-800 text-yellow-300 p-3 rounded font-mono text-sm">npm run build-all</code>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
-    <footer class="nw-footer text-center">
-      <p>View on <a href="https://github.com/involvex/newworld-dailycraft-calc" class="nw-link">GitHub</a></p>
-      <div class="nw-credits">
-        <p><strong>Credits:</strong></p>
-        <p>Author: <span class="text-yellow-300">Involvex</span></p>
-        <p>Based on <a href="https://nw-buddy.de/" class="nw-link" target="_blank" rel="noopener">nw-buddy.de</a></p>
-        <p>Images from <a href="https://nwdb.info/" class="nw-link" target="_blank" rel="noopener">nwdb.info</a></p>
+
+    <!-- Technologies -->
+    <section class="nw-section p-8 mb-8">
+      <h2 class="text-3xl font-bold text-cyan-300 mb-6 flex items-center">
+        <span class="mr-3">🛠️</span>
+        Technology Stack
+      </h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div>
+          <h3 class="text-lg font-semibold text-cyan-400 mb-3">Frontend</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="tech-tag">React 19.1.0</span>
+            <span class="tech-tag">TypeScript 5.8.3</span>
+            <span class="tech-tag">Tailwind CSS</span>
+            <span class="tech-tag">Vite 7.0.4</span>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-cyan-400 mb-3">Desktop</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="tech-tag">Electron 37.2.1</span>
+            <span class="tech-tag">Node.js IPC</span>
+            <span class="tech-tag">Native Menus</span>
+            <span class="tech-tag">Global Shortcuts</span>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-cyan-400 mb-3">Features</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="tech-tag">Tesseract.js OCR</span>
+            <span class="tech-tag">LocalStorage</span>
+            <span class="tech-tag">JSON Config</span>
+            <span class="tech-tag">Progressive Web App</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Support -->
+    <section class="nw-section p-8 mb-8">
+      <h2 class="text-3xl font-bold text-pink-300 mb-6 flex items-center">
+        <span class="mr-3">💝</span>
+        Support & Contributing
+      </h2>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div>
+          <h3 class="text-xl font-semibold text-pink-400 mb-4">Project Support</h3>
+          <p class="text-gray-300 mb-4">
+            This project is developed and maintained by the community. If you find it useful, consider supporting its development:
+          </p>
+          <div class="space-y-3">
+            <a href="https://paypal.me/involvex" 
+               class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+               target="_blank" rel="noopener noreferrer">
+              <span>☕</span>
+              Support Development
+            </a>
+            <p class="text-sm text-gray-400">
+              Donations help cover development time and hosting costs.
+            </p>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold text-pink-400 mb-4">Contributing</h3>
+          <ul class="space-y-2 text-gray-300">
+            <li class="flex items-center">
+              <span class="text-green-400 mr-2">✓</span>
+              Report bugs on <a href="https://github.com/involvex/newworld-dailycraft-calc/issues" class="text-blue-400 hover:text-blue-300 underline">GitHub Issues</a>
+            </li>
+            <li class="flex items-center">
+              <span class="text-green-400 mr-2">✓</span>
+              Submit feature requests
+            </li>
+            <li class="flex items-center">
+              <span class="text-green-400 mr-2">✓</span>
+              Contribute code improvements
+            </li>
+            <li class="flex items-center">
+              <span class="text-green-400 mr-2">✓</span>
+              Help with documentation
+            </li>
+            <li class="flex items-center">
+              <span class="text-green-400 mr-2">✓</span>
+              Share with other New World players
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="text-center py-8">
+      <div class="mb-6">
+        <img src="logo.png" alt="New World Crafting Calculator" class="mx-auto mb-4 h-16 w-auto opacity-80" />
+      </div>
+      <div class="space-y-3 text-gray-400">
+        <p class="text-lg font-medium">
+          Created with ❤️ by <span class="text-yellow-400 font-semibold">Involvex</span>
+        </p>
+        <div class="flex items-center justify-center gap-6 text-sm">
+          <a href="https://github.com/involvex/newworld-dailycraft-calc" 
+             class="text-blue-400 hover:text-blue-300 underline transition-colors"
+             target="_blank" rel="noopener noreferrer">
+            GitHub Repository
+          </a>
+          <span>•</span>
+          <a href="https://involvex.github.io/newworld-dailycraft-calc/" 
+             class="text-blue-400 hover:text-blue-300 underline transition-colors"
+             target="_blank" rel="noopener noreferrer">
+            Live Application
+          </a>
+        </div>
+        <div class="text-xs space-y-1">
+          <p>Game data sourced from <a href="https://nw-buddy.de" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">nw-buddy.de</a></p>
+          <p>Icons and images from <a href="https://nwdb.info" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">nwdb.info</a></p>
+          <p class="text-gray-500">New World Crafting Calculator v1.1.1 • Open Source • MIT License</p>
+        </div>
       </div>
     </footer>
   </div>
