@@ -122,9 +122,17 @@ npm run dev
 
 ## 🏅 Credits
 
-- <b>Author:</b> Involvex
-- <b>Based on:</b> [nw-buddy.de](https://nw-buddy.de/)
-- <b>Images from:</b> [nwdb.info](https://nwdb.info/)
+- **Author:** Involvex
+- **Based on:** [nw-buddy.de](https://nw-buddy.de/)
+- **Images from:** [nwdb.info](https://nwdb.info/)
+
+## 💝 Support Development
+
+If you like this project and want to support its development, you can donate:
+
+**[paypal.me/involvex](https://paypal.me/involvex)**
+
+Your support helps maintain and improve the New World Crafting Calculator! 🙏
 
 ---
 ## 📝 Development Status

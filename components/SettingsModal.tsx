@@ -250,6 +250,19 @@ export function SettingsModal({
           </div>
         </div>
 
+        {/* Support Section */}
+        <div className="mt-4 pt-4 border-t border-gray-600/30 text-center">
+          <p className="text-xs text-gray-400 mb-2">💝 Enjoying the calculator?</p>
+          <a 
+            href="https://paypal.me/involvex" 
+            className="text-xs text-blue-400 hover:text-blue-300 underline decoration-dotted hover:decoration-solid transition-all"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Support development ☕
+          </a>
+        </div>
+
         <div className="flex gap-2 mt-6 flex-shrink-0">
           <button onClick={onClose} className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
             Close

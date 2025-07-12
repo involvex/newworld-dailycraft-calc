@@ -1120,6 +1120,17 @@ const filteredCraftableItems = useMemo(() => {
               <p className="text-xs text-gray-500">
                 New World Crafting Calculator v{APP_VERSION} • Open Source
               </p>
+              <div className="mt-3 pt-2 border-t border-gray-600/30">
+                <p className="text-xs text-gray-400 mb-1">💝 Like this project?</p>
+                <a 
+                  href="https://paypal.me/involvex" 
+                  className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline decoration-dotted hover:decoration-solid transition-all"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Support development ☕
+                </a>
+              </div>
             </div>
           </footer>
         </div>
