@@ -28,7 +28,7 @@ jobs:
     # Only run this job if the workflow was triggered manually
     if: github.event_name == 'workflow_dispatch'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -81,6 +81,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist-electron/your-electron-build.exe
-          asset_name: your-electron-build.exe
+          asset_path: dist-electron/New World Crafting Calculator ${{ steps.get_version.outputs.version }}.exe
+          asset_name: New World Crafting Calculator ${{ steps.get_version.outputs.version }}.exe
           asset_content_type: application/octet-stream
