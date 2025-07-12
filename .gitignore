@@ -13,9 +13,7 @@ build-portable.js
 simple-server.js
 *.py
 dist/
-build-all.js
 icons/
-build-web-only.js
 build-portable.js
 .amazonq/
 _pycache_/
@@ -24,5 +22,4 @@ data/*.csv
 .clinerules/
 .github/
 AppKopie.tsx
-build-prod.ps1
 .vscode/
