@@ -1,8 +1,9 @@
 
-import { Item, Recipe, CraftingNodeData, RawMaterial, AllBonuses } from '../types';
+import { Item, Recipe, CraftingNodeData, RawMaterial, AllBonuses, XPSummary } from '../types';
 import { ITEMS } from '../data/items';
 import { RECIPES } from '../data/recipes';
 import { getCraftingYieldBonus } from './nwCraftingCalcs';
+import { XP_DATA } from '../utils/xpUtils';
 
 
 const getRecipe = (itemId: string): Recipe | undefined => {
@@ -366,62 +367,74 @@ export const aggregateRawMaterials = (
   if (!node?.item?.id) {
     return [];
   }
-  
-  if (viewMode === 'net') {
-    // Net mode: calculate without yield bonuses
-    const materialQuantities = calculateNetRequirements(
-      node.item.id,
-      node.totalQuantity,
-      collapsedNodes,
-      'ROOT',
-      selectedIngredients
-    );
-    
-    const materials: RawMaterial[] = [];
-    materialQuantities.forEach((quantity, itemId) => {
-      const item = ITEMS[itemId];
-      if (itemId !== node.item.id && item) {
-        materials.push({
-          item: item,
-          quantity: quantity
-        });
-      }
+
+  const combinedMaterialQuantities = new Map<string, number>();
+
+  // If it's a multi-item node, aggregate materials from its children
+  if (node.id === 'MULTI') {
+    node.children?.forEach(childNode => {
+      const childMaterials = aggregateRawMaterials(childNode, collapsedNodes, viewMode, bonuses, selectedIngredients);
+      childMaterials.forEach(material => {
+        combinedMaterialQuantities.set(
+          material.item.id,
+          (combinedMaterialQuantities.get(material.item.id) || 0) + material.quantity
+        );
+      });
     });
-    
-    return materials.sort((a, b) => {
-      if (!a.item || !b.item) return 0;
-      return b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name);
+  } else {
+    // For a single item node, calculate requirements as before
+    let materialQuantities: Map<string, number>;
+
+    if (viewMode === 'net') {
+      materialQuantities = calculateNetRequirements(
+        node.item.id,
+        node.totalQuantity,
+        collapsedNodes,
+        'ROOT',
+        selectedIngredients
+      );
+    } else { // gross mode
+      materialQuantities = calculateGrossRequirements(
+        node.item.id,
+        node.totalQuantity,
+        bonuses || {},
+        collapsedNodes,
+        'ROOT',
+        selectedIngredients
+      );
+    }
+
+    materialQuantities.forEach((quantity, itemId) => {
+      combinedMaterialQuantities.set(itemId, (combinedMaterialQuantities.get(itemId) || 0) + quantity);
     });
   }
-  
-  // Gross mode: calculate with yield bonuses applied
-  console.log('Gross calculation for:', node.item.id, 'quantity:', node.totalQuantity);
-  const materialQuantities = calculateGrossRequirements(
-    node.item.id,
-    node.totalQuantity,
-    bonuses || {},
-    collapsedNodes,
-    'ROOT',
-    selectedIngredients
-  );
-  console.log('Gross results:', Array.from(materialQuantities.entries()));
-  
+
   const materials: RawMaterial[] = [];
-  materialQuantities.forEach((quantity, itemId) => {
+  combinedMaterialQuantities.forEach((quantity, itemId) => {
     const item = ITEMS[itemId];
-    if (itemId !== node.item.id && item) {
+    if (item) {
       materials.push({
         item: item,
         quantity: quantity
       });
     }
   });
-  
-  return materials.sort((a, b) => {
+
+  // The filtering for the root item is now more complex with MULTI.
+  // We should only filter out the root item if it's a single item and has a recipe.
+  // For MULTI, we don't want to filter anything out at this level.
+  const finalMaterials = materials.filter(m => {
+    if (node.id !== 'MULTI' && m.item.id === node.item.id) {
+      return !getRecipe(m.item.id);
+    }
+    return true;
+  });
+
+
+  return finalMaterials.sort((a, b) => {
     if (!a.item || !b.item) return 0;
     return b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name);
   });
-
 };
 
 export const aggregateAllComponents = (
@@ -455,4 +468,66 @@ export const aggregateAllComponents = (
     if (!a.item || !b.item) return 0;
     return b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name);
   });
+};
+
+// Calculate XP gains from crafting tree
+export const calculateXPGains = (
+  node: CraftingNodeData,
+  bonuses: AllBonuses,
+  viewMode: 'net' | 'gross' = 'net'
+): XPSummary[] => {
+  const xpMap = new Map<string, XPSummary>();
+
+  const traverseForXP = (currentNode: CraftingNodeData) => {
+    if (!currentNode.item?.id) return;
+
+    const recipe = RECIPES[currentNode.item.id];
+    const xpData = XP_DATA[currentNode.item.id];
+    
+    if (recipe && xpData && currentNode.quantity > 0) {
+      const category = recipe.category;
+      const bonusConfig = bonuses[category];
+      let totalYield = recipe.baseYield;
+      
+      // Calculate actual yield with bonuses
+      if (bonusConfig && viewMode === 'net') {
+        const categoryBonus = getCraftingYieldBonus(recipe, bonusConfig);
+        totalYield = recipe.baseYield * (1 + Math.max(0, categoryBonus));
+      }
+      
+      // Calculate crafts needed
+      const craftsNeeded = Math.ceil(currentNode.totalQuantity / totalYield);
+      
+      // Calculate XP gains
+      const tradeskillXP = xpData.tradeskillXP * craftsNeeded;
+      const standingXP = xpData.standingXP * craftsNeeded;
+      
+      // Aggregate by category
+      const existing = xpMap.get(category);
+      if (existing) {
+        existing.tradeskillXP += tradeskillXP;
+        existing.standingXP += standingXP;
+        existing.totalCrafts += craftsNeeded;
+      } else {
+        xpMap.set(category, {
+          category,
+          tradeskillXP,
+          standingXP,
+          totalCrafts: craftsNeeded,
+        });
+      }
+    }
+
+    // Traverse children
+    currentNode.children?.forEach(child => traverseForXP(child));
+  };
+
+  // Handle multi-item nodes
+  if (node.id === 'MULTI') {
+    node.children?.forEach(child => traverseForXP(child));
+  } else {
+    traverseForXP(node);
+  }
+
+  return Array.from(xpMap.values()).sort((a, b) => a.category.localeCompare(b.category));
 };

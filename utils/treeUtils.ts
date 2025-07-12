@@ -1,11 +1,34 @@
-export function collectAllNodeIds(node: any, ids = new Set<string>()) {
-  if (!node) return ids;
-  ids.add(node.id);
-  node.children?.forEach((child: any) => collectAllNodeIds(child, ids));
+export function collectAllNodeIds(node: any): string[] {
+  const ids: string[] = [];
+  function traverse(n: any) {
+    ids.push(n.id);
+    if (n.children) n.children.forEach(traverse);
+  }
+  traverse(node);
   return ids;
 }
 
-export function collectSubtreeNodeIds(node: any, ids = new Set<string>()) {
-  // Same as collectAllNodeIds, but for subtree only
-  return collectAllNodeIds(node, ids);
+export function findNodeById(node: any, id: string): any | null {
+  if (node.id === id) {
+    return node;
+  }
+  if (node.children) {
+    for (const child of node.children) {
+      const found = findNodeById(child, id);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}
+
+export function collectSubtreeNodeIds(node: any): string[] {
+  const ids: string[] = [];
+  function traverse(n: any) {
+    ids.push(n.id);
+    if (n.children) n.children.forEach(traverse);
+  }
+  traverse(node);
+  return ids;
 }

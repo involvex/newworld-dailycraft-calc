@@ -28,6 +28,9 @@ export interface Recipe {
   bonusItemChanceDecrease?: string; // Comma-separated percentages for lower tier mats
   craftAll?: boolean; // Can this recipe be crafted in bulk for yield bonus
   skipGrantItems?: boolean; // Does this recipe skip granting bonus items
+  // XP data from CSV
+  tradeskillXP?: number; // Base tradeskill XP gained per craft
+  standingXP?: number; // Base standing XP gained per craft
 }
 
 export interface CraftingNodeData {
@@ -44,6 +47,19 @@ export interface RawMaterial {
   quantity: number;
 }
 
+export interface XPSummary {
+  category: string;
+  tradeskillXP: number;
+  standingXP: number;
+  totalCrafts: number;
+}
+
+export interface CraftingSummary {
+  materials: RawMaterial[];
+  xpGains?: XPSummary[];
+  title?: string;
+}
+
 export interface BonusConfiguration {
   skillLevel: number;
   gearBonus: number; // Stored as decimal, e.g. 0.10 for 10%
@@ -52,4 +68,9 @@ export interface BonusConfiguration {
 
 export interface AllBonuses {
   [category: string]: BonusConfiguration;
+}
+
+export interface Preset {
+  name: string;
+  items: { id: string; qty: number }[];
 }

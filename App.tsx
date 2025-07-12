@@ -1,13 +1,16 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ITEMS } from './data/items';
 import { RECIPES } from './data/recipes';
 import CraftingNode from './components/CraftingNode';
 import SummaryList from './components/SummaryList';
-import { Item, AllBonuses, BonusConfiguration, RawMaterial } from './types';
+import XPSummaryList from './components/XPSummaryList';
+import ContextMenu from './components/ContextMenu';
+import { Item, AllBonuses, BonusConfiguration } from './types';
 import useCraftingTree from './hooks/useCraftingTree';
 import useInventoryOCR from './hooks/useInventoryOCR';
 import usePresets from './hooks/usePresets';
-import { collectAllNodeIds, collectSubtreeNodeIds } from './utils/treeUtils';
+import useTreeCollapse from './hooks/useTreeCollapse';
+import { findNodeById } from './utils/treeUtils';
 
 // Types
 type SummaryMode = 'net' | 'xp';
@@ -15,8 +18,6 @@ type ViewMode = 'net' | 'gross';
 type Inventory = Record<string, number>;
 
 // Constants
-const FINAL_ITEMS = [ITEMS.PRISMATIC_INGOT, ITEMS.PRISMATIC_CLOTH, ITEMS.PRISMATIC_LEATHER, ITEMS.PRISMATIC_PLANKS];
-const PRISMATIC_ITEMS = ['PRISMATIC_INGOT', 'PRISMATIC_CLOTH', 'PRISMATIC_LEATHER', 'PRISMATIC_PLANKS'];
 const DEFAULT_BONUSES = {
   Smelting: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
   Weaving: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
@@ -24,28 +25,6 @@ const DEFAULT_BONUSES = {
   Woodworking: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
   Stonecutting: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
 };
-const PRESETS = [
-  { name: 'Daily Cooldowns (10)', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 },{ id: 'ASMODEUM', qty: 10 }, { id: 'PHOENIXWEAVE', qty: 10 }, { id: 'RUNIC_LEATHER', qty: 10 }, { id: 'GLITTERING_EBONY', qty: 10 }] },
-  { name: 'Prismatic Set (10)', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 }] },
-];
-const ITEM_MAPPINGS = {
-  'iron ore': 'IRON_ORE', 'steel ingot': 'STEEL_INGOT', 'starmetal ingot': 'STARMETAL_INGOT',
-  'orichalcum ore': 'ORICHALCUM_ORE', 'starmetal ore': 'STARMETAL_ORE', 'charcoal': 'CHARCOAL',
-  'thick hide': 'THICK_HIDE', 'timber': 'TIMBER', 'lumber': 'LUMBER', 'fiber': 'FIBERS',
-  'linen': 'LINEN', 'silk': 'SILK', 'reagents': 'REAGENTS'
-};
-const COMMON_ITEMS = [
-  'Iron Ore', 'Orichalcum Ore', 'Starmetal Ore', 'Steel Ingot', 'Starmetal Ingot', 
-  'Charcoal', 'Thick Hide', 'Linen', 'Fiber', 'Lumber', 'Timber', 'Silk', 
-  'Rawhide', 'Green Wood', 'Aged Wood', 'Silver Ore', 'Gold Ore', 'Mythril Ore',
-  'Reagents', 'Coarse Leather', 'Rugged Leather', 'Wyrdwood', 'Ironwood',
-  'Sand Flux', 'Obsidian Flux', 'Hemp', 'Cotton', 'Wirefiber', 'Silkweed',
-  'Iron Ingot', 'Orichalcum Ingot', 'Platinum Ore', 'Lodestone', 'Fae Iron',
-  'Voidmetal', 'Cinnabar', 'Tolvium', 'Azoth', 'Quintessence', 'Sateen',
-  'Phoenixweave', 'Runic Leather', 'Layered Leather', 'Glittering Ebony',
-  'Asmodeum', 'Void Ore', 'Scalecloth', 'Infused Leather', 'Barbvine',
-  'Blisterweave', 'Scarhide', 'Shadowcloth', 'Voidbent Ingot'
-];
 
 const getInitial = <T,>(key: string, fallback: T): T => {
   try {
@@ -55,138 +34,115 @@ const getInitial = <T,>(key: string, fallback: T): T => {
 };
 
 const App: React.FC = () => {
-  // Core state (move all useState above any useEffect)
-  const [selectedItemId, setSelectedItemId] = useState(() => getInitial('selectedItemId', FINAL_ITEMS[0].id));
-  const [quantity, setQuantity] = useState(() => getInitial('quantity', 10));
-  const [multiItems, setMultiItems] = useState(() => getInitial('multiItems', []));
+  // Core state (move all useState above any useEffect) - Fixed hook rendering issue and preset state management
+  const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(() => getInitial('collapsedNodes', new Set()));
+  const [selectedItemId, setSelectedItemId] = useState<string>(() => getInitial('selectedItemId', ''));
+  const [quantity, setQuantity] = useState<number>(() => getInitial('quantity', 10));
+  const [multiItems, setMultiItems] = useState<any[]>(() => getInitial('multiItems', []));
   const [summaryMode, setSummaryMode] = useState<SummaryMode>(() => getInitial('summaryMode', 'net'));
   const [viewMode, setViewMode] = useState<ViewMode>(() => getInitial('viewMode', 'net'));
   const [bonuses, setBonuses] = useState<AllBonuses>(() => getInitial('bonuses', DEFAULT_BONUSES));
-  const [collapsedNodes, setCollapsedNodes] = useState(() => new Set(getInitial<string[]>('collapsedNodes', [])));
   const [inventory, setInventory] = useState<Inventory>(() => getInitial('inventory', {}));
+  const [selectedPreset, setSelectedPreset] = useState<string>(() => getInitial('selectedPreset', '')); // Moved selectedPreset state here
 
-  // UI state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAdvanced, setShowAdvanced] = useState(() => getInitial('showAdvanced', false));
-  const [manualMode, setManualMode] = useState(() => getInitial('manualMode', false));
-  const [selectedPreset, setSelectedPreset] = useState('');
+// UI state
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
   // Modal states
-  const [showPrismaticList, setShowPrismaticList] = useState(false);
-  const [showManualEntry, setShowManualEntry] = useState(false);
-  const [showOCREdit, setShowOCREdit] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
-  const [showCreatePreset, setShowCreatePreset] = useState(false);
+  const [showManualEntry, setShowManualEntry] = useState<boolean>(false);
+  const [showOCREdit, setShowOCREdit] = useState<boolean>(false);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showAbout, setShowAbout] = useState<boolean>(false);
 
   // Data states
-  const [prismaticBuyList, setPrismaticBuyList] = useState<RawMaterial[]>([]);
-  const [customPresets, setCustomPresets] = useState(() => getInitial('customPresets', []));
-  const [manualEntryText, setManualEntryText] = useState('');
-  const [ocrEditText, setOCREditText] = useState('');
-  const [presetName, setPresetName] = useState('');
-  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
-  const [selectedIngredients, setSelectedIngredients] = useState(() => getInitial('selectedIngredients', {
+  const [manualEntryText, setManualEntryText] = useState<string>('');
+  const [ocrEditText, setOCREditText] = useState<string>('');
+  const [isProcessingOCR, setIsProcessingOCR] = useState<boolean>(false);
+  const [selectedIngredients, setSelectedIngredients] = useState<Record<string, string>>({
     GEMSTONE_DUST: 'PRISTINE_AMBER'
-  }));
+  });
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
+  const [removedNodes, setRemovedNodes] = useState<Set<string>>(new Set());
 
-  // --- On app load, initialize collapsedNodes from localStorage if present ---
-  useEffect(() => {
-    const stored = localStorage.getItem('collapsedNodes');
-    if (stored) {
-      try {
-        const arr = JSON.parse(stored);
-        if (Array.isArray(arr)) {
-          setCollapsedNodes(new Set(arr));
-        }
-      } catch {}
-    }
-    // else leave as default
-    // eslint-disable-next-line
-  }, []);
+  // --- Tree expand/collapse logic ---
+  const {
+    handleCollapseAll,
+    handleExpandAll,
+    handleToggleNode,
+    handleCollapseSubtree,
+    handleExpandSubtree,
+    restoreCollapsedNodes: treeRestoreCollapsedNodes, // Renamed to avoid conflict
+  } = useTreeCollapse({
+    collapsedNodes,
+    setCollapsedNodes,
+  });
 
-  // --- Ensure collapsedNodes is always saved to localStorage when it changes ---
-  useEffect(() => {
-    localStorage.setItem('collapsedNodes', JSON.stringify(Array.from(collapsedNodes)));
-  }, [collapsedNodes]);
+  // --- Preset logic (now uses restoreCollapsedNodes) ---
+  const {
+    PRESETS,
+    customPresets,
+    setCustomPresets,
+    handlePresetSelect,
+    handlePresetCreate,
+    handlePresetDelete,
+  } = usePresets({
+    multiItems,
+    selectedItemId,
+    quantity,
+    collapsedNodes,
+    setCollapsedNodes,
+    setMultiItems,
+    setSelectedItemId,
+    setQuantity,
+    restoreCollapsedNodes: treeRestoreCollapsedNodes,
+    selectedPreset, // Pass selectedPreset from App.tsx
+    setSelectedPreset, // Pass setSelectedPreset from App.tsx
+    setInventory, // Pass setInventory from App.tsx
+  });
 
   // --- Refactored hooks ---
-  const { craftingData, summaryData, allCraftableItems, filteredItems, netRequirementsWithInventory } =
-    useCraftingTree({
-      selectedItemId, quantity, multiItems, bonuses, selectedIngredients, viewMode, summaryMode, collapsedNodes, inventory
-    });
+  const {
+    craftingData,
+    summaryData,
+  } = useCraftingTree({
+    selectedItemId,
+    quantity,
+    multiItems,
+    bonuses,
+    selectedIngredients,
+    viewMode,
+    summaryMode,
+    collapsedNodes,
+    inventory,
+    removedNodes,
+    selectedPreset,
+  });
 
-  const { captureAndProcessScreenshot, parseInventoryOCR, isProcessingOCR: ocrProcessing, ocrEditText: ocrText, setOCREditText, setShowOCREdit } =
-    useInventoryOCR({ setInventory, inventory, setOCREditText, setShowOCREdit });
+  // Define allCraftableItems directly in App.tsx
+  const allCraftableItems: Item[] = useMemo(() =>
+    Object.values(ITEMS).filter(item => RECIPES[item.id])
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    []
+  );
 
-  const { PRESETS, customPresets, setCustomPresets, selectedPreset, setSelectedPreset, showCreatePreset, setShowCreatePreset, presetName, setPresetName } =
-    usePresets({ multiItems, selectedItemId, quantity, collapsedNodes });
+  // Memoized filtered list for search
+const filteredCraftableItems = useMemo(() => {
+  return allCraftableItems.filter((item: Item) =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+}, [allCraftableItems, searchTerm]);
 
-  // --- Context menu actions ---
-  const handleContextMenuAction = useCallback((action: 'expand' | 'collapse' | 'remove', node: any) => {
-    switch (action) {
-      case 'expand':
-        handleExpandAll(node);
-        break;
-      case 'collapse':
-        handleCollapseAll(node);
-        break;
-      case 'remove':
-        handleRemoveResource(node.id);
-        break;
-    }
-  }, [handleExpandAll, handleCollapseAll, handleRemoveResource]);
+  const {
+    captureAndProcessScreenshot,
+    parseInventoryOCR,
+  } = useInventoryOCR({
+    setOCREditText,
+    setShowOCREdit,
+    setIsProcessingOCR,
+  });
 
-  // --- Expand/collapse helpers ---
-  const handleCollapseAll = useCallback((rootNode?: any) => {
-    const node = rootNode || craftingData;
-    if (!node) return;
-    // Only collapse subtree if rootNode is provided, else whole tree
-    const allNodeIds = rootNode
-      ? collectSubtreeNodeIds(node)
-      : collectAllNodeIds(craftingData);
-    setCollapsedNodes(new Set(allNodeIds));
-    localStorage.setItem('collapsedNodes', JSON.stringify([...allNodeIds]));
-  }, [craftingData]);
-
-  const handleExpandAll = useCallback((rootNode?: any) => {
-    if (rootNode) {
-      // Only expand subtree: remove all its nodeIds from collapsedNodes
-      setCollapsedNodes(prev => {
-        const idsToRemove = collectSubtreeNodeIds(rootNode);
-        const newSet = new Set(prev);
-        idsToRemove.forEach(id => newSet.delete(id));
-        localStorage.setItem('collapsedNodes', JSON.stringify([...newSet]));
-        return newSet;
-      });
-    } else {
-      // Expand all: clear collapsedNodes
-      setCollapsedNodes(new Set());
-      localStorage.setItem('collapsedNodes', '[]');
-    }
-  }, []);
-
-  const handleToggleNode = useCallback((nodeId: string) => {
-    setCollapsedNodes(prev => {
-      const newSet = new Set(prev);
-      newSet.has(nodeId) ? newSet.delete(nodeId) : newSet.add(nodeId);
-      localStorage.setItem('collapsedNodes', JSON.stringify([...newSet]));
-      return newSet;
-    });
-  }, []);
-
-  // Remove resource from summary (net mode only)
-  const handleRemoveResource = useCallback((itemId: string) => {
-    // Remove from inventory so it is not counted in net requirements
-    setInventory(prev => {
-      const updated = { ...prev };
-      updated[itemId] = (updated[itemId] || 0) + 9999999; // Mark as 'infinite' so net = 0
-      localStorage.setItem('inventory', JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
-  const getIconUrl = useCallback((itemId: string, tier?: number) => {
+  const getIconUrl = useCallback((itemId: string) => {
     if (itemId === 'MULTI') {
       return 'https://nwdb.info/images/db/icons/filters/itemtypes/all.png';
     }
@@ -214,6 +170,17 @@ const App: React.FC = () => {
     });
   };
 
+  // Add localStorage setters for mode changes
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem('viewMode', JSON.stringify(mode));
+  };
+
+  const handleSummaryModeChange = (mode: SummaryMode) => {
+    setSummaryMode(mode);
+    localStorage.setItem('summaryMode', JSON.stringify(mode));
+  };
+
   const handleInventoryChange = (itemId: string, quantity: number) => {
     setInventory(prev => {
       const updated = { ...prev };
@@ -227,1328 +194,698 @@ const App: React.FC = () => {
     });
   };
 
-  const filteredItems = useMemo(() => 
-    searchTerm ? allCraftableItems.filter(item => 
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ) : allCraftableItems.slice(0, 50)
-  , [searchTerm, allCraftableItems]);
+  const handleContextMenu = (node: any, event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id });
+  };
 
-  useEffect(() => {
-    if (!craftingData?.children) return;
-    const nodesToCollapse = new Set<string>();
-    const collectSecondLevel = (node: any, level = 0) => {
-      if (level >= 2) nodesToCollapse.add(node.id);
-      node.children?.forEach((child: any) => collectSecondLevel(child, level + 1));
+  const handleRemoveNode = (nodeId: string) => {
+    setRemovedNodes(prev => new Set(prev).add(nodeId));
+    setContextMenu(null);
+  };
+
+
+  const handleExportData = () => {
+    const dataToExport = {
+      customPresets,
+      inventory,
+      bonuses,
+      collapsedNodes: Array.from(collapsedNodes),
     };
-    craftingData.children.forEach((child: any) => collectSecondLevel(child, 1));
-    setCollapsedNodes(nodesToCollapse);
-    localStorage.setItem('collapsedNodes', JSON.stringify([...nodesToCollapse]));
-  }, [craftingData]);
+    const dataStr = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'new-world-crafting-data.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
-  useEffect(() => {
-    const items = { selectedItemId, quantity, summaryMode, viewMode, multiItems };
-    Object.entries(items).forEach(([key, value]) => 
-      localStorage.setItem(key, JSON.stringify(value))
-    );
-  }, [selectedItemId, quantity, summaryMode, viewMode, multiItems]);
-  
-  // Only match presets when manually selecting items, not automatically
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.electronAPI) {
-      window.electronAPI.onTriggerOCR(() => {
-        if (!isProcessingOCR) captureAndProcessScreenshot();
-      });
-      window.electronAPI.onShowSettings(() => {
-        setShowSettings(true);
-      });
-      window.electronAPI.onShowAbout(() => {
-        setShowAbout(true);
-      });
-    }
-  }, [isProcessingOCR]);
-
-  const generatePrismaticBuyList = useCallback(async () => {
-    const totalMaterials = new Map<string, number>();
-    
-    PRISMATIC_ITEMS.forEach(itemId => {
-      const tree = calculateCraftingTree(itemId, quantity, bonuses, selectedIngredients, viewMode);
-      if (tree) {
-        const materials = aggregateRawMaterials(tree, new Set(), viewMode, bonuses, selectedIngredients);
-        
-        materials.forEach(material => {
-          const current = totalMaterials.get(material.item.id) || 0;
-          totalMaterials.set(material.item.id, current + material.quantity);
-        });
-      }
-    });
-    
-    const buyList = Array.from(totalMaterials.entries())
-      .map(([itemId, qty]) => ({
-        item: ITEMS[itemId],
-        quantity: qty
-      }))
-      .filter(m => m.item)
-      .sort((a, b) => b.item.tier - a.item.tier || a.item.name.localeCompare(b.item.name));
-    
-    // Copy to clipboard
-    const text = buyList.map(m => `${m.item.name}: ${Math.ceil(m.quantity)}`).join('\n');
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
-    } catch (err) {
-      console.error('Copy failed:', err);
-    }
-    
-    setPrismaticBuyList(buyList);
-    setShowPrismaticList(true);
-  }, [quantity, bonuses, viewMode]);
-
-  const parseInventoryOCR = useCallback((ocrText: string) => {
-    const foundItems: Record<string, number> = {};
-    
-    // Only process lines that look like "Item Name: Number"
-    const lines = ocrText.split(/[\n\r]+/);
-    
-    for (const line of lines) {
-      const cleanLine = line.trim().toLowerCase();
-      const match = cleanLine.match(/^(.+?):\s*(\d+)$/);
-      
-      if (match) {
-        const itemName = match[1].trim();
-        const quantity = parseInt(match[2]);
-        
-        // Only accept realistic quantities (10-10000)
-        if (quantity >= 10 && quantity <= 10000) {
-          for (const [key, itemId] of Object.entries(ITEM_MAPPINGS)) {
-            if (itemName === key || itemName.includes(key)) {
-              foundItems[itemId] = quantity;
-              break;
-            }
+  const handleImportData = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target?.result as string);
+            if (data.customPresets) setCustomPresets(data.customPresets);
+            if (data.inventory) setInventory(data.inventory);
+            if (data.bonuses) setBonuses(data.bonuses);
+            if (data.collapsedNodes) setCollapsedNodes(new Set(data.collapsedNodes));
+            alert('Data imported successfully!');
+          } catch (error) {
+            alert('Failed to import data. The file may be corrupted.');
           }
-        }
+        };
+        reader.readAsText(file);
       }
-    }
-    
-    return foundItems;
-  }, []);
+    };
+    input.click();
+  };
 
-  const captureAndProcessScreenshot = useCallback(async () => {
-    try {
-      setIsProcessingOCR(true);
-      
-      // Check if we're in Electron
-      const isElectron = typeof window !== 'undefined' && window.electronAPI;
-      let stream;
-      
-      if (isElectron) {
-        // Use Electron's desktopCapturer
-        const sources = await window.electronAPI.getDesktopSources();
-        console.log('Available sources:', sources.map(s => s.name));
-        
-        const primaryScreen = sources.find(source => 
-          source.name.toLowerCase().includes('screen') ||
-          source.name.toLowerCase().includes('entire') ||
-          source.id.includes('screen')
-        ) || sources[0]; // Fallback to first source
-        
-        if (primaryScreen) {
-          console.log('Using source:', primaryScreen.name);
-          stream = await navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: {
-              chromeMediaSource: 'desktop',
-              chromeMediaSourceId: primaryScreen.id,
-              width: { ideal: 1920, max: 1920 },
-              height: { ideal: 1080, max: 1080 }
-            }
-          });
-        } else {
-          throw new Error(`No screen source found. Available: ${sources.map(s => s.name).join(', ')}`);
-        }
-      } else {
-        // Use web API
-        stream = await navigator.mediaDevices.getDisplayMedia({ 
-          video: { 
-            width: { ideal: 1920, max: 1920 }, 
-            height: { ideal: 1080, max: 1080 },
-            frameRate: { ideal: 1, max: 5 }
-          },
-          audio: false
-        });
-      }
-      
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      video.muted = true;
-      
-      await new Promise((resolve, reject) => {
-        video.onloadedmetadata = () => video.play().then(resolve).catch(reject);
-        video.onerror = reject;
-        setTimeout(reject, 5000);
-      });
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      
-      ctx.drawImage(video, 0, 0);
-      stream.getTracks().forEach(track => track.stop());
-      video.srcObject = null;
-      
-      // Focus on inventory area - crop to center portion where inventory typically is
-      const cropX = Math.floor(canvas.width * 0.2);
-      const cropY = Math.floor(canvas.height * 0.3);
-      const cropWidth = Math.floor(canvas.width * 0.6);
-      const cropHeight = Math.floor(canvas.height * 0.4);
-      
-      const croppedCanvas = document.createElement('canvas');
-      croppedCanvas.width = cropWidth;
-      croppedCanvas.height = cropHeight;
-      const croppedCtx = croppedCanvas.getContext('2d');
-      
-      croppedCtx.drawImage(canvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-      
-      // Enhanced image preprocessing for better OCR
-      const imageData = croppedCtx.getImageData(0, 0, cropWidth, cropHeight);
-      const data = imageData.data;
-      
-      // Apply multiple preprocessing techniques
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i], g = data[i + 1], b = data[i + 2];
-        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        
-        // Adaptive thresholding for better text recognition
-        const threshold = gray > 140 ? 255 : 0;
-        data[i] = data[i + 1] = data[i + 2] = threshold;
-        data[i + 3] = 255; // Full opacity
-      }
-      croppedCtx.putImageData(imageData, 0, 0);
-      
-      // Scale up for better OCR accuracy
-      const scaledCanvas = document.createElement('canvas');
-      scaledCanvas.width = cropWidth * 2;
-      scaledCanvas.height = cropHeight * 2;
-      const scaledCtx = scaledCanvas.getContext('2d');
-      scaledCtx.imageSmoothingEnabled = false;
-      scaledCtx.drawImage(croppedCanvas, 0, 0, cropWidth * 2, cropHeight * 2);
-      
-      const { data: { text } } = await Tesseract.recognize(scaledCanvas.toDataURL('image/png'), 'eng', {
-        tessedit_pageseg_mode: '6',
-        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz :.,()-',
-        tessedit_ocr_engine_mode: '2',
-        preserve_interword_spaces: '1'
-      });
-      
-      const filteredText = text.split('\n')
-        .filter(line => {
-          const l = line.toLowerCase().trim();
-          return l && 
-            /\d/.test(l) && 
-            l.length > 3 && l.length < 50 && 
-            !l.includes('fps') && 
-            !l.includes('cpu') && 
-            !l.includes('gpu') && 
-            !l.includes('ram') && 
-            !l.includes('inventory') && 
-            !l.includes('decorate') && 
-            !l.includes('smelting') && 
-            !l.includes('leatherworking') && 
-            !l.includes('fishing');
-        })
-        .join('\n');
-      
-      // Extract only significant inventory quantities
-      const quantities = (text.match(/\b\d{2,5}\b/g) || [])
-        .map(n => parseInt(n))
-        .filter(n => n >= 50 && n <= 10000) // Realistic inventory range
-        .filter(n => ![60, 100, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000].includes(n))
-        .filter((n, i, arr) => arr.indexOf(n) === i)
-        .sort((a, b) => b - a)
-        .slice(0, 8); // Limit to 8 most likely items
-      
-      // Enhanced OCR processing with multiple strategies
-      const parsedItems = parseInventoryOCR(text);
-      const parsedCount = Object.keys(parsedItems).length;
-      
-      // Extract more numbers and try to match with common items
-      const allNumbers = (text.match(/\b\d{1,5}\b/g) || [])
-        .map(n => parseInt(n))
-        .filter(n => n >= 1 && n <= 20000)
-        .filter((n, i, arr) => arr.indexOf(n) === i)
-        .sort((a, b) => b - a)
-        .slice(0, 30);
-      
-
-      
-      // Combine parsed items with quantity-based suggestions
-      const combinedItems = new Map();
-      
-      // Add parsed items first
-      Object.entries(parsedItems).forEach(([id, qty]) => {
-        const item = Object.values(ITEMS).find(item => item.id === id);
-        if (item) combinedItems.set(item.name, qty);
-      });
-      
-      // Add quantity-based suggestions for remaining numbers
-      const usedQuantities = new Set(Object.values(parsedItems));
-      const unusedNumbers = allNumbers.filter(n => !usedQuantities.has(n));
-      
-      unusedNumbers.slice(0, Math.min(35 - combinedItems.size, 25)).forEach((qty, i) => {
-        const itemName = COMMON_ITEMS[combinedItems.size + i];
-        if (itemName && !combinedItems.has(itemName)) {
-          combinedItems.set(itemName, qty);
-        }
-      });
-      
-      const totalFound = combinedItems.size;
-      let suggestions;
-      if (totalFound > 0) {
-        suggestions = `Found ${totalFound} potential items. Edit the names below:\n\n` + 
-          Array.from(combinedItems.entries()).map(([name, qty]) => `${name}: ${qty}`).join('\n') +
-          '\n\n(Tip: Change item names to match your actual inventory)';
-      } else {
-        // Fallback: use quantities even if no items matched
-        const fallbackItems = allNumbers.slice(0, 10).map((qty, i) => 
-          `${COMMON_ITEMS[i] || `Item ${i + 1}`}: ${qty}`
-        ).join('\n');
-        suggestions = allNumbers.length > 0 
-          ? `Found ${allNumbers.length} potential items. Edit the names below:\n\n${fallbackItems}\n\n(Tip: Change item names to match your actual inventory)`
-          : `detected 0 out of 15 maybe\n\nManually enter your items like:\nIron Ore: 1800\nOrichalcum Ore: 635\nStarmetal Ore: 86\nSteel Ingot: 72`;
-      }
-      
-      setOCREditText(suggestions);
-      setShowOCREdit(true);
-    } catch (error) {
-      console.error('OCR Error:', error);
-      const isElectronCheck = typeof window !== 'undefined' && window.electronAPI;
-      const errorMsg = isElectronCheck 
-        ? 'Electron OCR failed. Try manual entry instead.'
-        : 'Screen capture failed. Try manual entry instead.';
-      setOCREditText(errorMsg + '\n\nManually enter your items like:\nIron Ore: 1800\nOrichalcum Ore: 635\nStarmetal Ore: 86\nSteel Ingot: 72');
-      setShowOCREdit(true);
-    } finally {
-      setIsProcessingOCR(false);
-    }
-  }, []);
+  const handleClearInventory = () => {
+    setInventory({});
+    localStorage.removeItem('inventory');
+  };
 
   return (
+    <React.Fragment>
+      <div className="bg-gray-900 text-gray-300 min-h-screen font-sans app-gradient-bg">
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-6xl">
+          <header className="mb-6 text-center">
+            <img src="logo.png" alt="New World Crafting Calculator" className="mx-auto mb-4 h-20 w-auto" />
+            <h1 className="text-3xl font-bold text-yellow-300 mb-2">New World Crafting Calculator</h1>
+            <p className="text-gray-400 text-sm">Plan your crafting efficiently with advanced material calculations</p>
+          </header>
 
-    <div className="bg-gray-900 text-gray-300 min-h-screen font-sans" style={{background: 'radial-gradient(ellipse at top, #232526 0%, #414345 100%)'}}>
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-5xl">
-        <header className="mb-4 text-center">
-          <img src="logo.png" alt="Logo" className="mx-auto mb-2 h-16 w-auto" />
-          <h1 className="text-s font-bold tracking-wider" style={{fontFamily: 'UnifrakturCook, cursive', color: '#e2b857', textShadow: '2px 2px 8px #000, 0 0 8px #e2b85799', letterSpacing: 2, fontSize: '14px'}}>New World Crafting Calculator</h1>
-          <p className="text-xs text-gray-200 mt-1">A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
-        </header>
-
-        <div className="bg-gray-800/30 backdrop-blur-sm p-2 sm:p-4 rounded-xl border border-yellow-900/40 mb-6 shadow-lg w-full max-w-full">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 w-full">
-            <h3 className="text-lg font-semibold text-yellow-300 flex items-center gap-2">
-              ⚙️ Settings
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setShowSettings(true)}
-                className="px-3 py-1.5 rounded text-sm bg-gray-700 text-white hover:bg-gray-600 transition font-medium"
-              >
-                ⚙️ Settings
-              </button>
-              <button
-                onClick={() => setShowAbout(true)}
-                className="px-3 py-1.5 rounded text-sm bg-blue-700 text-white hover:bg-blue-600 transition font-medium"
-              >
-                ℹ️ About
-              </button>
-              {typeof window !== 'undefined' && window.electronAPI && (
+          {/* Quick Controls Bar */}
+          <div className="mb-6 bg-gray-800/50 p-4 rounded-xl border border-yellow-900/30 backdrop-blur-sm">
+            <div className="flex flex-wrap gap-3 items-center justify-center">
+              <div className="flex items-center gap-2 bg-gray-700/50 rounded-lg px-3 py-2">
+                <span className="text-sm text-gray-300 font-medium">View:</span>
                 <button
-                  onClick={() => window.electronAPI.exitApp()}
-                  className="px-3 py-1.5 rounded text-sm bg-red-700 text-white hover:bg-red-600 transition font-medium"
+                  onClick={() => handleViewModeChange(viewMode === 'net' ? 'gross' : 'net')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                    viewMode === 'net' 
+                      ? 'bg-green-600 text-white shadow-lg' 
+                      : 'bg-blue-600 text-white shadow-lg'
+                  }`}
+                  title={`Switch to ${viewMode === 'net' ? 'Gross' : 'Net'} mode`}
                 >
-                  ❌ Exit
+                  {viewMode === 'net' ? '📊 Net Mode' : '📈 Gross Mode'}
                 </button>
-              )}
+              </div>
+              
+              <div className="flex items-center gap-2 bg-gray-700/50 rounded-lg px-3 py-2">
+                <span className="text-sm text-gray-300 font-medium">Summary:</span>
+                <button
+                  onClick={() => handleSummaryModeChange(summaryMode === 'net' ? 'xp' : 'net')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                    summaryMode === 'net' 
+                      ? 'bg-purple-600 text-white shadow-lg' 
+                      : 'bg-orange-600 text-white shadow-lg'
+                  }`}
+                  title={`Switch to ${summaryMode === 'net' ? 'XP' : 'Materials'} summary`}
+                >
+                  {summaryMode === 'net' ? '📦 Materials' : '⭐ XP Mode'}
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ${
+                  showAdvanced 
+                    ? 'bg-yellow-600 text-white shadow-lg' 
+                    : 'bg-gray-600 text-gray-200 hover:bg-gray-500'
+                }`}
+                title="Toggle advanced options"
+              >
+                {showAdvanced ? '🔧 Hide Advanced' : '⚙️ Advanced Options'}
+              </button>
+            </div>
+          </div>
+          {/* Presets Section */}
+          <div className="mb-6 bg-gradient-to-r from-gray-800 to-gray-700 p-4 rounded-xl border border-yellow-900/40 shadow-lg">
+            <h3 className="text-lg font-semibold text-yellow-300 mb-3 flex items-center">
+              <span className="mr-2">📋</span>
+              Crafting Presets
+            </h3>
+            <div className="flex gap-2 flex-wrap items-center">
+              <select
+                title="Select a preset"
+                value={selectedPreset}
+                onChange={(e) => {
+                  handlePresetSelect(e.target.value);
+                }}
+                className="flex-1 min-w-64 bg-gray-700 border border-yellow-900/40 rounded-lg py-2 px-3 text-yellow-100 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+              >
+                <option value="">🎯 Select a preset...</option>
+                {PRESETS.map((preset: any) => {
+                  const displayName = preset.items.length === 1
+                    ? `${preset.name} (${preset.items[0].qty})`
+                    : `${preset.name} (${preset.items.length} items)`;
+                  return <option key={preset.name} value={preset.name}>{displayName}</option>;
+                })}
+                {customPresets.length > 0 && <option disabled>--- Custom Presets ---</option>}
+                {customPresets.map((preset: any) => {
+                  const displayName = preset.items.length === 1
+                    ? `${preset.name} (${preset.items[0].qty})`
+                    : `${preset.name} (${preset.items.length} items)`;
+                  return <option key={preset.name} value={preset.name}>{displayName}</option>;
+                })}
+              </select>
               <button
                 onClick={() => {
-                  setShowAdvanced(!showAdvanced);
-                  localStorage.setItem('showAdvanced', JSON.stringify(!showAdvanced));
+                  const name = prompt('Enter preset name:');
+                  if (name !== null) {
+                    handlePresetCreate(name);
+                  }
                 }}
-                className="px-3 py-1.5 rounded text-sm bg-yellow-700 text-white hover:bg-yellow-600 transition font-medium"
+                className="px-3 py-2 bg-green-600 hover:bg-green-700 border border-green-500 rounded-lg text-sm text-white hover:shadow-lg transition-all duration-200 flex-shrink-0"
+                title="Create Preset"
               >
-                {showAdvanced ? 'Simple' : 'Advanced'}
+                ➕ Create
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedPreset && confirm(`Are you sure you want to delete the preset "${selectedPreset}"?`)) {
+                    handlePresetDelete(selectedPreset);
+                    setSelectedPreset('');
+                  }
+                }}
+                className="px-3 py-2 bg-red-600 hover:bg-red-700 border border-red-500 rounded-lg text-sm text-white hover:shadow-lg transition-all duration-200 flex-shrink-0"
+                title="Delete Preset"
+              >
+                🗑️ Delete
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full">
-            <div>
-              <label className="block text-xs text-yellow-300 mb-1 font-medium">Presets</label>
-              <div className="flex gap-1 flex-wrap items-center">
+
+          {/* Main Content */}
+          <div className="mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+              {/* Left Side: Item Selection */}
+              <div className="lg:col-span-3 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-yellow-900/40 shadow-lg">
+                <h3 className="text-lg font-semibold text-yellow-300 mb-4 flex items-center">
+                  <span className="mr-2">🎯</span>
+                  Item Selection
+                </h3>
+                <div className="relative mb-4">
+                  <input
+                    type="text"
+                    placeholder="🔍 Search for items to craft..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 text-white pr-10 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                      title="Clear search"
+                    >
+                      ❌
+                    </button>
+                  )}
+                </div>
                 <select
-                  value={selectedPreset}
+                  value={selectedItemId}
                   onChange={(e) => {
-                    const presetName = e.target.value;
-                    setSelectedPreset(presetName);
-                    if (presetName) {
-                      const allPresets = [...PRESETS, ...customPresets];
-                      const preset = allPresets.find(p => p.name === presetName);
-                      if (preset?.items) {
-                        if (preset.items.length === 1) {
-                          setSelectedItemId(preset.items[0].id);
-                          setQuantity(preset.items[0].qty);
-                          setMultiItems([]);
-                        } else {
-                          setMultiItems(preset.items);
-                          setSelectedItemId('');
-                          setQuantity(preset.items[0]?.qty || 10);
-                        }
-                        // Only restore collapsedNodes if present in the preset (custom presets)
-                        if (
-                          Object.prototype.hasOwnProperty.call(preset, 'collapsedNodes') &&
-                          Array.isArray(preset.collapsedNodes)
-                        ) {
-                          const nodeSet = new Set(preset.collapsedNodes);
-                          setCollapsedNodes(nodeSet);
-                          localStorage.setItem('collapsedNodes', JSON.stringify(preset.collapsedNodes));
-                        } else {
-                          setCollapsedNodes(new Set());
-                          localStorage.setItem('collapsedNodes', '[]');
-                        }
-                        localStorage.setItem('multiItems', JSON.stringify(preset.items.length > 1 ? preset.items : []));
-                      }
-                    }
+                    setSelectedItemId(e.target.value);
+                    setMultiItems([]); // Clear multi-items when a single item is selected
                   }}
-                  className="flex-1 min-w-0 bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+                  aria-label="Select item"
                 >
-                  <option value="">Select...</option>
-                  {PRESETS.map((preset: any) => {
-                    const displayName = preset.items.length === 1 
-                      ? `${preset.name} (${preset.items[0].qty})`
-                      : `${preset.name} (${preset.items.length} items)`;
-                    return <option key={preset.name} value={preset.name}>{displayName}</option>;
-                  })}
-                  {customPresets.length > 0 && <option disabled>--- Custom ---</option>}
-                  {customPresets.map((preset: any) => {
-                    const displayName = preset.items.length === 1 
-                      ? `${preset.name} (${preset.items[0].qty})`
-                      : `${preset.name} (${preset.items.length} items)`;
-                    return <option key={preset.name} value={preset.name}>{displayName}</option>;
-                  })}
+                  <option value="">📦 Select an item to craft...</option>
+                  {filteredCraftableItems.map((item: Item) => (
+                    <option key={item.id} value={item.id}>{item.name}</option>
+                  ))}
                 </select>
-                <button
-                  onClick={() => setShowCreatePreset(true)}
-                  className="px-2 py-1 bg-green-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-green-600 flex-shrink-0"
-                  title="Create Preset"
-                >
-                  +
-                </button>
-                <button
-                  onClick={() => {
-                    const currentPreset = `${ITEMS[selectedItemId]?.name} x${quantity}`;
-                    const matchingPreset = customPresets.find(p => 
-                      p.items[0]?.id === selectedItemId && p.items[0]?.qty === quantity
-                    );
-                    if (matchingPreset) {
-                      if (confirm(`Delete preset "${matchingPreset.name}"?`)) {
-                        const updatedPresets = customPresets.filter(p => p.name !== matchingPreset.name);
-                        setCustomPresets(updatedPresets);
-                        localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
-                      }
-                    } else {
-                      alert(`No preset found for current selection: ${currentPreset}`);
-                    }
-                  }}
-                  className="px-2 py-1 bg-red-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-red-600 flex-shrink-0"
-                  title="Delete Current Selection Preset"
-                >
-                  -
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-yellow-300 mb-1 font-medium">Search</label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search..."
-                className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-yellow-300 mb-1 font-medium">Item</label>
-              <select
-                value={selectedItemId}
-                onChange={(e) => {
-                  setSelectedItemId(e.target.value);
-                  setMultiItems([]); // Clear multi-items to show single item
-                  setSelectedPreset(''); // Clear preset when manually selecting item
-                }}
-                className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
-              >
-                {filteredItems.map(item => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} (T{item.tier})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-yellow-300 mb-1 font-medium">Amount</label>
-              <div className="space-y-2">
-                <input
-                  type="number"
-                  value={quantity}
-                  min="1"
-                  onChange={(e) => {
-                    const newQty = Math.max(1, parseInt(e.target.value) || 1);
-                    setQuantity(newQty);
-                    // Update multi-item quantities if in multi-item mode
-                    if (multiItems.length > 0) {
-                      const updatedMultiItems = multiItems.map(item => ({ ...item, qty: newQty }));
-                      setMultiItems(updatedMultiItems);
-                      localStorage.setItem('multiItems', JSON.stringify(updatedMultiItems));
-                    }
-                  }}
-                  className="w-full bg-gray-700 border border-yellow-900/40 rounded py-1 px-2 text-yellow-100 text-sm"
-                />
-                <div className="grid grid-cols-2 gap-1">
-                  <button
-                    onClick={() => {
-                      const newQty = quantity + 10;
-                      setQuantity(newQty);
-                      if (multiItems.length > 0) {
-                        const updatedMultiItems = multiItems.map(item => ({ ...item, qty: newQty }));
-                        setMultiItems(updatedMultiItems);
-                        localStorage.setItem('multiItems', JSON.stringify(updatedMultiItems));
-                      }
-                    }}
-                    className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
-                    title="+10"
-                  >
-                    +10
-                  </button>
-                  <button
-                    onClick={() => {
-                      const newQty = quantity + 100;
-                      setQuantity(newQty);
-                      if (multiItems.length > 0) {
-                        const updatedMultiItems = multiItems.map(item => ({ ...item, qty: newQty }));
-                        setMultiItems(updatedMultiItems);
-                        localStorage.setItem('multiItems', JSON.stringify(updatedMultiItems));
-                      }
-                    }}
-                    className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
-                    title="+100"
-                  >
-                    +100
-                  </button>
-                  <button
-                    onClick={() => {
-                      const newQty = quantity + 1000;
-                      setQuantity(newQty);
-                      if (multiItems.length > 0) {
-                        const updatedMultiItems = multiItems.map(item => ({ ...item, qty: newQty }));
-                        setMultiItems(updatedMultiItems);
-                        localStorage.setItem('multiItems', JSON.stringify(updatedMultiItems));
-                      }
-                    }}
-                    className="px-2 py-1 bg-yellow-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-yellow-600"
-                    title="+1000"
-                  >
-                    +1000
-                  </button>
-                  <button
-                    onClick={() => {
-                      setQuantity(1);
-                      if (multiItems.length > 0) {
-                        const updatedMultiItems = multiItems.map(item => ({ ...item, qty: 1 }));
-                        setMultiItems(updatedMultiItems);
-                        localStorage.setItem('multiItems', JSON.stringify(updatedMultiItems));
-                      }
-                    }}
-                    className="px-2 py-1 bg-red-700 border border-yellow-900/40 rounded text-xs text-yellow-100 hover:bg-red-600"
-                    title="Reset to 1"
-                  >
-                    Reset
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {showAdvanced && (
-          <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 mb-6">
-            <h3 className="text-lg font-semibold text-white mb-3">Yield Bonuses</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {Object.entries(bonuses).map(([category, config]) => (
-                <div key={category} className="bg-gray-900/50 p-3 rounded-md border border-gray-700/50">
-                    <div className="font-bold text-yellow-400 text-center mb-2 text-sm">{category}</div>
-                    <div className="space-y-2">
-                         <div>
-                            <label className="block text-xs font-medium text-gray-400">Skill</label>
-                            <input
-                              type="number"
-                              value={config.skillLevel}
-                              onChange={(e) => handleBonusChange(category, 'skillLevel', e.target.value)}
-                              className="w-full bg-gray-700 border-gray-600 text-xs rounded p-1"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400">Gear (%)</label>
-                            <input 
-                              type="number" 
-                              value={Math.round(config.gearBonus * 100)} 
-                              onChange={(e) => handleBonusChange(category, 'gearBonus', e.target.value)} 
-                              className="w-full bg-gray-700 border-gray-600 text-xs rounded p-1"
-                            />
-                        </div>
-                        <div className="flex items-center justify-between pt-1">
-                            <label className="text-xs font-medium text-gray-400">Fort</label>
-                            <input 
-                              type="checkbox" 
-                              checked={config.fortActive} 
-                              onChange={(e) => handleBonusChange(category, 'fortActive', e.target.checked)} 
-                              className="h-4 w-4 bg-gray-700 border-gray-600 rounded text-yellow-500 focus:ring-yellow-500"
-                            />
-                        </div>
-                    </div>
-                </div>
-                ))}
-            </div>
-            
-
-          </div>
-        )}
-
-        {craftingData && (
-          <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-white">Crafting Tree</h3>
-              <div className="flex gap-2">
-                <button onClick={handleExpandAll} className="px-3 py-1 rounded bg-gray-700 text-gray-200 hover:bg-gray-600 border border-gray-600 text-xs">Expand All</button>
-                <button onClick={handleCollapseAll} className="px-3 py-1 rounded bg-gray-700 text-gray-200 hover:bg-gray-600 border border-gray-600 text-xs">Collapse All</button>
-              </div>
-            </div>
-            <CraftingNode 
-              node={craftingData} 
-              getIconUrl={getIconUrl} 
-              isRoot={true} 
-              collapsedNodes={collapsedNodes} 
-              onToggle={handleToggleNode}
-              selectedIngredients={selectedIngredients}
-              onIngredientChange={(itemId, ingredient) => {
-                const updated = { ...selectedIngredients, [itemId]: ingredient };
-                setSelectedIngredients(updated);
-                localStorage.setItem('selectedIngredients', JSON.stringify(updated));
-              }}
-              viewMode={viewMode}
-              summaryData={summaryData.materials}
-              onNodeContextMenu={(node: any, event: React.MouseEvent) => {
-                event.preventDefault();
-                // Show a custom context menu at mouse position
-                const menu = document.createElement('div');
-                menu.style.position = 'fixed';
-                menu.style.left = `${event.clientX}px`;
-                menu.style.top = `${event.clientY}px`;
-                menu.style.background = '#222';
-                menu.style.color = '#fff';
-                menu.style.border = '1px solid #444';
-                menu.style.borderRadius = '6px';
-                menu.style.zIndex = '9999';
-                menu.style.boxShadow = '0 2px 12px #0008';
-                menu.style.padding = '0.5em 0';
-                menu.style.minWidth = '160px';
-                menu.style.fontSize = '14px';
-                menu.innerHTML = `
-                  <div style='padding:8px 16px;cursor:pointer;'>Expand All</div>
-                  <div style='padding:8px 16px;cursor:pointer;'>Collapse All</div>
-                  <div style='padding:8px 16px;cursor:pointer;'>Remove Resource</div>
-                `;
-                const [expand, collapse, remove] = Array.from(menu.children);
-                expand.addEventListener('click', () => {
-                  handleExpandAll(node);
-                  document.body.removeChild(menu);
-                });
-                collapse.addEventListener('click', () => {
-                  handleCollapseAll(node);
-                  document.body.removeChild(menu);
-                });
-                remove.addEventListener('click', () => {
-                  handleRemoveResource(node.id);
-                  document.body.removeChild(menu);
-                });
-                document.body.appendChild(menu);
-                const removeMenu = () => {
-                  if (document.body.contains(menu)) document.body.removeChild(menu);
-                  window.removeEventListener('click', removeMenu);
-                  window.removeEventListener('contextmenu', removeMenu);
-                  window.removeEventListener('scroll', removeMenu);
-                };
-                setTimeout(() => {
-                  window.addEventListener('click', removeMenu);
-                  window.addEventListener('contextmenu', removeMenu);
-                  window.addEventListener('scroll', removeMenu);
-                }, 10);
-              }}
-            />
-          </div>
-        )}
-        {(summaryMode === 'net' ? netRequirementsWithInventory : summaryData.materials).length > 0 && (
-          <div>
-            <div className="bg-gray-800/30 backdrop-blur-sm p-3 rounded-xl border border-yellow-900/40 mb-6 shadow-lg">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-base font-semibold text-yellow-300 flex items-center gap-2">
-                    📊 Summary
-                  </h3>
-                  <div className="flex rounded-lg bg-gray-700 border border-yellow-900/40 overflow-hidden">
-                    <button
-                      onClick={() => setSummaryMode('net')}
-                      className={`px-3 py-1 text-sm font-medium transition ${
-                        summaryMode === 'net'
-                          ? 'bg-yellow-600 text-white'
-                          : 'bg-transparent text-yellow-100 hover:bg-gray-600'
-                      }`}
-                    >
-                      Buy Order
-                    </button>
-                    <button
-                      onClick={() => setSummaryMode('xp')}
-                      className={`px-3 py-1 text-sm font-medium transition hidden ${
-                        summaryMode === 'xp'
-                          ? 'bg-yellow-600 text-white'
-                          : 'bg-transparent text-yellow-100 hover:bg-gray-600'
-                      }`}
-                    >
-                      XP Summary
-                    </button>
-                  </div>
-                </div>
-                
-                {summaryMode === 'net' && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-yellow-300 font-medium">Mode:</span>
-                    <div className="flex rounded bg-gray-700 border border-yellow-900/40 overflow-hidden">
-                      <button
-                        onClick={() => setViewMode('net')}
-                        className={`py-1 px-3 text-xs font-medium transition ${
-                          viewMode === 'net'
-                            ? 'bg-yellow-600 text-white'
-                            : 'bg-transparent text-yellow-100 hover:bg-gray-600'
-                        }`}
-                        title="Without yield bonuses"
-                      >
-                        Net
-                      </button>
-                      <button
-                        onClick={() => setViewMode('gross')}
-                        className={`py-1 px-3 text-xs font-medium transition ${
-                          viewMode === 'gross'
-                            ? 'bg-yellow-600 text-white'
-                            : 'bg-transparent text-yellow-100 hover:bg-gray-600'
-                        }`}
-                        title="With yield bonuses"
-                      >
-                        Gross
-                      </button>
-                    </div>
+                {multiItems.length > 0 && (
+                  <div className="mt-4 p-4 bg-gray-700/50 rounded-lg border border-yellow-900/30">
+                    <h4 className="text-md font-semibold text-yellow-400 mb-2 flex items-center">
+                      <span className="mr-2">📋</span>
+                      Selected Items ({multiItems.length})
+                    </h4>
+                    <ul className="space-y-2 max-h-48 overflow-y-auto">
+                      {multiItems.map(item => (
+                        <li key={item.id} className="text-sm text-gray-300 bg-gray-600/50 p-2 rounded flex items-center">
+                          <span className="mr-2">📦</span>
+                          {item.qty}x {ITEMS[item.id]?.name}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
-              
-              {summaryMode === 'net' && (
-                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-yellow-900/40">
-                  <button
-                    onClick={async () => {
-                      const materials = netRequirementsWithInventory.filter(m => m.quantity > 0);
-                      const text = materials.map(m => `${m.item.name}: ${Math.ceil(m.quantity)}`).join('\n');
-                      try {
-                        if (navigator.clipboard && navigator.clipboard.writeText) {
-                          await navigator.clipboard.writeText(text);
-                        } else {
-                          // Fallback for older browsers
-                          const textArea = document.createElement('textarea');
-                          textArea.value = text;
-                          document.body.appendChild(textArea);
-                          textArea.select();
-                          document.execCommand('copy');
-                          document.body.removeChild(textArea);
-                        }
-                      } catch (err) {
-                        console.error('Copy failed:', err);
-                        alert('Copy failed. Text:\n\n' + text);
-                      }
-                    }}
-                    className="px-2 py-1 rounded text-xs bg-blue-600 text-white hover:bg-blue-700 transition font-medium"
-                  >
-                    📋 Copy
-                  </button>
-                  <button
-                    onClick={generatePrismaticBuyList}
-                    className="px-2 py-1 rounded text-xs bg-purple-600 text-white hover:bg-purple-700 transition font-medium"
-                  >
-                    ✨ Prismatics
-                  </button>
-                  {manualMode && (
-                    <button
-                      onClick={() => {
-                        setShowManualEntry(true);
-                      }}
-                      className="px-2 py-1 rounded text-xs bg-green-600 text-white hover:bg-green-700 transition font-medium"
-                    >
-                      📝 Import
-                    </button>
-                  )}
-                  {(window.location.hostname === 'localhost' || window.location.protocol === 'https:' || window.location.protocol === 'file:' || typeof window !== 'undefined' && window.electronAPI) && (
-                    <button
-                      onClick={captureAndProcessScreenshot}
-                      disabled={isProcessingOCR}
-                      className={`px-2 py-1 rounded text-xs transition font-medium ${
-                        isProcessingOCR 
-                          ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                          : 'bg-orange-600 text-white hover:bg-orange-700'
-                      }`}
-                      title="Screenshot OCR (HTTPS/localhost only)"
-                    >
-                      {isProcessingOCR ? '⏳' : '📷'}
-                    </button>
-                  )}
-                  {manualMode && (
-                    <button
-                      onClick={() => setShowManualEntry(true)}
-                      className="px-2 py-1 rounded text-xs bg-yellow-600 text-white hover:bg-yellow-700 transition font-medium"
-                      title="Manual Entry"
-                    >
-                      ✏️ Manual
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      const items = Object.entries(inventory).map(([id, qty]) => {
-                        const item = ITEMS[id];
-                        return `${item?.name || id}: ${qty}`;
-                      }).join('\n');
-                      alert(items || 'Inventory is empty');
-                    }}
-                    className="px-2 py-1 rounded text-xs bg-gray-600 text-white hover:bg-gray-700 transition font-medium"
-                  >
-                    👁️ View
-                  </button>
 
-                  <button
-                    onClick={() => {
-                      if (confirm('Clear all inventory?')) {
-                        setInventory({});
-                        localStorage.setItem('inventory', JSON.stringify({}));
-                      }
-                    }}
-                    className="px-2 py-1 rounded text-xs bg-red-600 text-white hover:bg-red-700 transition font-medium"
+              {/* Right Side: Quantity and Controls */}
+              <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-yellow-900/40 shadow-lg">
+                <h3 className="text-lg font-semibold text-yellow-300 mb-4 flex items-center">
+                  <span className="mr-2">📊</span>
+                  Controls
+                </h3>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Quantity</label>
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 text-white text-center text-lg font-bold focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+                    aria-label="Quantity"
+                    min="1"
+                    max="10000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <button 
+                    onClick={() => setShowSettings(true)} 
+                    className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200"
                   >
-                    🗑️ Clear
+                    ⚙️ Settings
+                  </button>
+                  <button 
+                    onClick={() => setShowAbout(true)} 
+                    className="w-full px-4 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200"
+                  >
+                    ℹ️ About
                   </button>
                 </div>
-              )}
-            </div>
-            
-            <SummaryList 
-              materials={summaryMode === 'net' ? netRequirementsWithInventory : summaryData.materials} 
-              getIconUrl={getIconUrl} 
-              title={summaryData.title}
-              inventory={inventory}
-              onInventoryChange={handleInventoryChange}
-              showInventory={summaryMode === 'net'}
-              selectedIngredients={selectedIngredients}
-              onIngredientChange={(itemId, ingredient) => {
-                const updated = { ...selectedIngredients, [itemId]: ingredient };
-                setSelectedIngredients(updated);
-                localStorage.setItem('selectedIngredients', JSON.stringify(updated));
-              }}
-            />
-          </div>
-        )}
-
-        {showPrismaticList && (
-          <div>
-            <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 mb-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-white">All Prismatics Buy List</h3>
-                <button
-                  onClick={() => setShowPrismaticList(false)}
-                  className="px-3 py-1 rounded text-sm bg-gray-700 text-gray-300 hover:bg-gray-600 transition"
-                >
-                  Close
-                </button>
               </div>
             </div>
-            <SummaryList 
-              materials={prismaticBuyList} 
-              getIconUrl={getIconUrl} 
-              title="Combined Materials for All Prismatics"
-              inventory={{}}
-              onInventoryChange={() => {}}
-              showInventory={false}
-            />
-          </div>
-        )}
 
-        {showManualEntry && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-white mb-4">Manual Entry</h3>
-              <p className="text-gray-300 text-sm mb-4">
-                Enter items one per line:<br/>
-                Format: "Item Name: Quantity"<br/>
-                Example: Iron Ore: 1800
-              </p>
-              <textarea
-                value={manualEntryText}
-                onChange={(e) => setManualEntryText(e.target.value)}
-                placeholder="Iron Ore: 1800\nCharcoal: 41\nThick Hide: 635"
-                className="w-full h-32 bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-              />
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => {
-                    if (manualEntryText.trim()) {
-                      const parsedItems = parseInventoryOCR(manualEntryText);
-                      if (Object.keys(parsedItems).length > 0) {
-                        const newInventory = { ...inventory, ...parsedItems };
-                        setInventory(newInventory);
-                        localStorage.setItem('inventory', JSON.stringify(newInventory));
-                        const itemList = Object.entries(parsedItems).map(([id, qty]) => {
-                          const item = ITEMS[id];
-                          return `${item?.name || id}: ${qty}`;
-                        }).join('\n');
-                        alert(`Added ${Object.keys(parsedItems).length} items:\n\n${itemList}`);
+            {showAdvanced && (
+              <div className="mt-6 bg-gradient-to-r from-gray-800 to-gray-700 p-6 rounded-xl border border-yellow-900/40 shadow-lg">
+                <h3 className="text-lg font-semibold text-yellow-400 mb-4 flex items-center">
+                  <span className="mr-2">🔧</span>
+                  Advanced Configuration
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center">
+                      <span className="mr-2">👁️</span>
+                      View Mode
+                    </label>
+                    <select 
+                      value={viewMode} 
+                      onChange={(e) => handleViewModeChange(e.target.value as ViewMode)} 
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-yellow-500 transition-all" 
+                      aria-label="View mode"
+                    >
+                      <option value="net">📊 Net (Consider Inventory)</option>
+                      <option value="gross">📈 Gross (Total Required)</option>
+                    </select>
+                  </div>
+                  <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center">
+                      <span className="mr-2">📋</span>
+                      Summary Mode
+                    </label>
+                    <select 
+                      value={summaryMode} 
+                      onChange={(e) => handleSummaryModeChange(e.target.value as SummaryMode)} 
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-yellow-500 transition-all" 
+                      aria-label="Summary mode"
+                    >
+                      <option value="net">📦 Material Summary</option>
+                      <option value="xp">⭐ Experience Summary</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Inventory Tools */}
+          <div className="mb-6 bg-gradient-to-r from-blue-900/20 to-purple-900/20 p-6 rounded-xl border border-blue-500/30 shadow-lg">
+            <h3 className="text-lg font-semibold text-blue-300 mb-4 flex items-center">
+              <span className="mr-2">🎒</span>
+              Inventory Management
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button 
+                onClick={captureAndProcessScreenshot} 
+                className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center ${
+                  isProcessingOCR 
+                    ? 'bg-yellow-600 text-white cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg'
+                }`}
+                disabled={isProcessingOCR}
+              >
+                {isProcessingOCR ? (
+                  <>
+                    <span className="animate-spin mr-2">🔄</span>
+                    Scanning...
+                  </>
+                ) : (
+                  <>
+                    <span className="mr-2">📸</span>
+                    Scan Inventory (OCR)
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={() => setShowManualEntry(true)} 
+                className="px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium text-white hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+              >
+                <span className="mr-2">✏️</span>
+                Manual Entry
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-3 text-center">
+              Use OCR to automatically detect your inventory from screenshots, or enter items manually
+            </p>
+          </div>
+
+          {craftingData && (
+            <div className="mb-6">
+              <div className="bg-gradient-to-r from-green-900/20 to-emerald-900/20 p-6 rounded-xl border border-green-500/30 shadow-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-green-300 flex items-center">
+                    <span className="mr-2">🌳</span>
+                    Crafting Tree
+                  </h2>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleExpandAll(craftingData)} 
+                      className="px-3 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-xs font-medium text-white hover:shadow-lg transition-all duration-200"
+                    >
+                      📖 Expand All
+                    </button>
+                    <button 
+                      onClick={() => handleCollapseAll(craftingData)} 
+                      className="px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-xs font-medium text-white hover:shadow-lg transition-all duration-200"
+                    >
+                      📕 Collapse All
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-gray-800/50 p-4 rounded-lg">
+                  <CraftingNode
+                    node={craftingData}
+                    collapsedNodes={collapsedNodes}
+                    onToggle={handleToggleNode}
+                    getIconUrl={getIconUrl}
+                    onNodeContextMenu={handleContextMenu}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {summaryData && (summaryData.materials || summaryData.xpGains) && (
+            <div className="mb-6">
+              <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 p-6 rounded-xl border border-purple-500/30 shadow-lg">
+                <h2 className="text-xl font-bold text-purple-300 mb-4 flex items-center">
+                  <span className="mr-2">📊</span>
+                  {summaryData.title || "Summary"}
+                </h2>
+                {summaryMode === 'xp' && summaryData.xpGains ? (
+                  <XPSummaryList xpGains={summaryData.xpGains} />
+                ) : summaryData.materials ? (
+                  <SummaryList
+                    materials={summaryData.materials}
+                    inventory={inventory}
+                    onInventoryChange={handleInventoryChange}
+                    getIconUrl={getIconUrl}
+                    title={summaryData.title || "Raw Materials"}
+                    showInventory={summaryMode === 'net'}
+                    selectedIngredients={selectedIngredients}
+                    onIngredientChange={(itemId, ingredient) => {
+                      setSelectedIngredients(prev => ({ ...prev, [itemId]: ingredient }));
+                    }}
+                  />
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    <p>No data available for this view.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {showSettings && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+                <h2 className="text-2xl font-bold text-yellow-300 mb-4 flex-shrink-0">Settings</h2>
+                <div className="space-y-6 overflow-y-auto pr-2">
+                  {/* Interface Options */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2">Interface Options</h3>
+                    <div className="flex items-center gap-4">
+                      {/* OCR and Manual Entry buttons moved to main UI */}
+                    </div>
+                  </div>
+
+                  {/* Data Management */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2">Data Management</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={handleExportData} className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-500">💾 Export Data</button>
+                      <button onClick={handleImportData} className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-500">📁 Import Data</button>
+                      <button onClick={() => {
+                        if (confirm('Are you sure you want to delete all custom presets?')) {
+                          setCustomPresets([]);
+                          localStorage.removeItem('customPresets');
+                        }
+                      }} className="px-3 py-1 bg-red-700 rounded text-sm hover:bg-red-600">🗑️ Delete Presets</button>
+                      <button onClick={() => {
+                        if (confirm('Are you sure you want to erase ALL data? This cannot be undone.')) {
+                          localStorage.clear();
+                          window.location.reload();
+                        }
+                      }} className="px-3 py-1 bg-red-800 rounded text-sm hover:bg-red-700">🗑️ Erase All Data</button>
+                    </div>
+                  </div>
+
+                  {/* Global Hotkeys */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2">Global Hotkeys</h3>
+                    <div className="text-sm text-gray-400">
+                      <p>Ctrl+Alt+I - Toggle Calculator</p>
+                      <p>Ctrl+Alt+O - Start OCR Detection</p>
+                    </div>
+                  </div>
+
+                  {/* Inventory View */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2">Current Inventory</h3>
+                    {Object.keys(inventory).length === 0 ? (
+                      <p className="text-gray-400 text-sm">Inventory is empty.</p>
+                    ) : (
+                      <ul className="max-h-48 overflow-y-auto bg-gray-700 p-2 rounded text-sm text-gray-300">
+                        {Object.entries(inventory).sort(([, qtyA], [, qtyB]) => qtyB - qtyA).map(([itemId, qty]) => (
+                          <li key={itemId} className="flex justify-between items-center py-0.5">
+                            <span>{ITEMS[itemId]?.name || itemId}: {qty}</span>
+                            <button
+                              onClick={() => handleInventoryChange(itemId, 0)}
+                              className="text-red-400 hover:text-red-300 text-xs ml-2"
+                              title="Remove item from inventory"
+                            >
+                              &times;
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <button onClick={handleClearInventory} className="mt-2 px-3 py-1 bg-red-700 rounded text-sm hover:bg-red-600 w-full">Clear Inventory</button>
+                  </div>
+
+                  {/* Bonus Settings */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2">Bonus Settings</h3>
+                    {Object.entries(bonuses).map(([category, config]) => (
+                      <div key={category} className="p-4 bg-gray-700 rounded mb-2">
+                        <h4 className="font-bold text-md text-white mb-2">{category}</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300">Skill Level</label>
+                            <input type="number" aria-label={`${category} skill level`} value={config.skillLevel} onChange={(e) => handleBonusChange(category, 'skillLevel', e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300">Gear Bonus (%)</label>
+                            <input type="number" aria-label={`${category} gear bonus`} value={config.gearBonus * 100} onChange={(e) => handleBonusChange(category, 'gearBonus', e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white" />
+                          </div>
+                          <div className="col-span-2 flex items-center">
+                            <input type="checkbox" aria-label={`${category} fort active`} checked={config.fortActive} onChange={(e) => handleBonusChange(category, 'fortActive', e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500" />
+                            <label className="ml-2 block text-sm text-gray-300">Fort Bonus Active</label>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={() => setShowSettings(false)} className="mt-6 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded flex-shrink-0">Close</button>
+              </div>
+            </div>
+          )}
+          {contextMenu && (
+            <ContextMenu
+              x={contextMenu.x}
+              y={contextMenu.y}
+              onClose={() => setContextMenu(null)}
+              onExpand={() => {
+                const node = findNodeById(craftingData, contextMenu.nodeId);
+                if (node) {
+                  handleExpandSubtree(node);
+                }
+                setContextMenu(null);
+              }}
+              onCollapse={() => {
+                const node = findNodeById(craftingData, contextMenu.nodeId);
+                if (node) {
+                  handleCollapseSubtree(node);
+                }
+                setContextMenu(null);
+              }}
+              onRemove={() => handleRemoveNode(contextMenu.nodeId)}
+            />
+          )}
+
+          {showAbout && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-2xl font-bold text-yellow-300 mb-4">About</h2>
+                <p className="text-gray-300">This New World Crafting Calculator is an open-source project designed to help players plan their crafting efficiently.</p>
+                <p className="text-gray-300 mt-2">Version: 0.9.7</p>
+                <button onClick={() => setShowAbout(false)} className="mt-6 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Close</button>
+              </div>
+            </div>
+          )}
+
+          {/* Manual Entry Modal */}
+          {showManualEntry && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+                <h2 className="text-2xl font-bold text-yellow-300 mb-4">📝 Manual Inventory Entry</h2>
+                <div className="flex-1 overflow-y-auto">
+                  <p className="text-gray-300 mb-4">
+                    Enter your inventory items using the format: <code className="bg-gray-700 px-1 rounded">Item Name: Quantity</code>
+                  </p>
+                  <div className="mb-4 p-3 bg-gray-700 rounded text-sm text-gray-300">
+                    <strong>Examples:</strong><br />
+                    Iron Ore: 1800<br />
+                    Orichalcum Ore: 635<br />
+                    Starmetal Ore: 86<br />
+                    Steel Ingot: 72<br />
+                    Thick Hide: 450
+                  </div>
+                  <textarea
+                    value={manualEntryText}
+                    onChange={(e) => setManualEntryText(e.target.value)}
+                    placeholder="Enter your items here... (one per line)"
+                    className="w-full h-64 bg-gray-700 border border-gray-600 rounded p-3 text-white font-mono text-sm resize-none"
+                  />
+                </div>
+                <div className="flex gap-2 mt-4 flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      // Parse manual entry
+                      const parsed = parseInventoryOCR(manualEntryText);
+                      if (Object.keys(parsed).length > 0) {
+                        setInventory(prev => {
+                          const updated = { ...prev, ...parsed };
+                          localStorage.setItem('inventory', JSON.stringify(updated));
+                          return updated;
+                        });
                         setShowManualEntry(false);
                         setManualEntryText('');
                       } else {
-                        alert('No valid items found. Use format:\nIron Ore: 1800\nCharcoal: 41');
+                        alert('No valid items found. Please check your format: "Item Name: Quantity"');
                       }
-                    }
-                  }}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                >
-                  Add Items
-                </button>
-                <button
-                  onClick={() => {
-                    setShowManualEntry(false);
-                    setManualEntryText('');
-                  }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-                >
-                  Cancel
-                </button>
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    ✅ Apply to Inventory
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowManualEntry(false);
+                      setManualEntryText('');
+                    }}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {showOCREdit && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-2xl w-full mx-4">
-              <h3 className="text-lg font-semibold text-white mb-4">OCR Text Editor</h3>
-              <p className="text-gray-300 text-sm mb-4">
-                <span className="text-red-300">Clear the text below and manually type your items:</span><br/>
-                <span className="text-yellow-300">Item Name: Quantity</span><br/>
-                <span className="text-green-300">Iron Ore: 1800<br/>Steel Ingot: 266<br/>Charcoal: 88</span>
-              </p>
-              <textarea
-                value={ocrEditText}
-                onChange={(e) => setOCREditText(e.target.value)}
-                className="w-full h-48 bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm font-mono"
-              />
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => {
-                    if (ocrEditText.trim()) {
-                      const parsedItems = parseInventoryOCR(ocrEditText);
-                      if (Object.keys(parsedItems).length > 0) {
-                        const newInventory = { ...inventory, ...parsedItems };
-                        setInventory(newInventory);
-                        localStorage.setItem('inventory', JSON.stringify(newInventory));
-                        const itemList = Object.entries(parsedItems).map(([id, qty]) => {
-                          const item = ITEMS[id];
-                          return `${item?.name || id}: ${qty}`;
-                        }).join('\n');
-                        alert(`Imported ${Object.keys(parsedItems).length} items from OCR:\n\n${itemList}`);
+          {/* OCR Edit Modal */}
+          {showOCREdit && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+                <h2 className="text-2xl font-bold text-yellow-300 mb-4">🔍 OCR Results</h2>
+                <div className="flex-1 overflow-y-auto">
+                  <p className="text-gray-300 mb-4">
+                    Review and edit the detected items. Format: <code className="bg-gray-700 px-1 rounded">Item Name: Quantity</code>
+                  </p>
+                  <textarea
+                    value={ocrEditText}
+                    onChange={(e) => setOCREditText(e.target.value)}
+                    className="w-full h-64 bg-gray-700 border border-gray-600 rounded p-3 text-white font-mono text-sm resize-none"
+                    placeholder="OCR results will appear here..."
+                  />
+                </div>
+                <div className="flex gap-2 mt-4 flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      // Parse OCR text
+                      const parsed = parseInventoryOCR(ocrEditText);
+                      if (Object.keys(parsed).length > 0) {
+                        setInventory(prev => {
+                          const updated = { ...prev, ...parsed };
+                          localStorage.setItem('inventory', JSON.stringify(updated));
+                          return updated;
+                        });
                         setShowOCREdit(false);
                         setOCREditText('');
                       } else {
-                        alert('No valid items found in OCR text.');
+                        alert('No valid items found. Please check your format: "Item Name: Quantity"');
                       }
-                    }
-                  }}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                >
-                  Process Items
-                </button>
-                <button
-                  onClick={() => {
-                    setShowOCREdit(false);
-                    setOCREditText('');
-                  }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-                >
-                  Cancel
-                </button>
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    ✅ Apply to Inventory
+                  </button>
+                  <button
+                    onClick={() => captureAndProcessScreenshot()}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    disabled={isProcessingOCR}
+                  >
+                    {isProcessingOCR ? '🔍 Scanning...' : '🔄 Scan Again'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowOCREdit(false);
+                      setOCREditText('');
+                    }}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {showSettings && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700 w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl mx-2 sm:mx-4 overflow-y-auto max-h-[90vh] shadow-2xl">
-              <h3 className="text-lg font-semibold text-white mb-4">Settings</h3>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-medium text-yellow-300 mb-2">Interface Options</h4>
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-sm text-gray-300">Show Manual Entry Button</span>
-                    <input
-                      type="checkbox"
-                      checked={manualMode}
-                      onChange={(e) => {
-                        setManualMode(e.target.checked);
-                        localStorage.setItem('manualMode', JSON.stringify(e.target.checked));
-                      }}
-                      className="h-4 w-4 bg-gray-700 border-gray-600 rounded text-yellow-500 focus:ring-yellow-500"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-yellow-300 mb-2">Data Management</h4>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          const data = JSON.stringify({ inventory, bonuses, selectedItemId, quantity, customPresets }, null, 2);
-                          const blob = new Blob([data], { type: 'application/json' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = 'crafting-data.json';
-                          a.click();
-                          URL.revokeObjectURL(url);
-                        }}
-                        className="px-3 py-1 rounded text-xs bg-blue-600 text-white hover:bg-blue-700 transition font-medium"
-                      >
-                        💾 Export Data
-                      </button>
-                      <button
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = '.json';
-                          input.onchange = (e) => {
-                            const file = (e.target as HTMLInputElement).files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (e) => {
-                                try {
-                                  const data = JSON.parse(e.target?.result as string);
-                                  if (data.inventory) setInventory(data.inventory);
-                                  if (data.bonuses) setBonuses(data.bonuses);
-                                  if (data.selectedItemId) setSelectedItemId(data.selectedItemId);
-                                  if (data.quantity) setQuantity(data.quantity);
-                                  if (data.customPresets) {
-                                    setCustomPresets(data.customPresets);
-                                    localStorage.setItem('customPresets', JSON.stringify(data.customPresets));
-                                  }
-                                  alert('Data imported successfully!');
-                                } catch { alert('Invalid file format'); }
-                              };
-                              reader.readAsText(file);
-                            }
-                          };
-                          input.click();
-                        }}
-                        className="px-3 py-1 rounded text-xs bg-green-600 text-white hover:bg-green-700 transition font-medium"
-                      >
-                        📁 Import Data
-                      </button>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          if (confirm('Delete all custom presets? This cannot be undone.')) {
-                            setCustomPresets([]);
-                            localStorage.setItem('customPresets', JSON.stringify([]));
-                            alert('Custom presets deleted.');
-                          }
-                        }}
-                        className="px-3 py-1 rounded text-xs bg-orange-600 text-white hover:bg-orange-700 transition font-medium"
-                      >
-                        🗑️ Delete Presets
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm('Erase ALL data including inventory, bonuses, and presets? This cannot be undone.')) {
-                            setInventory({});
-                            setBonuses(DEFAULT_BONUSES);
-                            setCustomPresets([]);
-                            setSelectedItemId(FINAL_ITEMS[0].id);
-                            setQuantity(10);
-                            localStorage.clear();
-                            alert('All data erased.');
-                          }
-                        }}
-                        className="px-3 py-1 rounded text-xs bg-red-600 text-white hover:bg-red-700 transition font-medium"
-                      >
-                        🗑️ Erase All Data
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-yellow-300 mb-2">Global Hotkeys</h4>
-                  <div className="text-sm text-gray-300 space-y-1">
-                    <div><kbd className="bg-gray-700 px-2 py-1 rounded text-xs">Ctrl+Alt+I</kbd> - Toggle Calculator</div>
-                    <div><kbd className="bg-gray-700 px-2 py-1 rounded text-xs">Ctrl+Alt+O</kbd> - Start OCR Detection</div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-yellow-300 mb-2">Version</h4>
-                  <div className="text-sm text-gray-300">v0.8.1</div>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-6">
-                <button
-                  onClick={() => setShowSettings(false)}
-                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-                >
-                  Close
-                </button>
-              </div>
+          {/* Footer */}
+          <footer className="text-center mt-12 py-8 bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-600/30">
+            <div className="mb-4">
+              <img alt="New World Crafting Calculator" className="mx-auto mb-3 h-16 w-auto opacity-80" src="logo.png" />
             </div>
-          </div>
-        )}
-        
-        {showAbout && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-white mb-4">About</h3>
-              <div className="space-y-4">
-                <div className="text-center">
-                  <img src="logo.png" alt="Logo" className="mx-auto mb-4 h-16 w-auto" />
-                  <h4 className="text-yellow-300 font-bold text-lg">New World Crafting Calculator</h4>
-                  <p className="text-gray-300 text-sm mt-2">Version 0.8.2</p>
-                </div>
-                <div className="text-sm text-gray-300">
-                  <p>A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR.</p>
-                  <p className="mt-2">Created by <span className="text-yellow-300">Involvex</span></p>
-                  <div className="mt-4 space-y-2">
-                    <div>
-                      <a 
-                        href="https://github.com/involvex/newworld-dailycraft-calc" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 underline"
-                      >
-                        💻 GitHub Repository
-                      </a>
-                    </div>
-                    <div>
-                      <a 
-                        href="https://involvex.github.io/newworld-dailycraft-calc/" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-green-400 hover:text-green-300 underline"
-                      >
-                        🌐 Live Web App
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-6">
-                <button
-                  onClick={() => setShowAbout(false)}
-                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+            <div className="space-y-2 text-gray-400">
+              <p className="text-sm font-medium">Created with ❤️ by <span className="text-yellow-400">Involvex</span></p>
+              <p className="text-xs">
+                Game data sourced from{' '}
+                <a 
+                  href="https://nw-buddy.de" 
+                  className="text-blue-400 hover:text-blue-300 underline decoration-dotted hover:decoration-solid transition-all"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  Close
-                </button>
-              </div>
+                  nw-buddy.de
+                </a>
+              </p>
+              <p className="text-xs text-gray-500">
+                New World Crafting Calculator v0.9.7 • Open Source
+              </p>
             </div>
-          </div>
-        )}
-        
-        {showCreatePreset && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-white mb-4">Create Preset</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-yellow-300 mb-2">Preset Name</label>
-                  <input
-                    type="text"
-                    value={presetName}
-                    onChange={(e) => setPresetName(e.target.value)}
-                    placeholder="My Custom Preset"
-                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                  />
-                </div>
-                <div className="text-sm text-gray-300">
-                  <p>Current Selection:</p>
-                  {multiItems.length > 0 ? (
-                    <div className="text-yellow-300">
-                      {multiItems.map((item, i) => (
-                        <div key={i}>{ITEMS[item.id]?.name} x{item.qty}</div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-yellow-300">{ITEMS[selectedItemId]?.name} x{quantity}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-2 mt-6">
-                <button
-                  onClick={() => {
-                    if (presetName.trim()) {
-                      const trimmedName = presetName.trim();
-                      const existingIndex = customPresets.findIndex(p => p.name === trimmedName);
-                      if (existingIndex !== -1) {
-                        if (confirm(`Preset "${trimmedName}" already exists. Overwrite?`)) {
-                          const newPreset = {
-                            name: trimmedName,
-                            items: multiItems.length > 0 ? multiItems : [{ id: selectedItemId, qty: quantity }],
-                            collapsedNodes: [...collapsedNodes]
-                          };
-                          const updatedPresets = [...customPresets];
-                          updatedPresets[existingIndex] = newPreset;
-                          setCustomPresets(updatedPresets);
-                          localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
-                          setShowCreatePreset(false);
-                          setPresetName('');
-                        }
-                      } else {
-                        const newPreset = {
-                          name: trimmedName,
-                          items: multiItems.length > 0 ? multiItems : [{ id: selectedItemId, qty: quantity }],
-                          collapsedNodes: [...collapsedNodes]
-                        };
-                        const updatedPresets = [...customPresets, newPreset];
-                        setCustomPresets(updatedPresets);
-                        localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
-                        setShowCreatePreset(false);
-                        setPresetName('');
-                      }
-                    }
-                  }}
-                  disabled={!presetName.trim()}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:bg-gray-500"
-                >
-                  Create
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCreatePreset(false);
-                    setPresetName('');
-                  }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <footer className="text-center mt-12 text-gray-600 text-sm">
-          <p><img src="logo.png" alt="Logo" className="mx-auto mb-2 h-16 w-auto" /></p>
-          <p>Created by Involvex</p>
-          <p>Data from <a href="https://nw-buddy.de" className="text-blue-500 hover:underline">nw-buddy.de</a></p>
-        </footer>
+          </footer>
+        </div>
       </div>
-    </div>
+    </React.Fragment>
   );
-};
-
-export default App;
-                      {multiItems.map((item, i) => (
-                        <div key={i}>{ITEMS[item.id]?.name} x{item.qty}</div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-yellow-300">{ITEMS[selectedItemId]?.name} x{quantity}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-2 mt-6">
-                <button
-                  onClick={() => {
-                    if (presetName.trim()) {
-                      const trimmedName = presetName.trim();
-                      const existingIndex = customPresets.findIndex(p => p.name === trimmedName);
-                      if (existingIndex !== -1) {
-                        if (confirm(`Preset "${trimmedName}" already exists. Overwrite?`)) {
-                          const newPreset = {
-                            name: trimmedName,
-                            items: multiItems.length > 0 ? multiItems : [{ id: selectedItemId, qty: quantity }],
-                            collapsedNodes: [...collapsedNodes]
-                          };
-                          const updatedPresets = [...customPresets];
-                          updatedPresets[existingIndex] = newPreset;
-                          setCustomPresets(updatedPresets);
-                          localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
-                          setShowCreatePreset(false);
-                          setPresetName('');
-                        }
-                      } else {
-                        const newPreset = {
-                          name: trimmedName,
-                          items: multiItems.length > 0 ? multiItems : [{ id: selectedItemId, qty: quantity }],
-                          collapsedNodes: [...collapsedNodes]
-                        };
-                        const updatedPresets = [...customPresets, newPreset];
-                        setCustomPresets(updatedPresets);
-                        localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
-                        setShowCreatePreset(false);
-                        setPresetName('');
-                      }
-                    }
-                  }}
-                  disabled={!presetName.trim()}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:bg-gray-500"
-                >
-                  Create
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCreatePreset(false);
-                    setPresetName('');
-                  }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <footer className="text-center mt-12 text-gray-600 text-sm">
-          <p><img src="logo.png" alt="Logo" className="mx-auto mb-2 h-16 w-auto" /></p>
-          <p>Created by Involvex</p>
-          <p>Data from <a href="https://nw-buddy.de" className="text-blue-500 hover:underline">nw-buddy.de</a></p>
-        </footer>
-      </div>
-    </div>
-  );
-};
+}
 
 export default App;
