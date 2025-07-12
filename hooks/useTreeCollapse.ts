@@ -1,5 +1,5 @@
 import { useCallback, Dispatch, SetStateAction } from 'react'; // Added Dispatch, SetStateAction
-import { collectAllNodeIds, collectSubtreeNodeIds } from '../utils/treeUtils';
+import { collectSubtreeNodeIds, collectAncestorNodeIds } from '../utils/treeUtils';
 
 interface UseTreeCollapseProps {
   collapsedNodes: Set<string>;
@@ -92,6 +92,25 @@ export default function useTreeCollapse({ collapsedNodes, setCollapsedNodes }: U
     });
   }, [setCollapsedNodes]);
 
+  // Collapse only the target node (not the entire path)
+  const handleCollapseToNode = useCallback((_rootNode: any, targetNodeId: string) => {
+    setCollapsedNodes((prev: Set<string>) => {
+      const newSet = new Set(prev);
+      newSet.add(targetNodeId); // Only collapse the target node itself
+      return newSet;
+    });
+  }, [setCollapsedNodes]);
+
+  // Expand only nodes from root to the target node (limited expand)
+  const handleExpandToNode = useCallback((rootNode: any, targetNodeId: string) => {
+    const ancestorNodes = collectAncestorNodeIds(rootNode, targetNodeId);
+    setCollapsedNodes((prev: Set<string>) => {
+      const newSet = new Set(prev);
+      ancestorNodes.forEach(id => newSet.delete(id));
+      return newSet;
+    });
+  }, [setCollapsedNodes]);
+
   return {
     collapsedNodes, // Now returned from props
     setCollapsedNodes, // Now returned from props
@@ -100,6 +119,8 @@ export default function useTreeCollapse({ collapsedNodes, setCollapsedNodes }: U
     handleToggleNode,
     handleCollapseSubtree,
     handleExpandSubtree,
+    handleCollapseToNode,
+    handleExpandToNode,
     restoreCollapsedNodes,
   };
 }

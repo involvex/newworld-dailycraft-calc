@@ -10,7 +10,6 @@ import useCraftingTree from './hooks/useCraftingTree';
 import useInventoryOCR from './hooks/useInventoryOCR';
 import usePresets from './hooks/usePresets';
 import useTreeCollapse from './hooks/useTreeCollapse';
-import { findNodeById } from './utils/treeUtils';
 
 // Types
 type SummaryMode = 'net' | 'xp';
@@ -71,8 +70,8 @@ const App: React.FC = () => {
     handleCollapseAll,
     handleExpandAll,
     handleToggleNode,
-    handleCollapseSubtree,
-    handleExpandSubtree,
+    handleCollapseToNode,
+    handleExpandToNode,
     restoreCollapsedNodes: treeRestoreCollapsedNodes, // Renamed to avoid conflict
   } = useTreeCollapse({
     collapsedNodes,
@@ -781,16 +780,14 @@ const filteredCraftableItems = useMemo(() => {
               y={contextMenu.y}
               onClose={() => setContextMenu(null)}
               onExpand={() => {
-                const node = findNodeById(craftingData, contextMenu.nodeId);
-                if (node) {
-                  handleExpandSubtree(node);
+                if (craftingData) {
+                  handleExpandToNode(craftingData, contextMenu.nodeId);
                 }
                 setContextMenu(null);
               }}
               onCollapse={() => {
-                const node = findNodeById(craftingData, contextMenu.nodeId);
-                if (node) {
-                  handleCollapseSubtree(node);
+                if (craftingData) {
+                  handleCollapseToNode(craftingData, contextMenu.nodeId);
                 }
                 setContextMenu(null);
               }}
@@ -803,7 +800,7 @@ const filteredCraftableItems = useMemo(() => {
               <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
                 <h2 className="text-2xl font-bold text-yellow-300 mb-4">About</h2>
                 <p className="text-gray-300">This New World Crafting Calculator is an open-source project designed to help players plan their crafting efficiently.</p>
-                <p className="text-gray-300 mt-2">Version: 0.9.8</p>
+                <p className="text-gray-300 mt-2">Version: 1.0.1</p>
                 <button onClick={() => setShowAbout(false)} className="mt-6 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Close</button>
               </div>
             </div>
@@ -945,7 +942,7 @@ const filteredCraftableItems = useMemo(() => {
                 </a>
               </p>
               <p className="text-xs text-gray-500">
-                New World Crafting Calculator v0.9.8 • Open Source
+                New World Crafting Calculator v1.0.1 • Open Source
               </p>
             </div>
           </footer>

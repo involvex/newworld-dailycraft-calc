@@ -29,27 +29,60 @@ const useInventoryOCR = ({
     const foundItems: Record<string, number> = {};
     const lines = ocrText.split(/[\n\r]+/).filter(line => line.trim().length > 0);
 
-    // Enhanced regex patterns for different formats
+    // Enhanced regex patterns for New World inventory interface
     const patterns = [
       // Standard format: "Item Name: 123" or "Item Name 123"
       /^(.+?)\s*[:xX]?\s*(\d{1,6}(?:[.,]\d{1,3})?)\s*$/,
       // Format with quantity first: "123 Item Name" or "123x Item Name"
       /^(\d{1,6}(?:[.,]\d{1,3})?)\s*[xX]?\s*(.+?)\s*$/,
       // Format with parentheses: "Item Name (123)"
-      /^(.+?)\s*\((\d{1,6}(?:[.,]\d{1,3})?)\)\s*$/
+      /^(.+?)\s*\((\d{1,6}(?:[.,]\d{1,3})?)\)\s*$/,
+      // Quantity only on separate line (common in NW inventory)
+      /^(\d{1,6}(?:[.,]\d{1,3})?)$/,
+      // Material name with tier indicators: "Iron Ore T1" etc
+      /^(.+?)\s+[tT]\d+\s*[:xX]?\s*(\d{1,6}(?:[.,]\d{1,3})?)\s*$/,
+      // Item names that might be split across lines
+      /^([A-Za-z\s]{3,30})\s*$/
     ];
 
-    for (const line of lines) {
-      const cleanLine = line.trim().replace(/[^\w\s:.,()xX]/g, '');
+    let previousItemName = '';
+    let pendingQuantity = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const cleanLine = line.trim()
+        .replace(/[^\w\s:.,()xXtT]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
       
       // Skip obvious non-item lines
-      if (cleanLine.length < 3 || cleanLine.length > 60) continue;
-      if (/^(inventory|storage|guild|company|house|shed|chest|container)/i.test(cleanLine)) continue;
-      if (/^(fps|cpu|gpu|ram|ping|ms)/i.test(cleanLine)) continue;
+      if (cleanLine.length < 1 || cleanLine.length > 60) continue;
+      if (/^(inventory|storage|guild|company|house|shed|chest|container|decorate|furnishing)/i.test(cleanLine)) continue;
+      if (/^(fps|cpu|gpu|ram|ping|ms|level|weight|capacity)/i.test(cleanLine)) continue;
+      if (/^(reagents?|smelting|leatherworking|weaving|stonecutting|woodworking|fishing)/i.test(cleanLine)) continue;
 
       let itemNameRaw = '';
       let quantityStr = '';
       let matched = false;
+
+      // Check if this line is just a quantity (for previous item)
+      const quantityOnlyMatch = cleanLine.match(/^(\d{1,6}(?:[.,]\d{1,3})?)$/);
+      if (quantityOnlyMatch && previousItemName) {
+        const quantity = parseInt(quantityOnlyMatch[1].replace(/[.,]/g, ''), 10);
+        if (!isNaN(quantity) && quantity > 0) {
+          const cleanPrevName = previousItemName.toLowerCase()
+            .replace(/[^\w\s]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          const matchedId = findBestItemMatch(cleanPrevName);
+          if (matchedId) {
+            foundItems[matchedId] = (foundItems[matchedId] || 0) + quantity;
+          }
+        }
+        previousItemName = '';
+        continue;
+      }
 
       // Try each pattern
       for (const pattern of patterns) {
@@ -58,16 +91,37 @@ const useInventoryOCR = ({
           if (pattern === patterns[1]) { // Quantity first format
             quantityStr = match[1];
             itemNameRaw = match[2];
+          } else if (pattern === patterns[3]) { // Just quantity
+            pendingQuantity = parseInt(match[1].replace(/[.,]/g, ''), 10);
+            continue;
+          } else if (pattern === patterns[5]) { // Just item name
+            previousItemName = match[1];
+            continue;
           } else {
             itemNameRaw = match[1];
-            quantityStr = match[2];
+            quantityStr = match[2] || '';
           }
           matched = true;
           break;
         }
       }
 
-      if (!matched) continue;
+      if (!matched && !quantityStr) {
+        // Check if this might be an item name without quantity
+        const possibleItemName = cleanLine.replace(/\d+/g, '').trim();
+        if (possibleItemName.length >= 3 && possibleItemName.length <= 30) {
+          previousItemName = possibleItemName;
+        }
+        continue;
+      }
+
+      // Use pending quantity if we have one
+      if (!quantityStr && pendingQuantity > 0) {
+        quantityStr = pendingQuantity.toString();
+        pendingQuantity = 0;
+      }
+
+      if (!quantityStr) continue;
 
       // Clean and validate quantity
       const cleanQuantityStr = quantityStr.replace(/[.,]/g, '');
@@ -79,45 +133,105 @@ const useInventoryOCR = ({
 
       // Clean item name
       itemNameRaw = itemNameRaw.trim()
-        .replace(/[^\w\s]/g, '')
+        .replace(/[^\w\s]/g, ' ')
         .replace(/\s+/g, ' ')
-        .toLowerCase();
+        .toLowerCase()
+        .replace(/\s*[tT]\d+\s*$/, '') // Remove tier indicators
+        .trim();
 
       if (itemNameRaw.length < 2) continue;
 
-      let matchedItemId: string | null = null;
-      let bestMatchScore = 0;
-
-      // Enhanced matching with scoring
-      for (const [key, itemId] of Object.entries(ITEM_MAPPINGS)) {
-        const lowerKey = key.toLowerCase();
-        const score = calculateMatchScore(itemNameRaw, lowerKey);
-        
-        if (score > bestMatchScore && score > 0.7) { // Require 70% match
-          matchedItemId = itemId;
-          bestMatchScore = score;
-        }
-      }
-
-      // Fallback to ITEMS lookup if no mapping found
-      if (!matchedItemId && bestMatchScore < 0.7) {
-        for (const item of Object.values(ITEMS)) {
-          const itemNameLower = item.name.toLowerCase();
-          const score = calculateMatchScore(itemNameRaw, itemNameLower);
-          
-          if (score > bestMatchScore && score > 0.6) { // Lower threshold for direct item names
-            matchedItemId = item.id;
-            bestMatchScore = score;
-          }
-        }
-      }
-
+      const matchedItemId = findBestItemMatch(itemNameRaw);
       if (matchedItemId) {
         foundItems[matchedItemId] = (foundItems[matchedItemId] || 0) + quantity;
       }
+
+      previousItemName = '';
     }
+
     return foundItems;
   }, []);
+
+  // Enhanced item matching function
+  const findBestItemMatch = (itemNameRaw: string): string | null => {
+    let matchedItemId: string | null = null;
+    let bestMatchScore = 0;
+
+    // First, try exact matches in ITEM_MAPPINGS
+    const exactMapping = (ITEM_MAPPINGS as Record<string, string>)[itemNameRaw];
+    if (exactMapping) {
+      return exactMapping;
+    }
+
+    // Enhanced fuzzy matching with scoring
+    for (const [key, itemId] of Object.entries(ITEM_MAPPINGS)) {
+      const lowerKey = key.toLowerCase();
+      const score = calculateMatchScore(itemNameRaw, lowerKey);
+      
+      if (score > bestMatchScore && score > 0.75) { // Higher threshold for mappings
+        matchedItemId = itemId;
+        bestMatchScore = score;
+      }
+    }
+
+    // Enhanced partial matching for common terms
+    if (!matchedItemId || bestMatchScore < 0.8) {
+      for (const [key, itemId] of Object.entries(ITEM_MAPPINGS)) {
+        const lowerKey = key.toLowerCase();
+        
+        // Check for partial matches with common New World item patterns
+        if (itemNameRaw.includes(lowerKey) || lowerKey.includes(itemNameRaw)) {
+          const partialScore = Math.min(itemNameRaw.length, lowerKey.length) / Math.max(itemNameRaw.length, lowerKey.length);
+          if (partialScore > bestMatchScore && partialScore > 0.6) {
+            matchedItemId = itemId;
+            bestMatchScore = partialScore;
+          }
+        }
+
+        // Special handling for common abbreviations
+        const abbreviations: Record<string, string[]> = {
+          'iron': ['iron ore', 'iron ingot'],
+          'steel': ['steel ingot'],
+          'star': ['starmetal ore', 'starmetal ingot'],
+          'ori': ['orichalcum ore', 'orichalcum ingot'],
+          'thick': ['thick hide'],
+          'fiber': ['fibers', 'fiber'],
+          'wood': ['green wood', 'aged wood'],
+          'lumber': ['lumber'],
+        };
+
+        for (const [abbrev, fullNames] of Object.entries(abbreviations)) {
+          if (itemNameRaw.includes(abbrev)) {
+            for (const fullName of fullNames) {
+              const mappingValue = (ITEM_MAPPINGS as Record<string, string>)[fullName];
+              if (mappingValue) {
+                const score = 0.8; // Good score for abbreviation matches
+                if (score > bestMatchScore) {
+                  matchedItemId = mappingValue;
+                  bestMatchScore = score;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback to ITEMS lookup if no mapping found
+    if (!matchedItemId || bestMatchScore < 0.7) {
+      for (const item of Object.values(ITEMS)) {
+        const itemNameLower = item.name.toLowerCase();
+        const score = calculateMatchScore(itemNameRaw, itemNameLower);
+        
+        if (score > bestMatchScore && score > 0.65) { // Lower threshold for direct item names
+          matchedItemId = item.id;
+          bestMatchScore = score;
+        }
+      }
+    }
+
+    return matchedItemId;
+  };
 
   // Helper function to calculate string similarity
   const calculateMatchScore = (text1: string, text2: string): number => {
@@ -221,11 +335,11 @@ const useInventoryOCR = ({
       stream.getTracks().forEach(track => track.stop());
       video.srcObject = null;
       
-      // Focus on inventory area - crop to center portion where inventory typically is
-      const cropX = Math.floor(canvas.width * 0.2);
-      const cropY = Math.floor(canvas.height * 0.3);
-      const cropWidth = Math.floor(canvas.width * 0.6);
-      const cropHeight = Math.floor(canvas.height * 0.4);
+      // Focus on inventory area - improved cropping for New World interface
+      const cropX = Math.floor(canvas.width * 0.15);
+      const cropY = Math.floor(canvas.height * 0.2);
+      const cropWidth = Math.floor(canvas.width * 0.7);
+      const cropHeight = Math.floor(canvas.height * 0.6);
       
       const croppedCanvas = document.createElement('canvas');
       croppedCanvas.width = cropWidth;
@@ -238,41 +352,91 @@ const useInventoryOCR = ({
       
       croppedCtx.drawImage(canvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
       
-      // Enhanced image preprocessing for better OCR
+      // Enhanced image preprocessing optimized for New World inventory
       const imageData = croppedCtx.getImageData(0, 0, cropWidth, cropHeight);
       const data = imageData.data;
       
-      // Apply enhanced preprocessing with adaptive thresholding
+      // Two-pass processing: first pass for contrast enhancement, second for text isolation
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i], g = data[i + 1], b = data[i + 2];
         
         // Convert to grayscale using luminance formula
         const gray = 0.299 * r + 0.587 * g + 0.114 * b;
         
-        // Adaptive thresholding - adjust based on local contrast
+        // New World has white text on dark backgrounds and dark text on light tooltips
         let threshold: number;
-        if (gray > 180) {
-          threshold = 255; // Very bright - keep white
-        } else if (gray > 120) {
-          threshold = gray > 140 ? 255 : 0; // Medium brightness - threshold
-        } else if (gray > 80) {
-          threshold = 0; // Dark text - make black
-        } else {
-          threshold = 0; // Very dark - keep black
+        
+        // Detect white text (common in NW inventory)
+        if (gray > 200) {
+          threshold = 255; // Keep bright white text
+        } 
+        // Detect light gray text (quantities, names)
+        else if (gray > 150) {
+          threshold = 255; // Convert light gray to white for better OCR
+        }
+        // Detect medium gray (might be text or UI elements)
+        else if (gray > 100) {
+          // Check surrounding pixels for context
+          threshold = gray > 130 ? 255 : 0;
+        }
+        // Dark text or background
+        else if (gray > 50) {
+          threshold = 0; // Convert to black
+        }
+        // Very dark - background
+        else {
+          threshold = 0;
         }
         
-        // Apply slight contrast enhancement
-        const enhanced = threshold === 255 ? 255 : Math.max(0, threshold - 20);
-        
-        data[i] = data[i + 1] = data[i + 2] = enhanced;
+        data[i] = data[i + 1] = data[i + 2] = threshold;
         data[i + 3] = 255; // Full opacity
       }
-      croppedCtx.putImageData(imageData, 0, 0);
+      
+      // Apply noise reduction filter
+      const processedData = new Uint8ClampedArray(data);
+      for (let y = 1; y < cropHeight - 1; y++) {
+        for (let x = 1; x < cropWidth - 1; x++) {
+          const idx = (y * cropWidth + x) * 4;
+          
+          // Get surrounding pixels
+          const neighbors = [
+            data[((y-1) * cropWidth + (x-1)) * 4], // top-left
+            data[((y-1) * cropWidth + x) * 4],     // top
+            data[((y-1) * cropWidth + (x+1)) * 4], // top-right
+            data[(y * cropWidth + (x-1)) * 4],     // left
+            data[(y * cropWidth + (x+1)) * 4],     // right
+            data[((y+1) * cropWidth + (x-1)) * 4], // bottom-left
+            data[((y+1) * cropWidth + x) * 4],     // bottom
+            data[((y+1) * cropWidth + (x+1)) * 4]  // bottom-right
+          ];
+          
+          // Sort neighbors for analysis
+          neighbors.sort((a, b) => a - b);
+          
+          // Apply median if current pixel is isolated
+          const current = data[idx];
+          const whiteNeighbors = neighbors.filter(n => n > 200).length;
+          const blackNeighbors = neighbors.filter(n => n < 50).length;
+          
+          if (current > 200 && whiteNeighbors < 2) {
+            // Isolated white pixel - likely noise
+            processedData[idx] = processedData[idx + 1] = processedData[idx + 2] = 0;
+          } else if (current < 50 && blackNeighbors < 2) {
+            // Isolated black pixel in white area - likely noise
+            processedData[idx] = processedData[idx + 1] = processedData[idx + 2] = 255;
+          } else {
+            processedData[idx] = processedData[idx + 1] = processedData[idx + 2] = current;
+          }
+        }
+      }
+      
+      const cleanedImageData = new ImageData(processedData, cropWidth, cropHeight);
+      croppedCtx.putImageData(cleanedImageData, 0, 0);
       
       // Scale up significantly for better OCR accuracy
       const scaledCanvas = document.createElement('canvas');
-      scaledCanvas.width = cropWidth * 3; // Increased scaling
-      scaledCanvas.height = cropHeight * 3;
+      scaledCanvas.width = cropWidth * 4; // Increased scaling for small text
+      scaledCanvas.height = cropHeight * 4;
       const scaledCtx = scaledCanvas.getContext('2d');
       
       if (!scaledCtx) {
@@ -280,11 +444,10 @@ const useInventoryOCR = ({
       }
       
       // Use better interpolation for text
-      scaledCtx.imageSmoothingEnabled = true;
-      scaledCtx.imageSmoothingQuality = 'high';
-      scaledCtx.drawImage(croppedCanvas, 0, 0, cropWidth * 3, cropHeight * 3);
+      scaledCtx.imageSmoothingEnabled = false; // Disable smoothing for sharp text
+      scaledCtx.drawImage(croppedCanvas, 0, 0, cropWidth * 4, cropHeight * 4);
       
-      // Enhanced Tesseract configuration for inventory text
+      // Enhanced Tesseract configuration optimized for New World inventory
       const { data: { text } } = await Tesseract.recognize(scaledCanvas.toDataURL('image/png'), 'eng', {
         tessedit_pageseg_mode: '6', // Uniform block of text
         tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz :.,()-\'',
@@ -292,7 +455,16 @@ const useInventoryOCR = ({
         preserve_interword_spaces: '1',
         user_defined_dpi: '300', // High DPI for better accuracy
         tessedit_write_images: '0', // Don't save debug images
-        textord_min_linesize: '2.5' // Minimum line size
+        textord_min_linesize: '2.5', // Minimum line size
+        // New World specific enhancements
+        classify_bln_numeric_mode: '1', // Better number recognition for quantities
+        tessedit_do_invert: '0', // Don't invert since we handle this in preprocessing
+        load_system_dawg: '1', // Enable system dictionary
+        load_freq_dawg: '1', // Enable frequent words dictionary
+        load_unambig_dawg: '1', // Enable unambiguous words dictionary
+        textord_heavy_nr: '1', // Better handling of numerics
+        segment_penalty_dict_nonword: '1.3', // Penalize non-dictionary words less
+        classify_enable_adaptive_matcher: '1' // Enable adaptive matching
       } as any);
       
       // Enhanced text filtering and cleaning
