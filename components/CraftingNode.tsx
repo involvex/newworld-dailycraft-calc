@@ -89,8 +89,9 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
                   alt={node.item?.name || ''}
                   className="h-full w-full object-contain"
                   onError={(e) => {
-                    const fallback = '/fallback-icon.png';
-                    if (e.currentTarget.src !== window.location.origin + fallback && !e.currentTarget.src.endsWith(fallback)) {
+                    const fallback = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSI2IiBmaWxsPSIjMzc0MTUxIi8+CiAgPHBhdGggZD0iTTI0IDE2QzI0LjU1MjMgMTYgMjUgMTYuNDQ3NyAyNSAxN1YyM0gzMUMzMS41NTIzIDIzIDMyIDIzLjQ0NzcgMzIgMjRDMzIgMjQuNTUyMyAzMS41NTIzIDI1IDMxIDI1SDI1VjMxQzI1IDMxLjU1MjMgMjQuNTUyMyAzMiAyNCAzMkMyMy40NDc3IDMyIDIzIDMxLjU1MjMgMjMgMzFWMjVIMTdDMTYuNDQ3NyAyNSAxNiAyNC41NTIzIDE2IDI0QzE2IDIzLjQ0NzcgMTYuNDQ3NyAyMyAxNyAyM0gyM1YxN0MyMyAxNi40NDc3IDIzLjQ0NzcgMTYgMjQgMTZaIiBmaWxsPSIjOUNBM0FGIi8+CiAgPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjAiIHN0cm9rZT0iIzZCNzI4MCIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+Cjwvc3ZnPg==';
+                    if (e.currentTarget.src !== fallback) {
+                      console.warn('Failed to load item icon:', e.currentTarget.src);
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = fallback;
                     }

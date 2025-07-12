@@ -169,7 +169,14 @@ const filteredCraftableItems = useMemo(() => {
       return 'https://cdn.nwdb.info/db/images/live/v55/icons/items/consumable/gemstonedustt5.png';
     }
     const iconId = ITEMS[itemId]?.iconId || itemId.toLowerCase().replace(/_/g, '');
-    return `https://cdn.nwdb.info/db/images/live/v55/icons/items/resource/${iconId}.png`;
+    const url = `https://cdn.nwdb.info/db/images/live/v55/icons/items/resource/${iconId}.png`;
+    
+    // Debug logging for Electron builds
+    if (window.electronAPI) {
+      console.log(`Loading icon for ${itemId}: ${url}`);
+    }
+    
+    return url;
   }, []);
 
   const handleBonusChange = (category: string, field: keyof BonusConfiguration, value: string | boolean) => {

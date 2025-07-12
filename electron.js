@@ -16,10 +16,12 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true, // Enable for production builds
+      webSecurity: false, // Disable for external image loading
       experimentalFeatures: false, // Disable for security
-      sandbox: true, // Enable sandbox for security
-      preload: path.join(__dirname, 'preload.js')
+      sandbox: false, // Disable sandbox to allow external resources
+      preload: path.join(__dirname, 'preload.js'),
+      allowRunningInsecureContent: true, // Allow HTTP resources from HTTPS context
+      enableRemoteModule: false
     },
     title: 'New World Crafting Calculator',
     show: false,
@@ -201,11 +203,11 @@ app.whenReady().then(() => {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file: https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://esm.sh https://unpkg.com; " +
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file: https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://esm.sh https://unpkg.com https://cdn.nwdb.info https://nwdb.info; " +
           "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: file: https://cdn.tailwindcss.com https://esm.sh https://unpkg.com; " +
           "style-src 'self' 'unsafe-inline' data: file: https://cdn.tailwindcss.com https://fonts.googleapis.com; " +
           "font-src 'self' data: file: https://fonts.gstatic.com; " +
-          "img-src 'self' data: blob: file:; " +
+          "img-src 'self' data: blob: file: https://cdn.nwdb.info https://nwdb.info; " +
           "connect-src 'self' blob: file:;"
         ]
       }
