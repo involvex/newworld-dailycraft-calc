@@ -241,6 +241,27 @@ app.whenReady().then(() => {
     app.quit();
   });
 
+  // Handle toggle view mode
+  ipcMain.handle('toggle-view-mode', () => {
+    if (mainWindow && mainWindow.isVisible()) {
+      mainWindow.webContents.send('toggle-view-mode');
+    }
+  });
+
+  // Handle collapse/expand tree
+  ipcMain.handle('toggle-tree-expansion', () => {
+    if (mainWindow && mainWindow.isVisible()) {
+      mainWindow.webContents.send('toggle-tree-expansion');
+    }
+  });
+
+  // Handle view summary
+  ipcMain.handle('view-summary', () => {
+    if (mainWindow && mainWindow.isVisible()) {
+      mainWindow.webContents.send('view-summary');
+    }
+  });
+
   // Config management handlers
   ipcMain.handle('load-config', () => {
     try {
@@ -270,19 +291,24 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('export-config', async () => {
-    const result = await dialog.showSaveDialog(mainWindow, {
-      title: 'Export Configuration',
-      defaultPath: 'new-world-crafting-config.json',
-      filters: [
-        { name: 'JSON Files', extensions: ['json'] },
-        { name: 'All Files', extensions: ['*'] }
-      ]
-    });
+    try {
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Export Configuration',
+        defaultPath: 'new-world-crafting-config.json',
+        filters: [
+          { name: 'JSON Files', extensions: ['json'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      });
 
-    if (!result.canceled && result.filePath) {
-      return configService.exportConfig(result.filePath);
+      if (!result.canceled && result.filePath) {
+        return configService ? configService.exportConfig(result.filePath) : false;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error exporting config:', error);
+      return false;
     }
-    return false;
   });
 
   ipcMain.handle('import-config', async () => {
@@ -520,6 +546,40 @@ function registerHotkeys(hotkeys) {
       globalShortcut.register(hotkeys.openSettings, () => {
         if (mainWindow.isVisible()) {
           mainWindow.webContents.send('show-settings');
+        }
+      });
+    }
+
+    // New hotkeys - only work when app is focused
+    if (hotkeys.exitApp) {
+      globalShortcut.register(hotkeys.exitApp, () => {
+        if (mainWindow.isFocused()) {
+          app.isQuiting = true;
+          app.quit();
+        }
+      });
+    }
+
+    if (hotkeys.toggleTreeExpansion) {
+      globalShortcut.register(hotkeys.toggleTreeExpansion, () => {
+        if (mainWindow.isFocused()) {
+          mainWindow.webContents.send('toggle-tree-expansion');
+        }
+      });
+    }
+
+    if (hotkeys.viewSummary) {
+      globalShortcut.register(hotkeys.viewSummary, () => {
+        if (mainWindow.isFocused()) {
+          mainWindow.webContents.send('view-summary');
+        }
+      });
+    }
+
+    if (hotkeys.toggleViewMode) {
+      globalShortcut.register(hotkeys.toggleViewMode, () => {
+        if (mainWindow.isFocused()) {
+          mainWindow.webContents.send('toggle-view-mode');
         }
       });
     }

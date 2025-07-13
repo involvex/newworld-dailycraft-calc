@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useConfig } from '../hooks/useConfig';
+import React, { useState, useEffect } from 'react';
 import { AllBonuses, BonusConfiguration } from '../types';
 
 interface SettingsModalProps {
@@ -23,86 +22,52 @@ export function SettingsModal({
   onDeleteAllPresets,
   onEraseAllData,
 }: SettingsModalProps) {
-  const { config, updateConfig, registerHotkeys, exportConfig, importConfig, getConfigPath, isElectron } = useConfig();
-  const [hotkeys, setHotkeys] = useState(config?.hotkeys || {
+  const [activeTab, setActiveTab] = useState<'bonuses' | 'hotkeys' | 'data'>('bonuses');
+  const [hotkeys, setHotkeys] = useState({
     toggleCalculator: 'CommandOrControl+Alt+I',
     triggerOCR: 'CommandOrControl+Alt+O',
-    openSettings: 'CommandOrControl+Alt+S',
+    openSettings: 'CommandOrControl+,',
+    exitApp: 'CommandOrControl+Q',
+    toggleTreeExpansion: 'CommandOrControl+O',
+    viewSummary: 'CommandOrControl+Alt+M',
+    toggleViewMode: 'CommandOrControl+M'
   });
-  const [configPath, setConfigPath] = useState<string>('');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [hotkeyDescriptions] = useState({
+    toggleCalculator: 'Show/Hide Calculator (Global)',
+    triggerOCR: 'Trigger OCR Scan (Global)',
+    openSettings: 'Open Settings (Global)',
+    exitApp: 'Exit Application (Focused)',
+    toggleTreeExpansion: 'Collapse/Expand Tree (Focused)',
+    viewSummary: 'Scroll to Summary (Focused)',
+    toggleViewMode: 'Toggle View Mode (Focused)'
+  });
 
+  // Load current hotkeys when modal opens
   useEffect(() => {
-    if (config?.hotkeys) {
-      setHotkeys(config.hotkeys);
-    }
-  }, [config]);
-
-  useEffect(() => {
-    if (isElectron && isOpen) {
-      getConfigPath().then(path => {
-        if (path) setConfigPath(path);
+    if (isOpen && window.electronAPI?.config) {
+      window.electronAPI.config.load().then((config: any) => {
+        if (config.hotkeys) {
+          setHotkeys(config.hotkeys);
+        }
       });
     }
-  }, [isOpen, isElectron, getConfigPath]);
+  }, [isOpen]);
 
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const handleHotkeyChange = (key: keyof typeof hotkeys, value: string) => {
+  const handleHotkeyChange = (key: string, value: string) => {
     setHotkeys(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSaveHotkeys = async () => {
-    try {
-      if (isElectron) {
-        await registerHotkeys(hotkeys);
+  const saveHotkeys = async () => {
+    if (window.electronAPI?.config) {
+      try {
+        const config = await window.electronAPI.config.load();
+        config.hotkeys = hotkeys;
+        await window.electronAPI.config.save(config);
+        await window.electronAPI.config.registerHotkeys(hotkeys);
+        // Show success message
+      } catch (error) {
+        console.error('Failed to save hotkeys:', error);
       }
-      await updateConfig('hotkeys', hotkeys);
-      showToast('Hotkeys updated successfully!', 'success');
-    } catch (error) {
-      showToast('Failed to update hotkeys', 'error');
-      console.error('Error updating hotkeys:', error);
-    }
-  };
-
-  const handleExportConfig = async () => {
-    try {
-      if (isElectron) {
-        const success = await exportConfig();
-        if (success) {
-          showToast('Configuration exported successfully!', 'success');
-        } else {
-          showToast('Export cancelled or failed', 'error');
-        }
-      } else {
-        showToast('Export only available in desktop app', 'error');
-      }
-    } catch (error) {
-      showToast('Failed to export configuration', 'error');
-      console.error('Error exporting config:', error);
-    }
-  };
-
-  const handleImportConfig = async () => {
-    try {
-      if (isElectron) {
-        const success = await importConfig();
-        if (success) {
-          showToast('Configuration imported successfully!', 'success');
-          // Reload page to apply imported settings
-          window.location.reload();
-        } else {
-          showToast('Import cancelled or failed', 'error');
-        }
-      } else {
-        showToast('Import only available in desktop app', 'error');
-      }
-    } catch (error) {
-      showToast('Failed to import configuration', 'error');
-      console.error('Error importing config:', error);
     }
   };
 
@@ -110,161 +75,193 @@ export function SettingsModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <h2 className="text-2xl font-bold text-yellow-300 mb-4 flex-shrink-0">Settings</h2>
-        
-        {toast && (
-          <div className={`mb-4 p-3 rounded-lg ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white`}>
-            {toast.message}
-          </div>
-        )}
+      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-600">
+          <h2 className="text-2xl font-bold text-yellow-300">⚙️ Settings</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
 
-        <div className="space-y-6 overflow-y-auto pr-2">
-          {/* Configuration Management */}
-          {isElectron && (
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Configuration Management</h3>
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <button onClick={handleExportConfig} className="px-3 py-2 bg-blue-600 rounded text-sm hover:bg-blue-700">
-                  💾 Export Config
-                </button>
-                <button onClick={handleImportConfig} className="px-3 py-2 bg-blue-600 rounded text-sm hover:bg-blue-700">
-                  📁 Import Config
-                </button>
-              </div>
-              {configPath && (
-                <p className="text-xs text-gray-400">Config location: {configPath}</p>
-              )}
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-600">
+          <button
+            onClick={() => setActiveTab('bonuses')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'bonuses'
+                ? 'text-yellow-300 border-b-2 border-yellow-300'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            🎯 Yield Bonuses
+          </button>
+          <button
+            onClick={() => setActiveTab('hotkeys')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'hotkeys'
+                ? 'text-yellow-300 border-b-2 border-yellow-300'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            ⌨️ Hotkeys
+          </button>
+          <button
+            onClick={() => setActiveTab('data')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'data'
+                ? 'text-yellow-300 border-b-2 border-yellow-300'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            💾 Data Management
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {activeTab === 'bonuses' && (
+            <div className="space-y-6">
+              <p className="text-gray-300">Configure your skill levels, gear bonuses, and territory fort buffs for accurate yield calculations.</p>
+              
+              {Object.entries(bonuses).map(([category, bonus]) => (
+                <div key={category} className="bg-gray-700/50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-yellow-400 mb-4">{category}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Skill Level</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="250"
+                        value={bonus.skillLevel}
+                        onChange={(e) => onBonusChange(category, 'skillLevel', e.target.value)}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Gear Bonus (%)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="50"
+                        value={Math.round(bonus.gearBonus * 100)}
+                        onChange={(e) => onBonusChange(category, 'gearBonus', e.target.value)}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <label className="flex items-center text-sm font-medium text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={bonus.fortActive}
+                          onChange={(e) => onBonusChange(category, 'fortActive', e.target.checked)}
+                          className="mr-2 rounded"
+                        />
+                        Territory Fort Active
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Global Hotkeys */}
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-2">Global Hotkeys</h3>
-            {isElectron ? (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Toggle Calculator</label>
-                  <input
-                    type="text"
-                    value={hotkeys.toggleCalculator}
-                    onChange={(e) => handleHotkeyChange('toggleCalculator', e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-                    placeholder="e.g., CommandOrControl+Alt+I"
-                  />
+          {activeTab === 'hotkeys' && (
+            <div className="space-y-6">
+              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                <h4 className="text-blue-300 font-semibold mb-2">ℹ️ Hotkey Types</h4>
+                <div className="text-sm text-gray-300 space-y-1">
+                  <p><strong>Global:</strong> Work from anywhere, even when app is minimized</p>
+                  <p><strong>Focused:</strong> Only work when the calculator window is active</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Trigger OCR</label>
-                  <input
-                    type="text"
-                    value={hotkeys.triggerOCR}
-                    onChange={(e) => handleHotkeyChange('triggerOCR', e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-                    placeholder="e.g., CommandOrControl+Alt+O"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Open Settings</label>
-                  <input
-                    type="text"
-                    value={hotkeys.openSettings}
-                    onChange={(e) => handleHotkeyChange('openSettings', e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-                    placeholder="e.g., CommandOrControl+Alt+S"
-                  />
-                </div>
-                <button onClick={handleSaveHotkeys} className="px-4 py-2 bg-green-600 rounded text-sm hover:bg-green-700">
+              </div>
+
+              <div className="space-y-4">
+                {Object.entries(hotkeys).map(([key, value]) => (
+                  <div key={key} className="bg-gray-700/50 p-4 rounded-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex-1">
+                        <h4 className="text-white font-medium">{hotkeyDescriptions[key as keyof typeof hotkeyDescriptions]}</h4>
+                        <p className="text-xs text-gray-400">
+                          {key.includes('toggle') || key.includes('trigger') || key.includes('open') ? 'Global' : 'Focused Only'}
+                        </p>
+                      </div>
+                      <input
+                        type="text"
+                        value={value}
+                        onChange={(e) => handleHotkeyChange(key, e.target.value)}
+                        placeholder="Ctrl+Key"
+                        className="w-40 bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white text-center font-mono"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+                <h4 className="text-yellow-300 font-semibold mb-2">⚠️ Hotkey Format</h4>
+                <p className="text-sm text-gray-300">
+                  Use standard key combinations like: <code className="bg-gray-700 px-2 py-1 rounded">Ctrl+Shift+C</code>, <code className="bg-gray-700 px-2 py-1 rounded">Alt+F4</code>, etc.
+                </p>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={saveHotkeys}
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                >
                   💾 Save Hotkeys
                 </button>
-                <div className="text-xs text-gray-400">
-                  <p>Use modifiers: CommandOrControl, Alt, Shift, Super</p>
-                  <p>Keys: A-Z, 0-9, F1-F12, Space, etc.</p>
-                </div>
               </div>
-            ) : (
-              <div className="text-sm text-gray-400">
-                <p>Hotkeys only available in desktop app</p>
-              </div>
-            )}
-          </div>
-
-          {/* Data Management */}
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-2">Data Management</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={onExportData} className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-500">
-                💾 Export Data
-              </button>
-              <button onClick={onImportData} className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-500">
-                📁 Import Data
-              </button>
-              <button onClick={onDeleteAllPresets} className="px-3 py-1 bg-red-700 rounded text-sm hover:bg-red-600">
-                🗑️ Delete Presets
-              </button>
-              <button onClick={onEraseAllData} className="px-3 py-1 bg-red-800 rounded text-sm hover:bg-red-700">
-                🗑️ Erase All Data
-              </button>
             </div>
-          </div>
+          )}
 
-          {/* Bonus Settings */}
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-2">Bonus Settings</h3>
-            {Object.entries(bonuses).map(([category, config]) => (
-              <div key={category} className="p-4 bg-gray-700 rounded mb-2">
-                <h4 className="font-bold text-md text-white mb-2">{category}</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300">Skill Level</label>
-                    <input
-                      type="number"
-                      aria-label={`${category} skill level`}
-                      value={config.skillLevel}
-                      onChange={(e) => onBonusChange(category, 'skillLevel', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300">Gear Bonus (%)</label>
-                    <input
-                      type="number"
-                      aria-label={`${category} gear bonus`}
-                      value={config.gearBonus * 100}
-                      onChange={(e) => onBonusChange(category, 'gearBonus', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white"
-                    />
-                  </div>
-                  <div className="col-span-2 flex items-center">
-                    <input
-                      type="checkbox"
-                      aria-label={`${category} fort active`}
-                      checked={config.fortActive}
-                      onChange={(e) => onBonusChange(category, 'fortActive', e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
-                    />
-                    <label className="ml-2 block text-sm text-gray-300">Fort Bonus Active</label>
-                  </div>
-                </div>
+          {activeTab === 'data' && (
+            <div className="space-y-6">
+              <p className="text-gray-300">Manage your saved data, presets, and configuration.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={onExportData}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                >
+                  📤 Export Data
+                </button>
+                <button
+                  onClick={onImportData}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                >
+                  📥 Import Data
+                </button>
+                <button
+                  onClick={onDeleteAllPresets}
+                  className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                >
+                  🗑️ Delete All Presets
+                </button>
+                <button
+                  onClick={onEraseAllData}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                >
+                  ⚠️ Erase All Data
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Support Section */}
-        <div className="mt-4 pt-4 border-t border-gray-600/30 text-center">
-          <p className="text-xs text-gray-400 mb-2">💝 Enjoying the calculator?</p>
-          <a 
-            href="https://paypal.me/involvex" 
-            className="text-xs text-blue-400 hover:text-blue-300 underline decoration-dotted hover:decoration-solid transition-all"
-            target="_blank"
-            rel="noopener noreferrer"
+        {/* Footer */}
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-600">
+          <button
+            onClick={onClose}
+            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
           >
-            Support development ☕
-          </a>
-        </div>
-
-        <div className="flex gap-2 mt-6 flex-shrink-0">
-          <button onClick={onClose} className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
             Close
           </button>
         </div>

@@ -17,6 +17,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Return cleanup function
     return () => ipcRenderer.removeListener('show-about', callback);
   },
+  onToggleViewMode: (callback) => {
+    ipcRenderer.on('toggle-view-mode', callback);
+    return () => ipcRenderer.removeListener('toggle-view-mode', callback);
+  },
+  onToggleTreeExpansion: (callback) => {
+    ipcRenderer.on('toggle-tree-expansion', callback);
+    return () => ipcRenderer.removeListener('toggle-tree-expansion', callback);
+  },
+  onViewSummary: (callback) => {
+    ipcRenderer.on('view-summary', callback);
+    return () => ipcRenderer.removeListener('view-summary', callback);
+  },
   exitApp: () => ipcRenderer.invoke('app-exit'),
   
   // Configuration management

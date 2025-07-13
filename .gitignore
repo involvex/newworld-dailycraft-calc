@@ -32,3 +32,8 @@ cert
 # Release directories
 release/
 release-v*/
+.github/instructions/
+.github/prompts/
+.calva/
+.lsp/
+.clj-kondo/

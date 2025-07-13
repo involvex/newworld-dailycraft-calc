@@ -30,7 +30,11 @@ class ConfigService {
       hotkeys: {
         toggleCalculator: 'CommandOrControl+Alt+I',
         triggerOCR: 'CommandOrControl+Alt+O',
-        openSettings: 'CommandOrControl+,'
+        openSettings: 'CommandOrControl+,',
+        exitApp: 'CommandOrControl+Q',
+        toggleTreeExpansion: 'CommandOrControl+O',
+        viewSummary: 'CommandOrControl+Alt+M',
+        toggleViewMode: 'CommandOrControl+M'
       },
       customPresets: [],
       inventory: {},
@@ -97,7 +101,7 @@ class ConfigService {
       }
     }
     
-    // Merge other properties
+    // Merge other properties with new hotkeys
     merged.hotkeys = { ...merged.hotkeys, ...config.hotkeys };
     merged.customPresets = config.customPresets || [];
     merged.inventory = config.inventory || {};

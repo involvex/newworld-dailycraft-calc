@@ -1,6 +1,6 @@
 {
   "name": "new-world-crafting-calculator",
-  "version": "1.6.1",
+  "version": "1.6.5",
   "description": "A comprehensive crafting calculator for Amazon's New World MMO with advanced OCR inventory detection, customizable hotkeys, persistent configuration system, and interactive crafting tree visualization.",
   "author": "Involvex",
   "homepage": "https://involvex.github.io/newworld-dailycraft-calc/",
@@ -44,7 +44,11 @@
     "build-all": "node build-all.js",
     "build-web": "node build-web-only.js",
     "build:signed": "npm run build:electron:prod && node build-signed.js",
-    "release": "npm run build:signed"
+    "release": "npm run build:signed",
+    "lint": "tsc --noEmit",
+    "lint:tsx": "tsc --noEmit --jsx react-jsx",
+    "validate": "npm run lint:tsx",
+    "build:check": "npm run lint && npm run build"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.6.0",
@@ -57,10 +61,15 @@
     "@types/node": "^24.0.13",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
     "electron": "^37.2.1",
-    "electron-builder": "^26.0.18",
+    "electron-builder": "^26.0.12",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
     "gh-pages": "^6.3.0",
     "typescript": "^5.8.3",
     "vite": "^7.0.4",

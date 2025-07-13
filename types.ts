@@ -98,6 +98,9 @@ declare global {
       onTriggerOCR: (callback: () => void) => (() => void);
       onShowSettings: (callback: () => void) => (() => void);
       onShowAbout: (callback: () => void) => (() => void);
+      onToggleViewMode: (callback: () => void) => (() => void);
+      onToggleTreeExpansion: (callback: () => void) => (() => void);
+      onViewSummary: (callback: () => void) => (() => void);
       exitApp: () => Promise<void>;
       config: {
         load: () => Promise<any>;
