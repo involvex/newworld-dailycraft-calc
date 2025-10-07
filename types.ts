@@ -70,11 +70,40 @@ export interface AllBonuses {
   [category: string]: BonusConfiguration;
 }
 
+
+export interface AnalyzedItem {
+  itemName: string;
+  quantity: number;
+}
+
+export interface ProcessedItem extends AnalyzedItem {
+  price: number;
+  totalValue: number;
+  status: 'loading' | 'complete' | 'not_found';
+}
+
+export interface RawPriceData {
+  item_id: string; 
+  price: number;
+}
+
+export interface ServerInfo {
+  id: string;
+  name: string;
+}
+
+// A map where the key is the lowercase item ID and the value is the item's display name.
+export type ItemDefinitionMap = Record<string, string>;
+
+
 // Electron API types
 declare global {
   interface Window {
     electronAPI?: {
       getDesktopSources: () => Promise<any[]>;
+      runPSScript: (scriptPath: string) => Promise<{ stdout: string; stderr: string; }>;
+      readClipboardImage: () => Promise<string>;
+      isDev: () => Promise<boolean>;
       onTriggerOCR: (callback: () => void) => (() => void);
       onShowSettings: (callback: () => void) => (() => void);
       onShowAbout: (callback: () => void) => (() => void);
@@ -94,4 +123,32 @@ declare global {
 export interface Preset {
   name: string;
   items: { id: string; qty: number }[];
+}
+
+export interface GEMINI_API_KEY {
+  GEMINI_API_KEY: string;
+}
+
+export interface Settings {
+  viewMode: 'net' | 'gross';
+  summaryMode: 'net' | 'gross';
+  showAdvanced: boolean;
+  debugOCRPreview: boolean;
+  bonuses: AllBonuses;
+}
+
+export interface Config {
+  version: string;
+  settings: Settings;
+  hotkeys: {
+    toggleCalculator: string;
+    triggerOCR: string;
+    openSettings: string;
+  };
+  customPresets: Preset[];
+  inventory: Record<string, number>;
+  selectedPreset: string;
+  collapsedNodes: string[];
+  GEMINI_API_KEY: string;
+  [key: string]: any;
 }

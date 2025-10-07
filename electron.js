@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, session, desktopCapturer, ipcMain, globalShortcut, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, session, desktopCapturer, ipcMain, globalShortcut, dialog, clipboard } = require('electron');
 const path = require('path');
 const ConfigService = require('./services/configService');
 
@@ -163,6 +163,8 @@ function createTray() {
   }
 }
 
+app.disableHardwareAcceleration();
+
 app.whenReady().then(() => {
   // Set development mode detection
   isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev') || !app.isPackaged;
@@ -190,11 +192,12 @@ app.whenReady().then(() => {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file: https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://esm.sh https://unpkg.com; " +
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: file: https://cdn.tailwindcss.com https://esm.sh https://unpkg.com; " +
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: file: https://cdn.tailwindcss.com https://esm.sh https://unpkg.com https://cdn.jsdelivr.net; " +
           "style-src 'self' 'unsafe-inline' data: file: https://cdn.tailwindcss.com https://fonts.googleapis.com; " +
           "font-src 'self' data: file: https://fonts.gstatic.com; " +
           "img-src 'self' data: blob: file:; " +
-          "connect-src 'self' blob: file:;"
+          "connect-src 'self' blob: file: data: https://cdn.jsdelivr.net https://generativelanguage.googleapis.com;" +
+          "worker-src 'self' blob:;"
         ]
       }
     });
@@ -221,6 +224,27 @@ app.whenReady().then(() => {
     return sources;
   });
   
+const { exec } = require('child_process');
+
+  ipcMain.handle('run-ps-script', async (event, scriptPath) => {
+    return new Promise((resolve, reject) => {
+      exec(`powershell -ExecutionPolicy Bypass -File "${scriptPath}"`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`exec error: ${error}`);
+          return reject(error);
+        }
+        resolve({ stdout, stderr });
+      });
+    });
+  });
+
+  ipcMain.handle('get-is-dev', () => isDev);
+
+  ipcMain.handle('read-clipboard-image', () => {
+    const image = clipboard.readImage();
+    return image.toDataURL();
+  });
+
   // Handle app exit
   ipcMain.handle('app-exit', () => {
     app.isQuiting = true;
@@ -230,7 +254,9 @@ app.whenReady().then(() => {
   // Config management handlers
   ipcMain.handle('load-config', () => {
     try {
-      return configService ? configService.loadConfig() : {};
+      const loadedConfig = configService ? configService.loadConfig() : {};
+      // Ensure GEMINI_API_KEY is explicitly included in the returned config
+      return { ...loadedConfig, GEMINI_API_KEY: loadedConfig.GEMINI_API_KEY || '' };
     } catch (error) {
       console.error('Error loading config:', error);
       return {};

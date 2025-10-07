@@ -1,51 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-interface ConfigData {
-  bonuses: {
-    cooking: number;
-    arcana: number;
-    armoring: number;
-    engineering: number;
-    furnishing: number;
-    jewelcrafting: number;
-    leatherworking: number;
-    weaponsmithing: number;
-    woodworking: number;
-    stonecutting: number;
-    weaving: number;
-    smelting: number;
-  };
+// Define a more specific type for the configuration data
+export interface ConfigData {
+  GEMINI_API_KEY: string;
   hotkeys: {
     toggleCalculator: string;
     triggerOCR: string;
     openSettings: string;
   };
-  presets: Array<{
-    id: string;
-    name: string;
-    selectedItems: Record<string, number>;
-    bonuses: Record<string, number>;
-    selectedIngredients: Record<string, string>;
-  }>;
-  inventory: Record<string, number>;
-  ui: {
-    theme: string;
-    showTooltips: boolean;
-    autoCollapse: boolean;
-  };
+  // Add other config properties as needed
+  [key: string]: any; // Allow other properties
 }
 
+const defaultConfig: ConfigData = {
+  GEMINI_API_KEY: '',
+  hotkeys: {
+    toggleCalculator: 'CommandOrControl+Alt+I',
+    triggerOCR: 'CommandOrControl+Alt+O',
+    openSettings: 'CommandOrControl+Alt+S',
+  },
+};
+
 export function useConfig() {
-  const [config, setConfig] = useState<ConfigData | null>(null);
+  const [config, setConfig] = useState<ConfigData>(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if we're in Electron environment
-  const isElectron = () => {
-    return typeof window !== 'undefined' && window.electronAPI;
-  };
+  const isElectron = () => typeof window !== 'undefined' && window.electronAPI;
 
-  // Load configuration
   const loadConfig = async () => {
     try {
       setIsLoading(true);
@@ -55,41 +37,10 @@ export function useConfig() {
         const loadedConfig = await window.electronAPI.config.load();
         setConfig(loadedConfig);
       } else {
-        // Fallback to localStorage for web version
         const savedData = localStorage.getItem('nw-crafting-config');
         if (savedData) {
-          setConfig(JSON.parse(savedData));
-        } else {
-          // Set default config
-          const defaultConfig: ConfigData = {
-            bonuses: {
-              cooking: 0,
-              arcana: 0,
-              armoring: 0,
-              engineering: 0,
-              furnishing: 0,
-              jewelcrafting: 0,
-              leatherworking: 0,
-              weaponsmithing: 0,
-              woodworking: 0,
-              stonecutting: 0,
-              weaving: 0,
-              smelting: 0,
-            },
-            hotkeys: {
-              toggleCalculator: 'CommandOrControl+Alt+I',
-              triggerOCR: 'CommandOrControl+Alt+O',
-              openSettings: 'CommandOrControl+Alt+S',
-            },
-            presets: [],
-            inventory: {},
-            ui: {
-              theme: 'dark',
-              showTooltips: true,
-              autoCollapse: false,
-            },
-          };
-          setConfig(defaultConfig);
+          const parsedConfig = JSON.parse(savedData);
+          setConfig(parsedConfig);
         }
       }
     } catch (err) {
@@ -100,11 +51,9 @@ export function useConfig() {
     }
   };
 
-  // Save configuration
   const saveConfig = async (newConfig: ConfigData) => {
     try {
       setError(null);
-
       if (isElectron() && window.electronAPI?.config) {
         const success = await window.electronAPI.config.save(newConfig);
         if (success) {
@@ -113,7 +62,6 @@ export function useConfig() {
           throw new Error('Failed to save configuration to file');
         }
       } else {
-        // Fallback to localStorage for web version
         localStorage.setItem('nw-crafting-config', JSON.stringify(newConfig));
         setConfig(newConfig);
       }
@@ -124,85 +72,41 @@ export function useConfig() {
     }
   };
 
-  // Update specific config section
-  const updateConfig = async (section: keyof ConfigData, data: any) => {
-    if (!config) return;
-
-    const updatedConfig = {
-      ...config,
-      [section]: { ...config[section], ...data }
-    };
-
+  // Simplified update function for top-level keys
+  const updateConfig = async (key: keyof ConfigData, value: any) => {
+    const updatedConfig = { ...config, [key]: value };
     await saveConfig(updatedConfig);
   };
 
-  // Register hotkeys in Electron
   const registerHotkeys = async (hotkeys: ConfigData['hotkeys']) => {
     if (isElectron() && window.electronAPI?.config) {
       try {
-        const success = await window.electronAPI.config.registerHotkeys(hotkeys);
-        if (!success) {
-          throw new Error('Failed to register hotkeys');
-        }
+        await window.electronAPI.config.registerHotkeys(hotkeys);
       } catch (err) {
         console.error('Error registering hotkeys:', err);
         setError(err instanceof Error ? err.message : 'Failed to register hotkeys');
-        throw err;
       }
     }
   };
 
-  // Export configuration
   const exportConfig = async () => {
-    if (isElectron() && window.electronAPI?.config) {
-      try {
-        const success = await window.electronAPI.config.export();
-        return success;
-      } catch (err) {
-        console.error('Error exporting config:', err);
-        setError(err instanceof Error ? err.message : 'Failed to export configuration');
-        return false;
-      }
-    }
-    return false;
+    return isElectron() && window.electronAPI?.config ? window.electronAPI.config.export() : Promise.resolve(false);
   };
 
-  // Import configuration
   const importConfig = async () => {
     if (isElectron() && window.electronAPI?.config) {
-      try {
-        const importedConfig = await window.electronAPI.config.import();
-        if (importedConfig) {
-          setConfig(importedConfig);
-          return true;
-        }
-        return false;
-      } catch (err) {
-        console.error('Error importing config:', err);
-        setError(err instanceof Error ? err.message : 'Failed to import configuration');
-        return false;
+      const importedConfig = await window.electronAPI.config.import();
+      if (importedConfig) {
+        setConfig(importedConfig);
+        return true;
       }
     }
     return false;
   };
 
-  // Get config file path
   const getConfigPath = async () => {
-    if (isElectron() && window.electronAPI?.config) {
-      try {
-        return await window.electronAPI.config.getPath();
-      } catch (err) {
-        console.error('Error getting config path:', err);
-        return null;
-      }
-    }
-    return null;
+    return isElectron() && window.electronAPI?.config ? window.electronAPI.config.getPath() : Promise.resolve('');
   };
-
-  // Load config on mount
-  useEffect(() => {
-    loadConfig();
-  }, []);
 
   return {
     config,

@@ -1,0 +1,20 @@
+name: Lint
+
+on:
+    push:
+    pull_request:
+
+jobs:
+    eslint:
+        name: ESLint
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install node v22
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+            - name: Install dependencies
+              run: npm install
+            - name: Run ESLint
+              run: ./node_modules/.bin/eslint .

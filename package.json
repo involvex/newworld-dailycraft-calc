@@ -1,6 +1,6 @@
 {
   "name": "new-world-crafting-calculator",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "A comprehensive crafting calculator for Amazon's New World MMO with advanced OCR inventory detection, customizable hotkeys, persistent configuration system, and interactive crafting tree visualization.",
   "author": "Involvex",
   "homepage": "https://involvex.github.io/newworld-dailycraft-calc/",
@@ -31,9 +31,10 @@
     "build:electron:prod": "cross-env NODE_ENV=production vite build --mode electron",
     "build:pages": "cross-env VITE_BASE_URL=/newworld-dailycraft-calc/ vite build",
     "preview": "vite preview",
-    "electron-dev": "concurrently \"vite\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron": "npm run build:electron && electron .",
-    "electron:prod": "npm run build:electron:prod && cross-env NODE_ENV=production electron .",
+    "electron-dev": "concurrently \"npm:dev\" \"npm:start-electron-dev\"",
+    "start-electron-dev": "wait-on http://localhost:3000 && cross-env NODE_ENV=development \"node_modules/.bin/electron\" electron.js",
+    "electron": "npm run build:electron && npx electron electron.js",
+    "electron:prod": "npm run build:electron:prod && cross-env NODE_ENV=production npx electron electron.js",
     "dist": "npm run build:electron:prod && cross-env NODE_ENV=production electron-builder --config.compression=maximum --config.win.target=portable",
     "deploy": "npm run build:pages && copy dist\\index.html docs\\index.html && xcopy dist\\assets docs\\assets /E /I /Y",
     "build:prod": "powershell -ExecutionPolicy Bypass -File .\\build-prod.ps1",
@@ -41,15 +42,25 @@
     "serve": "npm run build && node simple-server.js",
     "portable": "npm run build:electron && node build-portable.js",
     "build-all": "node build-all.js",
-    "build-web": "node build-web-only.js"
+    "build-web": "node build-web-only.js",
+    "lint": "npx eslint . --config eslint.config.mjs",
+    "lint:fix": "npx eslint . --config eslint.config.mjs --fix"
   },
   "dependencies": {
+    "@google/genai": "^1.22.0",
     "@vitejs/plugin-react": "^4.6.0",
+    "cloneable-readable": "^3.0.0",
+    "core-util-is": "^1.0.3",
+    "globals": "^16.4.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
+    "@eslint/css": "^0.12.0",
+    "@eslint/js": "^9.37.0",
+    "@eslint/json": "^0.13.2",
+    "@eslint/markdown": "^7.4.0",
     "@types/node": "^24.0.13",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
@@ -57,8 +68,12 @@
     "cross-env": "^7.0.3",
     "electron": "^37.2.1",
     "electron-builder": "^26.0.12",
+    "eslint-plugin-react": "^7.37.5",
+    "generate": "^0.14.0",
+    "generate-eslint": "^1.0.0",
     "gh-pages": "^6.3.0",
     "typescript": "^5.8.3",
+    "typescript-eslint": "^8.46.0",
     "vite": "^7.0.4",
     "wait-on": "^8.0.3"
   },
@@ -75,7 +90,8 @@
       "logo.png",
       "services/**/*",
       "dist/**/*",
-      "!dist/**/*.map"
+      "!dist/**/*.map",
+      "fokusnewworldscreenshot.ps1"
     ],
     "icon": "logo.png",
     "compression": "maximum",

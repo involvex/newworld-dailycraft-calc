@@ -1,6 +1,10 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  runPSScript: (scriptPath) => ipcRenderer.invoke('run-ps-script', scriptPath),
+  readClipboardImage: () => ipcRenderer.invoke('read-clipboard-image'),
+  readClipboardImage: () => ipcRenderer.invoke('read-clipboard-image'),
+  isDev: () => ipcRenderer.invoke('get-is-dev'),
   getDesktopSources: () => ipcRenderer.invoke('get-desktop-sources'),
   onTriggerOCR: (callback) => {
     ipcRenderer.on('trigger-ocr', callback);

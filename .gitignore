@@ -13,12 +13,13 @@ build-portable.js
 simple-server.js
 *.py
 dist/
-icons/
+icons/*
+icons
 build-portable.js
 .amazonq/
 _pycache_/
 .mypy_cache/
 data/*.csv
-.clinerules/
+.clinerules/*
 AppKopie.tsx
 .vscode/

@@ -19,17 +19,9 @@ interface SummaryListProps {
   onIngredientChange?: (itemId: string, ingredient: string) => void;
 }
 
-const SummaryList: React.FC<SummaryListProps> = ({ 
-  materials, 
-  getIconUrl, 
-  title, 
-  inventory = {}, 
-  onInventoryChange, 
-  showInventory = false,
-  selectedIngredients = {},
-  onIngredientChange
-}) => {
-  const [editingItem, setEditingItem] = useState<string | null>(null);
+import PropTypes from 'prop-types';
+
+const SummaryList = ({ materials, inventory, onInventoryChange, getIconUrl, title, showInventory, selectedIngredients, onIngredientChange }) => {  const [editingItem, setEditingItem] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'success' | 'error'>('idle');
 
@@ -245,6 +237,17 @@ const SummaryList: React.FC<SummaryListProps> = ({
       </div>
     </div>
   );
+};
+
+SummaryList.propTypes = {
+  materials: PropTypes.array.isRequired,
+  inventory: PropTypes.object.isRequired,
+  onInventoryChange: PropTypes.func.isRequired,
+  getIconUrl: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  showInventory: PropTypes.bool.isRequired,
+  selectedIngredients: PropTypes.object.isRequired,
+  onIngredientChange: PropTypes.func.isRequired,
 };
 
 export default SummaryList;

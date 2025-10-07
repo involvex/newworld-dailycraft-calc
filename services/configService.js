@@ -1,6 +1,8 @@
 const { app } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const { ENCRYPTION_KEY, IV } = require('./configEncryption'); // Import persistent key and IV
 
 class ConfigService {
   constructor() {
@@ -35,7 +37,8 @@ class ConfigService {
       customPresets: [],
       inventory: {},
       selectedPreset: '',
-      collapsedNodes: []
+      collapsedNodes: [],
+      encryptedGeminiApiKey: '' // Store encrypted key here
     };
     this.ensureConfigDirectory();
   }
@@ -44,11 +47,27 @@ class ConfigService {
     try {
       if (!fs.existsSync(this.configDir)) {
         fs.mkdirSync(this.configDir, { recursive: true });
-        console.log(`Created config directory: ${this.configDir}`);
       }
     } catch (error) {
       console.error('Error creating config directory:', error);
     }
+  }
+
+  encrypt(text) {
+    const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, IV);
+    let encrypted = cipher.update(text);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return IV.toString('hex') + ':' + encrypted.toString('hex');
+  }
+
+  decrypt(text) {
+    const textParts = text.split(':');
+    const iv = Buffer.from(textParts.shift(), 'hex');
+    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
   }
 
   loadConfig() {
@@ -56,7 +75,16 @@ class ConfigService {
       if (fs.existsSync(this.configFile)) {
         const configData = fs.readFileSync(this.configFile, 'utf8');
         const config = JSON.parse(configData);
-        // Merge with default config to ensure all properties exist
+        
+        // Decrypt API key if present
+        if (config.encryptedGeminiApiKey) {
+          try {
+            config.GEMINI_API_KEY = this.decrypt(config.encryptedGeminiApiKey);
+          } catch (decryptError) {
+            console.error('Error decrypting Gemini API Key:', decryptError);
+            config.GEMINI_API_KEY = ''; // Clear invalid key
+          }
+        }
         return this.mergeWithDefaults(config);
       }
     } catch (error) {
@@ -67,18 +95,23 @@ class ConfigService {
 
   saveConfig(config) {
     try {
-      // Ensure config directory exists
       this.ensureConfigDirectory();
       
+      const configToSave = { ...config };
+
+      // Encrypt API key before saving
+      if (configToSave.GEMINI_API_KEY) {
+        configToSave.encryptedGeminiApiKey = this.encrypt(configToSave.GEMINI_API_KEY);
+        delete configToSave.GEMINI_API_KEY; // Remove plain text key
+      } else {
+        configToSave.encryptedGeminiApiKey = '';
+      }
+
       // Add version and timestamp
-      const configToSave = {
-        ...config,
-        version: this.version,
-        lastSaved: new Date().toISOString()
-      };
+      configToSave.version = this.defaultConfig.version; // Use default version
+      configToSave.lastSaved = new Date().toISOString();
       
       fs.writeFileSync(this.configFile, JSON.stringify(configToSave, null, 2), 'utf8');
-      console.log(`Config saved to: ${this.configFile}`);
       return true;
     } catch (error) {
       console.error('Error saving config:', error);
@@ -89,7 +122,6 @@ class ConfigService {
   mergeWithDefaults(config) {
     const merged = { ...this.defaultConfig };
     
-    // Deep merge settings
     if (config.settings) {
       merged.settings = { ...merged.settings, ...config.settings };
       if (config.settings.bonuses) {
@@ -97,12 +129,12 @@ class ConfigService {
       }
     }
     
-    // Merge other properties
     merged.hotkeys = { ...merged.hotkeys, ...config.hotkeys };
     merged.customPresets = config.customPresets || [];
     merged.inventory = config.inventory || {};
     merged.selectedPreset = config.selectedPreset || '';
     merged.collapsedNodes = config.collapsedNodes || [];
+    merged.GEMINI_API_KEY = config.GEMINI_API_KEY || ''; // Ensure decrypted key is merged
     
     return merged;
   }

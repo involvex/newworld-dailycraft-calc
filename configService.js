@@ -1,6 +1,12 @@
 const { app } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+
+// --- Encryption Settings ---
+const ALGORITHM = 'aes-256-gcm';
+const SECRET_KEY = Buffer.from('9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', 'hex'); // 32-byte key
+const IV_LENGTH = 16; // For AES, this is always 16
 
 class ConfigService {
   constructor() {
@@ -12,6 +18,7 @@ class ConfigService {
         viewMode: 'net',
         summaryMode: 'net',
         showAdvanced: false,
+        debugOCRPreview: false,
         bonuses: {
           Smelting: { skillLevel: 250, gearBonus: 10, fortActive: true },
           Leatherworking: { skillLevel: 250, gearBonus: 10, fortActive: true },
@@ -35,9 +42,44 @@ class ConfigService {
       customPresets: [],
       inventory: {},
       selectedPreset: '',
-      collapsedNodes: []
+      collapsedNodes: [],
+      GEMINI_API_KEY: '' // Default empty value
     };
     this.ensureConfigDirectory();
+  }
+
+  encrypt(text) {
+    if (!text) return '';
+    try {
+      const iv = crypto.randomBytes(IV_LENGTH);
+      const cipher = crypto.createCipheriv(ALGORITHM, SECRET_KEY, iv);
+      let encrypted = cipher.update(text, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
+      const authTag = cipher.getAuthTag();
+      return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+    } catch (error) {
+      console.error('Encryption failed:', error);
+      return ''; // Return empty string on failure
+    }
+  }
+
+  decrypt(text) {
+    if (!text) return '';
+    try {
+      const parts = text.split(':');
+      if (parts.length !== 3) throw new Error('Invalid encrypted format');
+      const iv = Buffer.from(parts[0], 'hex');
+      const authTag = Buffer.from(parts[1], 'hex');
+      const encryptedText = parts[2];
+      const decipher = crypto.createDecipheriv(ALGORITHM, SECRET_KEY, iv);
+      decipher.setAuthTag(authTag);
+      let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      return decrypted;
+    } catch (error) {
+      console.error('Decryption failed:', error);
+      return ''; // Return empty string on failure, preventing app crash
+    }
   }
 
   ensureConfigDirectory() {
@@ -56,7 +98,10 @@ class ConfigService {
       if (fs.existsSync(this.configFile)) {
         const configData = fs.readFileSync(this.configFile, 'utf8');
         const config = JSON.parse(configData);
-        // Merge with default config to ensure all properties exist
+        // Decrypt API key if it exists
+        if (config.GEMINI_API_KEY) {
+          config.GEMINI_API_KEY = this.decrypt(config.GEMINI_API_KEY);
+        }
         return this.mergeWithDefaults(config);
       }
     } catch (error) {
@@ -67,15 +112,17 @@ class ConfigService {
 
   saveConfig(config) {
     try {
-      // Ensure config directory exists
       this.ensureConfigDirectory();
       
-      // Add version and timestamp
-      const configToSave = {
-        ...config,
-        version: '1.0.3',
-        lastSaved: new Date().toISOString()
-      };
+      const configToSave = { ...config };
+
+      // Encrypt API key before saving
+      if (configToSave.GEMINI_API_KEY) {
+        configToSave.GEMINI_API_KEY = this.encrypt(configToSave.GEMINI_API_KEY);
+      }
+
+      configToSave.version = '1.0.4'; // Version bump
+      configToSave.lastSaved = new Date().toISOString();
       
       fs.writeFileSync(this.configFile, JSON.stringify(configToSave, null, 2), 'utf8');
       console.log(`Config saved to: ${this.configFile}`);
@@ -103,6 +150,10 @@ class ConfigService {
     merged.inventory = config.inventory || {};
     merged.selectedPreset = config.selectedPreset || '';
     merged.collapsedNodes = config.collapsedNodes || [];
+    // Crucially, preserve the loaded API key if it exists
+    if (config.hasOwnProperty('GEMINI_API_KEY')) {
+      merged.GEMINI_API_KEY = config.GEMINI_API_KEY;
+    }
     
     return merged;
   }

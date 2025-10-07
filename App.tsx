@@ -36,8 +36,13 @@ const getInitial = <T,>(key: string, fallback: T): T => {
 };
 
 const App: React.FC = () => {
-  // Config management
-  useConfig();
+  // Centralized config management
+  const configState = useConfig();
+  const { loadConfig } = configState;
+
+  useEffect(() => {
+    loadConfig();
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   // App state
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(() => getInitial('collapsedNodes', new Set()));
@@ -153,11 +158,14 @@ const filteredCraftableItems = useMemo(() => {
 
   const {
     captureAndProcessScreenshot,
-    parseInventoryOCR,
+    parseManualInventory,
+    processClipboardImage,
   } = useInventoryOCR({
     setOCREditText,
     setShowOCREdit,
     setIsProcessingOCR,
+    geminiApiKey: configState.config?.GEMINI_API_KEY, // Pass API key as prop
+    debugOCRPreview: configState.config?.settings?.debugOCRPreview, // Pass debug setting as prop
   });
 
   const getIconUrl = useCallback((itemId: string) => {
@@ -259,7 +267,7 @@ const filteredCraftableItems = useMemo(() => {
             if (data.collapsedNodes) setCollapsedNodes(new Set(data.collapsedNodes));
             showToastMessage('Data imported successfully!');
           } catch (error) {
-            showToastMessage('Failed to import data. The file may be corrupted.');
+            showToastMessage('Failed to import data. The file may be corrupted.' + error);
           }
         };
         reader.readAsText(file);
@@ -326,45 +334,45 @@ const filteredCraftableItems = useMemo(() => {
 
   return (
     <React.Fragment>
-      <div className="bg-gray-900 text-gray-300 min-h-screen font-sans app-gradient-bg">
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-6xl">
+      <div className="min-h-screen font-sans text-gray-300 bg-gray-900 app-gradient-bg">
+        <div className="container max-w-6xl p-4 mx-auto sm:p-6 lg:p-8">
           <header className="mb-6 text-center">
-            <img src="logo.png" alt="New World Crafting Calculator" className="mx-auto mb-4 h-20 w-auto" />
-            <h1 className="text-3xl font-bold text-yellow-300 mb-2">New World Crafting Calculator</h1>
-            <p className="text-gray-400 text-sm">Plan your crafting efficiently with advanced material calculations</p>
+            <img src="logo.png" alt="New World Crafting Calculator" className="w-auto h-20 mx-auto mb-4" />
+            <h1 className="mb-2 text-3xl font-bold text-yellow-300">New World Crafting Calculator</h1>
+            <p className="text-sm text-gray-400">Plan your crafting efficiently with advanced material calculations</p>
           </header>
 
           {/* Navigation Bar */}
-          <div className="mb-6 bg-gray-800/30 p-3 rounded-xl border border-gray-600/30 backdrop-blur-sm">
-            <div className="flex flex-wrap gap-2 items-center justify-center">
-              <span className="text-sm text-gray-300 font-medium mr-2">Jump to:</span>
+          <div className="p-3 mb-6 border bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="mr-2 text-sm font-medium text-gray-300">Jump to:</span>
               <button
                 onClick={() => document.getElementById('presets-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 rounded-md text-xs text-yellow-300 transition-all duration-200"
+                className="px-3 py-1 text-xs text-yellow-300 transition-all duration-200 border rounded-md bg-yellow-600/20 hover:bg-yellow-600/40 border-yellow-500/30"
               >
                 📋 Presets
               </button>
               <button
                 onClick={() => document.getElementById('selection-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 rounded-md text-xs text-yellow-300 transition-all duration-200"
+                className="px-3 py-1 text-xs text-yellow-300 transition-all duration-200 border rounded-md bg-yellow-600/20 hover:bg-yellow-600/40 border-yellow-500/30"
               >
                 🎯 Item Selection
               </button>
               <button
                 onClick={() => document.getElementById('inventory-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-md text-xs text-blue-300 transition-all duration-200"
+                className="px-3 py-1 text-xs text-blue-300 transition-all duration-200 border rounded-md bg-blue-600/20 hover:bg-blue-600/40 border-blue-500/30"
               >
                 🎒 Inventory
               </button>
               <button
                 onClick={() => document.getElementById('crafting-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 bg-green-600/20 hover:bg-green-600/40 border border-green-500/30 rounded-md text-xs text-green-300 transition-all duration-200"
+                className="px-3 py-1 text-xs text-green-300 transition-all duration-200 border rounded-md bg-green-600/20 hover:bg-green-600/40 border-green-500/30"
               >
                 🌳 Crafting Tree
               </button>
               <button
                 onClick={() => document.getElementById('summary-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 rounded-md text-xs text-purple-300 transition-all duration-200"
+                className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-purple-600/20 hover:bg-purple-600/40 border-purple-500/30"
               >
                 📊 Summary
               </button>
@@ -372,10 +380,10 @@ const filteredCraftableItems = useMemo(() => {
           </div>
 
           {/* Quick Controls Bar */}
-          <div className="mb-6 bg-gray-800/50 p-4 rounded-xl border border-yellow-900/30 backdrop-blur-sm">
-            <div className="flex flex-wrap gap-3 items-center justify-center">
-              <div className="flex items-center gap-2 bg-gray-700/50 rounded-lg px-3 py-2">
-                <span className="text-sm text-gray-300 font-medium">View:</span>
+          <div className="p-4 mb-6 border bg-gray-800/50 rounded-xl border-yellow-900/30 backdrop-blur-sm">
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700/50">
+                <span className="text-sm font-medium text-gray-300">View:</span>
                 <button
                   onClick={() => handleViewModeChange(viewMode === 'net' ? 'gross' : 'net')}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
@@ -389,8 +397,8 @@ const filteredCraftableItems = useMemo(() => {
                 </button>
               </div>
               
-              <div className="flex items-center gap-2 bg-gray-700/50 rounded-lg px-3 py-2">
-                <span className="text-sm text-gray-300 font-medium">Summary:</span>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700/50">
+                <span className="text-sm font-medium text-gray-300">Summary:</span>
                 <button
                   onClick={() => handleSummaryModeChange(summaryMode === 'net' ? 'xp' : 'net')}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
@@ -418,19 +426,19 @@ const filteredCraftableItems = useMemo(() => {
             </div>
           </div>
           {/* Presets Section */}
-          <div id="presets-section" className="mb-6 bg-gradient-to-r from-gray-800 to-gray-700 p-4 rounded-xl border border-yellow-900/40 shadow-lg">
-            <h3 className="text-lg font-semibold text-yellow-300 mb-3 flex items-center">
+          <div id="presets-section" className="p-4 mb-6 border shadow-lg bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl border-yellow-900/40">
+            <h3 className="flex items-center mb-3 text-lg font-semibold text-yellow-300">
               <span className="mr-2">📋</span>
               Crafting Presets
             </h3>
-            <div className="flex gap-2 flex-wrap items-center">
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 title="Select a preset"
                 value={selectedPreset}
                 onChange={(e) => {
                   handlePresetSelect(e.target.value);
                 }}
-                className="flex-1 min-w-64 bg-gray-700 border border-yellow-900/40 rounded-lg py-2 px-3 text-yellow-100 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+                className="flex-1 px-3 py-2 text-sm text-yellow-100 transition-all bg-gray-700 border rounded-lg min-w-64 border-yellow-900/40 focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               >
                 <option value="">🎯 Select a preset...</option>
                 {PRESETS.map((preset: any) => {
@@ -449,7 +457,7 @@ const filteredCraftableItems = useMemo(() => {
               </select>
               <button
                 onClick={() => setShowCreatePreset(true)}
-                className="px-3 py-2 bg-green-600 hover:bg-green-700 border border-green-500 rounded-lg text-sm text-white hover:shadow-lg transition-all duration-200 flex-shrink-0"
+                className="flex-shrink-0 px-3 py-2 text-sm text-white transition-all duration-200 bg-green-600 border border-green-500 rounded-lg hover:bg-green-700 hover:shadow-lg"
                 title="Create Preset"
               >
                 ➕ Create
@@ -462,7 +470,7 @@ const filteredCraftableItems = useMemo(() => {
                     showToastMessage('Please select a preset to delete.');
                   }
                 }}
-                className="px-3 py-2 bg-red-600 hover:bg-red-700 border border-red-500 rounded-lg text-sm text-white hover:shadow-lg transition-all duration-200 flex-shrink-0"
+                className="flex-shrink-0 px-3 py-2 text-sm text-white transition-all duration-200 bg-red-600 border border-red-500 rounded-lg hover:bg-red-700 hover:shadow-lg"
                 title="Delete Preset"
               >
                 🗑️ Delete
@@ -472,10 +480,10 @@ const filteredCraftableItems = useMemo(() => {
 
           {/* Main Content */}
           <div id="selection-section" className="mb-6">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+            <div className="grid items-start grid-cols-1 gap-6 lg:grid-cols-4">
               {/* Left Side: Item Selection */}
-              <div className="lg:col-span-3 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-yellow-900/40 shadow-lg">
-                <h3 className="text-lg font-semibold text-yellow-300 mb-4 flex items-center">
+              <div className="p-6 border shadow-lg lg:col-span-3 bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl border-yellow-900/40">
+                <h3 className="flex items-center mb-4 text-lg font-semibold text-yellow-300">
                   <span className="mr-2">🎯</span>
                   Item Selection
                 </h3>
@@ -485,12 +493,12 @@ const filteredCraftableItems = useMemo(() => {
                     placeholder="🔍 Search for items to craft..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 text-white pr-10 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 pr-10 text-white transition-all bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   />
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                      className="absolute text-gray-400 transition-colors transform -translate-y-1/2 right-3 top-1/2 hover:text-gray-200"
                       title="Clear search"
                     >
                       ❌
@@ -503,7 +511,7 @@ const filteredCraftableItems = useMemo(() => {
                     setSelectedItemId(e.target.value);
                     setMultiItems([]); // Clear multi-items when a single item is selected
                   }}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 text-white transition-all bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   aria-label="Select item"
                 >
                   <option value="">📦 Select an item to craft...</option>
@@ -513,14 +521,14 @@ const filteredCraftableItems = useMemo(() => {
                 </select>
 
                 {multiItems.length > 0 && (
-                  <div className="mt-4 p-4 bg-gray-700/50 rounded-lg border border-yellow-900/30">
-                    <h4 className="text-md font-semibold text-yellow-400 mb-2 flex items-center">
+                  <div className="p-4 mt-4 border rounded-lg bg-gray-700/50 border-yellow-900/30">
+                    <h4 className="flex items-center mb-2 font-semibold text-yellow-400 text-md">
                       <span className="mr-2">📋</span>
                       Selected Items ({multiItems.length})
                     </h4>
-                    <ul className="space-y-2 max-h-48 overflow-y-auto">
+                    <ul className="space-y-2 overflow-y-auto max-h-48">
                       {multiItems.map(item => (
-                        <li key={item.id} className="text-sm text-gray-300 bg-gray-600/50 p-2 rounded flex items-center">
+                        <li key={item.id} className="flex items-center p-2 text-sm text-gray-300 rounded bg-gray-600/50">
                           <span className="mr-2">📦</span>
                           {item.qty}x {ITEMS[item.id]?.name}
                         </li>
@@ -531,18 +539,18 @@ const filteredCraftableItems = useMemo(() => {
               </div>
 
               {/* Right Side: Quantity and Controls */}
-              <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-yellow-900/40 shadow-lg">
-                <h3 className="text-lg font-semibold text-yellow-300 mb-4 flex items-center">
+              <div className="p-6 border shadow-lg bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl border-yellow-900/40">
+                <h3 className="flex items-center mb-4 text-lg font-semibold text-yellow-300">
                   <span className="mr-2">📊</span>
                   Controls
                 </h3>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Quantity</label>
+                  <label className="block mb-2 text-sm font-medium text-gray-300">Quantity</label>
                   <input
                     type="number"
                     value={quantity}
                     onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 text-white text-center text-lg font-bold focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 text-lg font-bold text-center text-white transition-all bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                     aria-label="Quantity"
                     min="1"
                     max="10000"
@@ -551,13 +559,13 @@ const filteredCraftableItems = useMemo(() => {
                 <div className="space-y-2">
                   <button 
                     onClick={() => setShowSettings(true)} 
-                    className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200"
+                    className="w-full px-4 py-3 text-sm font-medium transition-all duration-200 bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-lg"
                   >
                     ⚙️ Settings
                   </button>
                   <button 
                     onClick={() => setShowAbout(true)} 
-                    className="w-full px-4 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200"
+                    className="w-full px-4 py-3 text-sm font-medium transition-all duration-200 bg-gray-600 rounded-lg hover:bg-gray-700 hover:shadow-lg"
                   >
                     ℹ️ About
                   </button>
@@ -566,36 +574,36 @@ const filteredCraftableItems = useMemo(() => {
             </div>
 
             {showAdvanced && (
-              <div className="mt-6 bg-gradient-to-r from-gray-800 to-gray-700 p-6 rounded-xl border border-yellow-900/40 shadow-lg">
-                <h3 className="text-lg font-semibold text-yellow-400 mb-4 flex items-center">
+              <div className="p-6 mt-6 border shadow-lg bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl border-yellow-900/40">
+                <h3 className="flex items-center mb-4 text-lg font-semibold text-yellow-400">
                   <span className="mr-2">🔧</span>
                   Advanced Configuration
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-gray-700/50 p-4 rounded-lg">
-                    <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="p-4 rounded-lg bg-gray-700/50">
+                    <label className="flex items-center block mb-2 text-sm font-medium text-gray-300">
                       <span className="mr-2">👁️</span>
                       View Mode
                     </label>
                     <select 
                       value={viewMode} 
                       onChange={(e) => handleViewModeChange(e.target.value as ViewMode)} 
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-yellow-500 transition-all" 
+                      className="w-full px-3 py-2 text-white transition-all bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500" 
                       aria-label="View mode"
                     >
                       <option value="net">📊 Net (Consider Inventory)</option>
                       <option value="gross">📈 Gross (Total Required)</option>
                     </select>
                   </div>
-                  <div className="bg-gray-700/50 p-4 rounded-lg">
-                    <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center">
+                  <div className="p-4 rounded-lg bg-gray-700/50">
+                    <label className="flex items-center block mb-2 text-sm font-medium text-gray-300">
                       <span className="mr-2">📋</span>
                       Summary Mode
                     </label>
                     <select 
                       value={summaryMode} 
                       onChange={(e) => handleSummaryModeChange(e.target.value as SummaryMode)} 
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-yellow-500 transition-all" 
+                      className="w-full px-3 py-2 text-white transition-all bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500" 
                       aria-label="Summary mode"
                     >
                       <option value="net">📦 Material Summary</option>
@@ -608,12 +616,12 @@ const filteredCraftableItems = useMemo(() => {
           </div>
 
           {/* Inventory Tools */}
-          <div id="inventory-section" className="mb-6 bg-gradient-to-r from-blue-900/20 to-purple-900/20 p-6 rounded-xl border border-blue-500/30 shadow-lg">
-            <h3 className="text-lg font-semibold text-blue-300 mb-4 flex items-center">
+          <div id="inventory-section" className="p-6 mb-6 border shadow-lg bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl border-blue-500/30">
+            <h3 className="flex items-center mb-4 text-lg font-semibold text-blue-300">
               <span className="mr-2">🎒</span>
               Inventory Management
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2">
               <button 
                 onClick={captureAndProcessScreenshot} 
                 className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center ${
@@ -625,7 +633,7 @@ const filteredCraftableItems = useMemo(() => {
               >
                 {isProcessingOCR ? (
                   <>
-                    <span className="animate-spin mr-2">🔄</span>
+                    <span className="mr-2 animate-spin">🔄</span>
                     Scanning...
                   </>
                 ) : (
@@ -637,45 +645,52 @@ const filteredCraftableItems = useMemo(() => {
               </button>
               <button 
                 onClick={() => setShowManualEntry(true)} 
-                className="px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium text-white hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+                className="flex items-center justify-center px-4 py-3 text-sm font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg hover:bg-purple-700 hover:shadow-lg"
               >
                 <span className="mr-2">✏️</span>
                 Manual Entry
               </button>
+
             </div>
-            <p className="text-xs text-gray-400 mb-4 text-center">
+                          <button 
+                onClick={processClipboardImage} 
+                className="flex items-center justify-center px-4 py-3 text-sm font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg hover:bg-purple-700 hover:shadow-lg"
+              >                <span className="mr-2">✏️</span>
+                Use Image from Clipboard
+              </button>
+            <p className="mb-4 text-xs text-center text-gray-400">
               Use OCR to automatically detect your inventory from screenshots, or enter items manually
             </p>
 
             {/* Current Inventory */}
-            <div className="bg-gray-800/50 p-4 rounded-lg border border-blue-500/20">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="text-md font-semibold text-blue-300 flex items-center">
+            <div className="p-4 border rounded-lg bg-gray-800/50 border-blue-500/20">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="flex items-center font-semibold text-blue-300 text-md">
                   <span className="mr-2">📦</span>
                   Current Inventory ({Object.keys(inventory).length} items)
                 </h4>
                 <button 
                   onClick={handleClearInventory} 
-                  className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-xs text-white transition-all duration-200"
+                  className="px-3 py-1 text-xs text-white transition-all duration-200 bg-red-600 rounded hover:bg-red-700"
                   title="Clear all inventory"
                 >
                   🗑️ Clear All
                 </button>
               </div>
               {Object.keys(inventory).length === 0 ? (
-                <p className="text-gray-400 text-sm text-center py-4">
+                <p className="py-4 text-sm text-center text-gray-400">
                   No items in inventory. Use OCR scan or manual entry to add items.
                 </p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                <div className="grid grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3 max-h-48">
                   {Object.entries(inventory).sort(([, qtyA], [, qtyB]) => qtyB - qtyA).map(([itemId, qty]) => (
-                    <div key={itemId} className="flex justify-between items-center p-2 bg-gray-700/50 rounded text-sm">
-                      <span className="text-gray-300 truncate mr-2" title={ITEMS[itemId]?.name || itemId}>
+                    <div key={itemId} className="flex items-center justify-between p-2 text-sm rounded bg-gray-700/50">
+                      <span className="mr-2 text-gray-300 truncate" title={ITEMS[itemId]?.name || itemId}>
                         {ITEMS[itemId]?.name || itemId}: {qty.toLocaleString()}
                       </span>
                       <button
                         onClick={() => handleInventoryChange(itemId, 0)}
-                        className="text-red-400 hover:text-red-300 text-xs ml-1 flex-shrink-0"
+                        className="flex-shrink-0 ml-1 text-xs text-red-400 hover:text-red-300"
                         title="Remove item from inventory"
                       >
                         ✕
@@ -689,28 +704,28 @@ const filteredCraftableItems = useMemo(() => {
 
           {craftingData && (
             <div id="crafting-section" className="mb-6">
-              <div className="bg-gradient-to-r from-green-900/20 to-emerald-900/20 p-6 rounded-xl border border-green-500/30 shadow-lg">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-green-300 flex items-center">
+              <div className="p-6 border shadow-lg bg-gradient-to-r from-green-900/20 to-emerald-900/20 rounded-xl border-green-500/30">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="flex items-center text-xl font-bold text-green-300">
                     <span className="mr-2">🌳</span>
                     Crafting Tree
                   </h2>
                   <div className="flex gap-2">
                     <button 
                       onClick={() => handleExpandAll(craftingData)} 
-                      className="px-3 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-xs font-medium text-white hover:shadow-lg transition-all duration-200"
+                      className="px-3 py-2 text-xs font-medium text-white transition-all duration-200 bg-green-600 rounded-lg hover:bg-green-700 hover:shadow-lg"
                     >
                       📖 Expand All
                     </button>
                     <button 
                       onClick={() => handleCollapseAll(craftingData)} 
-                      className="px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-xs font-medium text-white hover:shadow-lg transition-all duration-200"
+                      className="px-3 py-2 text-xs font-medium text-white transition-all duration-200 bg-orange-600 rounded-lg hover:bg-orange-700 hover:shadow-lg"
                     >
                       📕 Collapse All
                     </button>
                   </div>
                 </div>
-                <div className="bg-gray-800/50 p-4 rounded-lg">
+                <div className="p-4 rounded-lg bg-gray-800/50">
                   <CraftingNode
                     node={craftingData}
                     collapsedNodes={collapsedNodes}
@@ -725,8 +740,8 @@ const filteredCraftableItems = useMemo(() => {
 
           {summaryData && (summaryData.materials || summaryData.xpGains) && (
             <div id="summary-section" className="mb-6">
-              <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 p-6 rounded-xl border border-purple-500/30 shadow-lg">
-                <h2 className="text-xl font-bold text-purple-300 mb-4 flex items-center">
+              <div className="p-6 border shadow-lg bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-xl border-purple-500/30">
+                <h2 className="flex items-center mb-4 text-xl font-bold text-purple-300">
                   <span className="mr-2">📊</span>
                   {summaryData.title || "Summary"}
                 </h2>
@@ -734,20 +749,20 @@ const filteredCraftableItems = useMemo(() => {
                   <XPSummaryList xpGains={summaryData.xpGains} />
                 ) : summaryData.materials ? (
                   <SummaryList
-                    materials={summaryData.materials}
-                    inventory={inventory}
-                    onInventoryChange={handleInventoryChange}
-                    getIconUrl={getIconUrl}
-                    title={summaryData.title || "Raw Materials"}
-                    showInventory={summaryMode === 'net'}
-                    selectedIngredients={selectedIngredients}
-                    onIngredientChange={(itemId, ingredient) => {
-                      setSelectedIngredients(prev => ({ ...prev, [itemId]: ingredient }));
-                    }}
+                  materials={summaryData.materials}
+                  inventory={inventory}
+                  onInventoryChange={handleInventoryChange}
+                  getIconUrl={getIconUrl}
+                  title={summaryData.title || "Raw Materials"}
+                  showInventory={summaryMode === 'net'}
+                  selectedIngredients={selectedIngredients}
+                  onIngredientChange={(itemId: string, ingredient: string) => {
+                    setSelectedIngredients(prev => ({ ...prev, [itemId]: ingredient }));
+                  }}
                   />
                 ) : (
-                  <div className="text-center text-gray-400 py-8">
-                    <p>No data available for this view.</p>
+                  <div className="py-8 text-center text-gray-400">
+                  <p>No data available for this view.</p>
                   </div>
                 )}
               </div>
@@ -763,6 +778,7 @@ const filteredCraftableItems = useMemo(() => {
             onImportData={handleImportData}
             onDeleteAllPresets={() => setShowDeleteAllPresets(true)}
             onEraseAllData={() => setShowEraseAllData(true)}
+            configState={configState}
           />
           {contextMenu && (
             <ContextMenu
@@ -786,26 +802,26 @@ const filteredCraftableItems = useMemo(() => {
           )}
 
           {showAbout && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
-                <h2 className="text-2xl font-bold text-yellow-300 mb-4">About</h2>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-xl">
+                <h2 className="mb-4 text-2xl font-bold text-yellow-300">About</h2>
                 <p className="text-gray-300">This New World Crafting Calculator is an open-source project designed to help players plan their crafting efficiently.</p>
-                <p className="text-gray-300 mt-2">Version: {APP_VERSION}</p>
-                <button onClick={() => setShowAbout(false)} className="mt-6 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Close</button>
+                <p className="mt-2 text-gray-300">Version: {APP_VERSION}</p>
+                <button onClick={() => setShowAbout(false)} className="w-full px-4 py-2 mt-6 font-bold text-white bg-yellow-600 rounded hover:bg-yellow-700">Close</button>
               </div>
             </div>
           )}
 
           {/* Manual Entry Modal */}
           {showManualEntry && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
               <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-                <h2 className="text-2xl font-bold text-yellow-300 mb-4">📝 Manual Inventory Entry</h2>
+                <h2 className="mb-4 text-2xl font-bold text-yellow-300">📝 Manual Inventory Entry</h2>
                 <div className="flex-1 overflow-y-auto">
-                  <p className="text-gray-300 mb-4">
-                    Enter your inventory items using the format: <code className="bg-gray-700 px-1 rounded">Item Name: Quantity</code>
+                  <p className="mb-4 text-gray-300">
+                    Enter your inventory items using the format: <code className="px-1 bg-gray-700 rounded">Item Name: Quantity</code>
                   </p>
-                  <div className="mb-4 p-3 bg-gray-700 rounded text-sm text-gray-300">
+                  <div className="p-3 mb-4 text-sm text-gray-300 bg-gray-700 rounded">
                     <strong>Examples:</strong><br />
                     Iron Ore: 1800<br />
                     Orichalcum Ore: 635<br />
@@ -817,14 +833,14 @@ const filteredCraftableItems = useMemo(() => {
                     value={manualEntryText}
                     onChange={(e) => setManualEntryText(e.target.value)}
                     placeholder="Enter your items here... (one per line)"
-                    className="w-full h-64 bg-gray-700 border border-gray-600 rounded p-3 text-white font-mono text-sm resize-none"
+                    className="w-full h-64 p-3 font-mono text-sm text-white bg-gray-700 border border-gray-600 rounded resize-none"
                   />
                 </div>
-                <div className="flex gap-2 mt-4 flex-shrink-0">
+                <div className="flex flex-shrink-0 gap-2 mt-4">
                   <button
                     onClick={() => {
                       // Parse manual entry
-                      const parsed = parseInventoryOCR(manualEntryText);
+                      const parsed = parseManualInventory(manualEntryText);
                       if (Object.keys(parsed).length > 0) {
                         setInventory(prev => {
                           const updated = { ...prev, ...parsed };
@@ -837,7 +853,7 @@ const filteredCraftableItems = useMemo(() => {
                         showToastMessage('No valid items found. Please check your format: "Item Name: Quantity"');
                       }
                     }}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                    className="flex-1 px-4 py-2 font-bold text-white bg-green-600 rounded hover:bg-green-700"
                   >
                     ✅ Apply to Inventory
                   </button>
@@ -846,7 +862,7 @@ const filteredCraftableItems = useMemo(() => {
                       setShowManualEntry(false);
                       setManualEntryText('');
                     }}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                    className="flex-1 px-4 py-2 font-bold text-white bg-gray-600 rounded hover:bg-gray-700"
                   >
                     Cancel
                   </button>
@@ -857,25 +873,25 @@ const filteredCraftableItems = useMemo(() => {
 
           {/* OCR Edit Modal */}
           {showOCREdit && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
               <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-                <h2 className="text-2xl font-bold text-yellow-300 mb-4">🔍 OCR Results</h2>
+                <h2 className="mb-4 text-2xl font-bold text-yellow-300">🔍 OCR Results</h2>
                 <div className="flex-1 overflow-y-auto">
-                  <p className="text-gray-300 mb-4">
-                    Review and edit the detected items. Format: <code className="bg-gray-700 px-1 rounded">Item Name: Quantity</code>
+                  <p className="mb-4 text-gray-300">
+                    Review and edit the detected items. Format: <code className="px-1 bg-gray-700 rounded">Item Name: Quantity</code>
                   </p>
                   <textarea
                     value={ocrEditText}
                     onChange={(e) => setOCREditText(e.target.value)}
-                    className="w-full h-64 bg-gray-700 border border-gray-600 rounded p-3 text-white font-mono text-sm resize-none"
+                    className="w-full h-64 p-3 font-mono text-sm text-white bg-gray-700 border border-gray-600 rounded resize-none"
                     placeholder="OCR results will appear here..."
                   />
                 </div>
-                <div className="flex gap-2 mt-4 flex-shrink-0">
+                <div className="flex flex-shrink-0 gap-2 mt-4">
                   <button
                     onClick={() => {
                       // Parse OCR text
-                      const parsed = parseInventoryOCR(ocrEditText);
+                      const parsed = parseManualInventory(ocrEditText);
                       if (Object.keys(parsed).length > 0) {
                         setInventory(prev => {
                           const updated = { ...prev, ...parsed };
@@ -888,13 +904,13 @@ const filteredCraftableItems = useMemo(() => {
                         showToastMessage('No valid items found. Please check your format: "Item Name: Quantity"');
                       }
                     }}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                    className="flex-1 px-4 py-2 font-bold text-white bg-green-600 rounded hover:bg-green-700"
                   >
                     ✅ Apply to Inventory
                   </button>
                   <button
                     onClick={() => captureAndProcessScreenshot()}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    className="flex-1 px-4 py-2 font-bold text-white bg-blue-600 rounded hover:bg-blue-700"
                     disabled={isProcessingOCR}
                   >
                     {isProcessingOCR ? '🔍 Scanning...' : '🔄 Scan Again'}
@@ -904,7 +920,7 @@ const filteredCraftableItems = useMemo(() => {
                       setShowOCREdit(false);
                       setOCREditText('');
                     }}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                    className="flex-1 px-4 py-2 font-bold text-white bg-gray-600 rounded hover:bg-gray-700"
                   >
                     Cancel
                   </button>
@@ -915,16 +931,16 @@ const filteredCraftableItems = useMemo(() => {
 
           {/* Create Preset Modal */}
           {showCreatePreset && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
-                <h2 className="text-2xl font-bold text-yellow-300 mb-4">Create New Preset</h2>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-xl">
+                <h2 className="mb-4 text-2xl font-bold text-yellow-300">Create New Preset</h2>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Preset Name</label>
+                  <label className="block mb-2 text-sm font-medium text-gray-300">Preset Name</label>
                   <input
                     type="text"
                     value={presetNameInput}
                     onChange={(e) => setPresetNameInput(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 text-white transition-all bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                     placeholder="Enter preset name..."
                     maxLength={50}
                     onKeyDown={(e) => {
@@ -949,7 +965,7 @@ const filteredCraftableItems = useMemo(() => {
                         setShowCreatePreset(false);
                       }
                     }}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                    className="flex-1 px-4 py-2 font-bold text-white transition-all duration-200 bg-green-600 rounded hover:bg-green-700"
                     disabled={!presetNameInput.trim()}
                   >
                     ✅ Create Preset
@@ -959,7 +975,7 @@ const filteredCraftableItems = useMemo(() => {
                       setPresetNameInput('');
                       setShowCreatePreset(false);
                     }}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                    className="flex-1 px-4 py-2 font-bold text-white transition-all duration-200 bg-gray-600 rounded hover:bg-gray-700"
                   >
                     Cancel
                   </button>
@@ -970,13 +986,13 @@ const filteredCraftableItems = useMemo(() => {
 
           {/* Delete Preset Modal */}
           {showDeletePreset && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
-                <h2 className="text-2xl font-bold text-red-300 mb-4">Delete Preset</h2>
-                <p className="text-gray-300 mb-6">
-                  Are you sure you want to delete the preset <span className="font-bold text-yellow-300">"{selectedPreset}"</span>?
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-xl">
+                <h2 className="mb-4 text-2xl font-bold text-red-300">Delete Preset</h2>
+                <p className="mb-6 text-gray-300">
+                  Are you sure you want to delete the preset <span className="font-bold text-yellow-300">&quot;{selectedPreset}&quot;</span>?
                   <br />
-                  <span className="text-red-400 text-sm">This action cannot be undone.</span>
+                  <span className="text-sm text-red-400">This action cannot be undone.</span>
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -987,13 +1003,13 @@ const filteredCraftableItems = useMemo(() => {
                         setShowDeletePreset(false);
                       }
                     }}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                    className="flex-1 px-4 py-2 font-bold text-white transition-all duration-200 bg-red-600 rounded hover:bg-red-700"
                   >
                     🗑️ Delete
                   </button>
                   <button
                     onClick={() => setShowDeletePreset(false)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                    className="flex-1 px-4 py-2 font-bold text-white transition-all duration-200 bg-gray-600 rounded hover:bg-gray-700"
                   >
                     Cancel
                   </button>
@@ -1004,13 +1020,13 @@ const filteredCraftableItems = useMemo(() => {
 
           {/* Delete All Presets Modal */}
           {showDeleteAllPresets && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
-                <h2 className="text-2xl font-bold text-red-300 mb-4">Delete All Custom Presets</h2>
-                <p className="text-gray-300 mb-6">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-xl">
+                <h2 className="mb-4 text-2xl font-bold text-red-300">Delete All Custom Presets</h2>
+                <p className="mb-6 text-gray-300">
                   Are you sure you want to delete <span className="font-bold text-yellow-300">all custom presets</span>?
                   <br />
-                  <span className="text-red-400 text-sm">This action cannot be undone.</span>
+                  <span className="text-sm text-red-400">This action cannot be undone.</span>
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -1019,13 +1035,13 @@ const filteredCraftableItems = useMemo(() => {
                       localStorage.removeItem('customPresets');
                       setShowDeleteAllPresets(false);
                     }}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                    className="flex-1 px-4 py-2 font-bold text-white transition-all duration-200 bg-red-600 rounded hover:bg-red-700"
                   >
                     🗑️ Delete All
                   </button>
                   <button
                     onClick={() => setShowDeleteAllPresets(false)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                    className="flex-1 px-4 py-2 font-bold text-white transition-all duration-200 bg-gray-600 rounded hover:bg-gray-700"
                   >
                     Cancel
                   </button>
@@ -1036,20 +1052,20 @@ const filteredCraftableItems = useMemo(() => {
 
           {/* Erase All Data Modal */}
           {showEraseAllData && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
-                <h2 className="text-2xl font-bold text-red-300 mb-4">⚠️ Erase All Data</h2>
-                <p className="text-gray-300 mb-6">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-xl">
+                <h2 className="mb-4 text-2xl font-bold text-red-300">⚠️ Erase All Data</h2>
+                <p className="mb-6 text-gray-300">
                   Are you sure you want to <span className="font-bold text-red-400">erase ALL data</span>?
                   <br />
                   This will delete:
-                  <ul className="list-disc list-inside mt-2 text-sm text-gray-400">
+                  <ul className="mt-2 text-sm text-gray-400 list-disc list-inside">
                     <li>All custom presets</li>
                     <li>Inventory data</li>
                     <li>Bonus settings</li>
                     <li>All other saved data</li>
                   </ul>
-                  <span className="text-red-400 text-sm font-bold">This action cannot be undone and will reload the page.</span>
+                  <span className="text-sm font-bold text-red-400">This action cannot be undone and will reload the page.</span>
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -1057,13 +1073,13 @@ const filteredCraftableItems = useMemo(() => {
                       localStorage.clear();
                       window.location.reload();
                     }}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                    className="flex-1 px-4 py-2 font-bold text-white transition-all duration-200 bg-red-600 rounded hover:bg-red-700"
                   >
                     🗑️ Erase Everything
                   </button>
                   <button
                     onClick={() => setShowEraseAllData(false)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+                    className="flex-1 px-4 py-2 font-bold text-white transition-all duration-200 bg-gray-600 rounded hover:bg-gray-700"
                   >
                     Cancel
                   </button>
@@ -1074,13 +1090,13 @@ const filteredCraftableItems = useMemo(() => {
 
           {/* Toast Notification */}
           {showToast && (
-            <div className="fixed top-4 right-4 bg-gray-800 border border-yellow-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm">
+            <div className="fixed z-50 max-w-sm p-4 text-white bg-gray-800 border border-yellow-500 rounded-lg shadow-lg top-4 right-4">
               <div className="flex items-center">
                 <span className="mr-2">ℹ️</span>
                 <span className="text-sm">{toastMessage}</span>
                 <button
                   onClick={() => setShowToast(false)}
-                  className="ml-2 text-gray-400 hover:text-white transition-colors"
+                  className="ml-2 text-gray-400 transition-colors hover:text-white"
                 >
                   ✕
                 </button>
@@ -1092,7 +1108,7 @@ const filteredCraftableItems = useMemo(() => {
           {showBackToTop && (
             <button
               onClick={scrollToTop}
-              className="fixed bottom-6 right-6 bg-yellow-600 hover:bg-yellow-700 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40"
+              className="fixed z-40 p-3 text-white transition-all duration-300 bg-yellow-600 rounded-full shadow-lg bottom-6 right-6 hover:bg-yellow-700 hover:shadow-xl"
               title="Back to Top"
             >
               <span className="text-lg">⬆️</span>
@@ -1100,9 +1116,9 @@ const filteredCraftableItems = useMemo(() => {
           )}
 
           {/* Footer */}
-          <footer className="text-center mt-12 py-8 bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-600/30">
+          <footer className="py-8 mt-12 text-center border bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border-gray-600/30">
             <div className="mb-4">
-              <img alt="New World Crafting Calculator" className="mx-auto mb-3 h-16 w-auto opacity-80" src="logo.png" />
+              <img alt="New World Crafting Calculator" className="w-auto h-16 mx-auto mb-3 opacity-80" src="logo.png" />
             </div>
             <div className="space-y-2 text-gray-400">
               <p className="text-sm font-medium">Created with ❤️ by <span className="text-yellow-400">Involvex</span></p>
@@ -1110,7 +1126,7 @@ const filteredCraftableItems = useMemo(() => {
                 Game data sourced from{' '}
                 <a 
                   href="https://nw-buddy.de" 
-                  className="text-blue-400 hover:text-blue-300 underline decoration-dotted hover:decoration-solid transition-all"
+                  className="text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -1120,11 +1136,11 @@ const filteredCraftableItems = useMemo(() => {
               <p className="text-xs text-gray-500">
                 New World Crafting Calculator v{APP_VERSION} • Open Source
               </p>
-              <div className="mt-3 pt-2 border-t border-gray-600/30">
-                <p className="text-xs text-gray-400 mb-1">💝 Like this project?</p>
+              <div className="pt-2 mt-3 border-t border-gray-600/30">
+                <p className="mb-1 text-xs text-gray-400">💝 Like this project?</p>
                 <a 
                   href="https://paypal.me/involvex" 
-                  className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline decoration-dotted hover:decoration-solid transition-all"
+                  className="inline-flex items-center gap-1 text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

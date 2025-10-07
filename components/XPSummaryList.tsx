@@ -6,7 +6,7 @@ interface XPSummaryListProps {
   title?: string;
 }
 
-const XPSummaryList: React.FC<XPSummaryListProps> = ({ xpGains, title = "Experience Summary" }) => {
+const XPSummaryList: React.FC<XPSummaryListProps> = ({ xpGains }) => {
   if (!xpGains || xpGains.length === 0) {
     return (
       <div className="text-center text-gray-400 py-8">

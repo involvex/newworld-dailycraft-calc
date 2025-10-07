@@ -11,40 +11,31 @@ interface SettingsModalProps {
   onImportData: () => void;
   onDeleteAllPresets: () => void;
   onEraseAllData: () => void;
+  configState: ReturnType<typeof useConfig>;
 }
 
 export function SettingsModal({
   isOpen,
   onClose,
-  bonuses,
-  onBonusChange,
   onExportData,
   onImportData,
   onDeleteAllPresets,
   onEraseAllData,
+  bonuses,
+  onBonusChange,
+  configState,
 }: SettingsModalProps) {
-  const { config, updateConfig, registerHotkeys, exportConfig, importConfig, getConfigPath, isElectron } = useConfig();
-  const [hotkeys, setHotkeys] = useState(config?.hotkeys || {
-    toggleCalculator: 'CommandOrControl+Alt+I',
-    triggerOCR: 'CommandOrControl+Alt+O',
-    openSettings: 'CommandOrControl+Alt+S',
-  });
-  const [configPath, setConfigPath] = useState<string>('');
+  const { config, updateConfig, registerHotkeys, exportConfig, importConfig, getConfigPath, isElectron } = configState;
+  const [hotkeys, setHotkeys] = useState(config?.hotkeys || {});
+  const [apiKeyInput, setApiKeyInput] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
-    if (config?.hotkeys) {
-      setHotkeys(config.hotkeys);
+    if (config) {
+      setHotkeys(config.hotkeys || {});
+      setApiKeyInput(config.GEMINI_API_KEY || '');
     }
-  }, [config]);
-
-  useEffect(() => {
-    if (isElectron && isOpen) {
-      getConfigPath().then(path => {
-        if (path) setConfigPath(path);
-      });
-    }
-  }, [isOpen, isElectron, getConfigPath]);
+  }, [config]); // Rerun whenever the config object changes
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -57,14 +48,24 @@ export function SettingsModal({
 
   const handleSaveHotkeys = async () => {
     try {
+      await updateConfig('hotkeys', hotkeys);
       if (isElectron) {
         await registerHotkeys(hotkeys);
       }
-      await updateConfig('hotkeys', hotkeys);
       showToast('Hotkeys updated successfully!', 'success');
     } catch (error) {
       showToast('Failed to update hotkeys', 'error');
       console.error('Error updating hotkeys:', error);
+    }
+  };
+
+  const handleSaveApiKey = async () => {
+    try {
+      await updateConfig('GEMINI_API_KEY', apiKeyInput);
+      showToast('API Key saved successfully!', 'success');
+    } catch (error) {
+      showToast('Failed to save API Key', 'error');
+      console.error('Error saving API key:', error);
     }
   };
 
@@ -91,9 +92,8 @@ export function SettingsModal({
       if (isElectron) {
         const success = await importConfig();
         if (success) {
-          showToast('Configuration imported successfully!', 'success');
-          // Reload page to apply imported settings
-          window.location.reload();
+          showToast('Configuration imported successfully! Reloading...', 'success');
+          setTimeout(() => window.location.reload(), 1500);
         } else {
           showToast('Import cancelled or failed', 'error');
         }
@@ -109,71 +109,55 @@ export function SettingsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <h2 className="text-2xl font-bold text-yellow-300 mb-4 flex-shrink-0">Settings</h2>
+        <h2 className="flex-shrink-0 mb-4 text-2xl font-bold text-yellow-300">Settings</h2>
         
         {toast && (
           <div className={`mb-4 p-3 rounded-lg ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white`}>
             {toast.message}
           </div>
         )}
+        
 
-        <div className="space-y-6 overflow-y-auto pr-2">
-          {/* Configuration Management */}
-          {isElectron && (
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Configuration Management</h3>
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <button onClick={handleExportConfig} className="px-3 py-2 bg-blue-600 rounded text-sm hover:bg-blue-700">
-                  💾 Export Config
-                </button>
-                <button onClick={handleImportConfig} className="px-3 py-2 bg-blue-600 rounded text-sm hover:bg-blue-700">
-                  📁 Import Config
-                </button>
-              </div>
-              {configPath && (
-                <p className="text-xs text-gray-400">Config location: {configPath}</p>
-              )}
-            </div>
-          )}
-
-          {/* Global Hotkeys */}
+          
+        <div className="pr-2 space-y-6 overflow-y-auto">
+                    {/* Global Hotkeys */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-2">Global Hotkeys</h3>
+            <h3 className="mb-2 text-lg font-semibold text-white">Global Hotkeys</h3>
             {isElectron ? (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Toggle Calculator</label>
+                  <label className="block mb-1 text-sm font-medium text-gray-300">Toggle Calculator</label>
                   <input
                     type="text"
                     value={hotkeys.toggleCalculator}
                     onChange={(e) => handleHotkeyChange('toggleCalculator', e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                    className="w-full px-3 py-2 text-sm text-white bg-gray-700 border border-gray-600 rounded"
                     placeholder="e.g., CommandOrControl+Alt+I"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Trigger OCR</label>
+                  <label className="block mb-1 text-sm font-medium text-gray-300">Trigger OCR</label>
                   <input
                     type="text"
                     value={hotkeys.triggerOCR}
                     onChange={(e) => handleHotkeyChange('triggerOCR', e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                    className="w-full px-3 py-2 text-sm text-white bg-gray-700 border border-gray-600 rounded"
                     placeholder="e.g., CommandOrControl+Alt+O"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Open Settings</label>
+                  <label className="block mb-1 text-sm font-medium text-gray-300">Open Settings</label>
                   <input
                     type="text"
                     value={hotkeys.openSettings}
                     onChange={(e) => handleHotkeyChange('openSettings', e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                    className="w-full px-3 py-2 text-sm text-white bg-gray-700 border border-gray-600 rounded"
                     placeholder="e.g., CommandOrControl+Alt+S"
                   />
                 </div>
-                <button onClick={handleSaveHotkeys} className="px-4 py-2 bg-green-600 rounded text-sm hover:bg-green-700">
+                <button onClick={handleSaveHotkeys} className="px-4 py-2 text-sm bg-green-600 rounded hover:bg-green-700">
                   💾 Save Hotkeys
                 </button>
                 <div className="text-xs text-gray-400">
@@ -186,22 +170,60 @@ export function SettingsModal({
                 <p>Hotkeys only available in desktop app</p>
               </div>
             )}
+            <br />
           </div>
-
-          {/* Data Management */}
+          {/* API Key Config */}
+          {isElectron && (
+            <div>
+              <h3 className="mb-2 text-lg font-semibold text-white">Gemini API Key</h3>
+              <p className="mb-2 text-xs text-gray-400">Required for the AI-powered OCR feature. Your key is stored encrypted on your local machine.</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  className="flex-grow w-full px-3 py-2 text-sm text-white bg-gray-700 border border-gray-600 rounded"
+                  placeholder="Enter your Gemini API Key"
+                />
+                <button onClick={handleSaveApiKey} className="px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded hover:bg-green-700 whitespace-nowrap">
+                  💾 Save Key
+                </button>
+                            </div>
+                          </div>
+                        )}
+              
+                        {/* Debug Settings */}
+                        {isElectron && (
+                          <div>
+                            <h3 className="mb-2 text-lg font-semibold text-white">Debug Settings</h3>
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-700/50">
+                              <input
+                                type="checkbox"
+                                id="debug-ocr-preview"
+                                checked={config?.settings?.debugOCRPreview || false}
+                                onChange={(e) => updateConfig('settings', { ...config.settings, debugOCRPreview: e.target.checked })}
+                                className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                              />
+                              <label htmlFor="debug-ocr-preview" className="text-sm text-gray-300">Enable OCR Debug Preview</label>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-400">If enabled, the app will display the captured screenshot for inspection before sending it to the AI.</p>
+                          </div>
+                        )}
+              
+                        {/* Data Management */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-2">Data Management</h3>
+            <h3 className="mb-2 text-lg font-semibold text-white">Data Management</h3>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={onExportData} className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-500">
+              <button onClick={onExportData} className="px-3 py-1 text-sm bg-gray-600 rounded hover:bg-gray-500">
                 💾 Export Data
               </button>
-              <button onClick={onImportData} className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-500">
+              <button onClick={onImportData} className="px-3 py-1 text-sm bg-gray-600 rounded hover:bg-gray-500">
                 📁 Import Data
               </button>
-              <button onClick={onDeleteAllPresets} className="px-3 py-1 bg-red-700 rounded text-sm hover:bg-red-600">
+              <button onClick={onDeleteAllPresets} className="px-3 py-1 text-sm bg-red-700 rounded hover:bg-red-600">
                 🗑️ Delete Presets
               </button>
-              <button onClick={onEraseAllData} className="px-3 py-1 bg-red-800 rounded text-sm hover:bg-red-700">
+              <button onClick={onEraseAllData} className="px-3 py-1 text-sm bg-red-800 rounded hover:bg-red-700">
                 🗑️ Erase All Data
               </button>
             </div>
@@ -209,10 +231,10 @@ export function SettingsModal({
 
           {/* Bonus Settings */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-2">Bonus Settings</h3>
+            <h3 className="mb-2 text-lg font-semibold text-white">Bonus Settings</h3>
             {Object.entries(bonuses).map(([category, config]) => (
-              <div key={category} className="p-4 bg-gray-700 rounded mb-2">
-                <h4 className="font-bold text-md text-white mb-2">{category}</h4>
+              <div key={category} className="p-4 mb-2 bg-gray-700 rounded">
+                <h4 className="mb-2 font-bold text-white text-md">{category}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300">Skill Level</label>
@@ -221,7 +243,7 @@ export function SettingsModal({
                       aria-label={`${category} skill level`}
                       value={config.skillLevel}
                       onChange={(e) => onBonusChange(category, 'skillLevel', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white"
+                      className="w-full px-2 py-1 text-white bg-gray-800 border border-gray-600 rounded"
                     />
                   </div>
                   <div>
@@ -231,31 +253,48 @@ export function SettingsModal({
                       aria-label={`${category} gear bonus`}
                       value={config.gearBonus * 100}
                       onChange={(e) => onBonusChange(category, 'gearBonus', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white"
+                      className="w-full px-2 py-1 text-white bg-gray-800 border border-gray-600 rounded"
                     />
                   </div>
-                  <div className="col-span-2 flex items-center">
+                  <div className="flex items-center col-span-2">
                     <input
                       type="checkbox"
                       aria-label={`${category} fort active`}
                       checked={config.fortActive}
                       onChange={(e) => onBonusChange(category, 'fortActive', e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                      className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
                     />
-                    <label className="ml-2 block text-sm text-gray-300">Fort Bonus Active</label>
+                    <label className="block ml-2 text-sm text-gray-300">Fort Bonus Active</label>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+                    {/* Debug Settings */}
+          {isElectron && (
+            <div>
+              <h3 className="mb-2 text-lg font-semibold text-white">Debug Settings</h3>
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-700/50">
+                <input
+                  type="checkbox"
+                  id="debug-ocr-preview"
+                  checked={config?.settings?.debugOCRPreview || false}
+                  onChange={(e) => updateConfig('settings', { ...config.settings, debugOCRPreview: e.target.checked })}
+                  className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                />
+                <label htmlFor="debug-ocr-preview" className="text-sm text-gray-300">Enable OCR Debug Preview</label>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">If enabled, the app will display the captured screenshot for inspection before sending it to the AI.</p>
+            </div>
+          )}
         </div>
 
         {/* Support Section */}
-        <div className="mt-4 pt-4 border-t border-gray-600/30 text-center">
-          <p className="text-xs text-gray-400 mb-2">💝 Enjoying the calculator?</p>
+        <div className="pt-4 mt-4 text-center border-t border-gray-600/30">
+          <p className="mb-2 text-xs text-gray-400">💝 Enjoying the calculator?</p>
           <a 
             href="https://paypal.me/involvex" 
-            className="text-xs text-blue-400 hover:text-blue-300 underline decoration-dotted hover:decoration-solid transition-all"
+            className="text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -263,8 +302,8 @@ export function SettingsModal({
           </a>
         </div>
 
-        <div className="flex gap-2 mt-6 flex-shrink-0">
-          <button onClick={onClose} className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
+        <div className="flex flex-shrink-0 gap-2 mt-6">
+          <button onClick={onClose} className="flex-1 px-4 py-2 font-bold text-white bg-yellow-600 rounded hover:bg-yellow-700">
             Close
           </button>
         </div>
