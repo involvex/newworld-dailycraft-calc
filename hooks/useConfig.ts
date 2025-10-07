@@ -12,6 +12,17 @@ export interface ConfigData {
   [key: string]: any; // Allow other properties
 }
 
+// Type for config stored in browser (without API key for security)
+export interface StoredConfigData {
+  hotkeys: {
+    toggleCalculator: string;
+    triggerOCR: string;
+    openSettings: string;
+  };
+  // Add other config properties as needed
+  [key: string]: any; // Allow other properties
+}
+
 const defaultConfig: ConfigData = {
   GEMINI_API_KEY: '',
   hotkeys: {
@@ -38,9 +49,17 @@ export function useConfig() {
         setConfig(loadedConfig);
       } else {
         const savedData = localStorage.getItem('nw-crafting-config');
+        const apiKey = localStorage.getItem('nw-crafting-gemini-api-key');
         if (savedData) {
           const parsedConfig = JSON.parse(savedData);
+          // Add API key from separate storage if available
+          if (apiKey) {
+            parsedConfig.GEMINI_API_KEY = apiKey;
+          }
           setConfig(parsedConfig);
+        } else if (apiKey) {
+          // If no main config but API key exists, create minimal config
+          setConfig({ ...defaultConfig, GEMINI_API_KEY: apiKey });
         }
       }
     } catch (err) {
@@ -62,7 +81,12 @@ export function useConfig() {
           throw new Error('Failed to save configuration to file');
         }
       } else {
-        localStorage.setItem('nw-crafting-config', JSON.stringify(newConfig));
+        // Browser storage - save API key separately for security
+        const { GEMINI_API_KEY, ...configToStore } = newConfig;
+        if (GEMINI_API_KEY) {
+          localStorage.setItem('nw-crafting-gemini-api-key', GEMINI_API_KEY);
+        }
+        localStorage.setItem('nw-crafting-config', JSON.stringify(configToStore));
         setConfig(newConfig);
       }
     } catch (err) {

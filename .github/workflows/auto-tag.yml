@@ -10,6 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Extract version from package.json
+      id: package-version
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Extracted version: $VERSION"
     - uses: butlerlogic/action-autotag@stable
+      id: auto-tag
+      with:
+        strategy: package.json version
+        tag_prefix: "v"
+        tag_message: "Release version %tag%"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION: ${{ steps.package-version.outputs.version }}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { APP_VERSION } from './src/version';
 import { ITEMS } from './data/items';
 import { RECIPES } from './data/recipes';
@@ -89,6 +89,7 @@ const App: React.FC = () => {
   });
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
   const [removedNodes, setRemovedNodes] = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Tree expand/collapse logic ---
   const {
@@ -281,6 +282,184 @@ const filteredCraftableItems = useMemo(() => {
     localStorage.removeItem('inventory');
   };
 
+  const handleFileButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleUploadImage = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToastMessage('Please select a valid image file.');
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showToastMessage('Image file is too large. Please select an image smaller than 10MB.');
+      return;
+    }
+
+    try {
+      setIsProcessingOCR(true);
+      showToastMessage('Processing uploaded image...');
+
+      // Create object URL for the uploaded file
+      const imageUrl = URL.createObjectURL(file);
+
+      // Process the image using the existing OCR logic
+      const img = new Image();
+      img.onload = async () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Could not get 2D context for canvas');
+
+          ctx.drawImage(img, 0, 0);
+
+          if (configState.config?.settings?.debugOCRPreview) {
+            const debugImg = document.getElementById('ocr-debug-image') as HTMLImageElement;
+            if (debugImg) {
+              debugImg.src = canvas.toDataURL('image/png');
+            } else {
+              const newDebugImg = document.createElement('img');
+              newDebugImg.id = 'ocr-debug-image';
+              newDebugImg.src = canvas.toDataURL('image/png');
+              newDebugImg.style.position = 'fixed';
+              newDebugImg.style.top = '10px';
+              newDebugImg.style.left = '10px';
+              newDebugImg.style.zIndex = '9999';
+              newDebugImg.style.border = '5px solid red';
+              newDebugImg.style.width = '50%';
+              document.body.appendChild(newDebugImg);
+            }
+            setShowOCREdit(true);
+            setOCREditText('Debug preview is active. Close this modal to continue analysis.');
+
+            // Wait for the modal to be closed by checking if the modal is still open
+            await new Promise<void>((resolve) => {
+              const checkModalClosed = () => {
+                // Check if the modal is still showing by looking for modal-specific elements
+                const modal = document.querySelector('.fixed.inset-0.z-50'); // Modal overlay
+                if (!modal || modal.classList.contains('hidden') || window.getComputedStyle(modal).display === 'none') {
+                  resolve();
+                } else {
+                  setTimeout(checkModalClosed, 500);
+                }
+              };
+              checkModalClosed();
+            });
+          }
+
+          const base64Image = canvas.toDataURL('image/png').split(',')[1];
+
+          if (!configState.config?.GEMINI_API_KEY) {
+            throw new Error("Gemini API Key is not configured. Please go to Settings and enter your API Key.");
+          }
+
+          const { analyzeInventoryImage } = await import('./services/geminiService');
+          const analyzedItems = await analyzeInventoryImage(base64Image, configState.config.GEMINI_API_KEY);
+
+          const foundItems: Record<string, number> = {};
+          for (const item of analyzedItems) {
+            const matchedId = findBestItemMatch(item.itemName);
+            if (matchedId) {
+              foundItems[matchedId] = (foundItems[matchedId] || 0) + item.quantity;
+            }
+          }
+
+          const totalFound = Object.keys(foundItems).length;
+          let suggestions: string;
+          if (totalFound > 0) {
+            suggestions = `🎯 Found ${totalFound} items!\n\n` + Object.entries(foundItems).map(([id, qty]) => {
+              const item = ITEMS[id];
+              return `${item ? item.name : id}: ${qty.toLocaleString()}`;
+            }).join('\n') + '\n\n💡 Review and edit if needed.';
+          } else {
+            suggestions = '📝 No items detected automatically.';
+          }
+
+          setOCREditText(suggestions);
+          setShowOCREdit(true);
+          showToastMessage('Image processed successfully!');
+        } catch (error) {
+          console.error('Error processing uploaded image:', error);
+          const errorMsg = error instanceof Error ? error.message : 'An unknown error occurred.';
+          setOCREditText(errorMsg);
+          setShowOCREdit(true);
+          showToastMessage('Failed to process image: ' + errorMsg);
+        } finally {
+          setIsProcessingOCR(false);
+          // Clean up object URL
+          URL.revokeObjectURL(imageUrl);
+        }
+      };
+
+      img.onerror = () => {
+        setIsProcessingOCR(false);
+        URL.revokeObjectURL(imageUrl);
+        showToastMessage('Failed to load image file.');
+      };
+
+      img.src = imageUrl;
+    } catch (error) {
+      console.error('Error handling file upload:', error);
+      setIsProcessingOCR(false);
+      showToastMessage('Failed to process uploaded file.');
+    }
+
+    // Reset the input
+    event.target.value = '';
+  }, [configState.config, showToastMessage, setIsProcessingOCR, setOCREditText, setShowOCREdit]);
+
+  // Helper function for item matching (extracted from useInventoryOCR)
+  const findBestItemMatch = (itemNameRaw: string): string | null => {
+    const { ITEM_MAPPINGS } = require('./constants');
+    let matchedItemId: string | null = null;
+    let bestMatchScore = 0;
+    const lowerItemName = itemNameRaw.toLowerCase().trim();
+
+    const exactMapping = (ITEM_MAPPINGS as Record<string, string>)[lowerItemName];
+    if (exactMapping) {
+      return exactMapping;
+    }
+
+    for (const item of Object.values(ITEMS)) {
+      const itemNameLower = item.name.toLowerCase();
+      const score = calculateMatchScore(lowerItemName, itemNameLower);
+      if (score > bestMatchScore && score > 0.85) {
+        matchedItemId = item.id;
+        bestMatchScore = score;
+      }
+    }
+    return matchedItemId;
+  };
+
+  const calculateMatchScore = (text1: string, text2: string): number => {
+    if (text1 === text2) return 1.0;
+    if (text1.includes(text2) || text2.includes(text1)) return 0.9;
+    const distance = getLevenshteinDistance(text1, text2);
+    const maxLength = Math.max(text1.length, text2.length);
+    return 1 - (distance / maxLength);
+  };
+
+  const getLevenshteinDistance = (str1: string, str2: string): number => {
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(matrix[j][i - 1] + 1, matrix[j - 1][i] + 1, matrix[j - 1][i - 1] + indicator);
+      }
+    }
+    return matrix[str2.length][str1.length];
+  };
+
   // Scroll tracking for back to top button
   useEffect(() => {
     const handleScroll = () => {
@@ -334,9 +513,9 @@ const filteredCraftableItems = useMemo(() => {
 
   return (
     <React.Fragment>
-      <div className="min-h-screen font-sans text-gray-300 bg-gray-900 app-gradient-bg">
-        <div className="container max-w-6xl p-4 mx-auto sm:p-6 lg:p-8">
-          <header className="mb-6 text-center bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm">
+      <div className="min-h-screen mt-0 font-sans text-gray-300 bg-gray-900 app-gradient-bg">
+        <div className="container max-w-6xl p-4 mx-auto mt-0 sm:p-6 lg:p-8">
+          <header className="mt-0 mb-6 text-center bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm">
             <img src="logo.png" alt="New World Crafting Calculator" className="w-auto h-12 mx-auto mb-1 logo" />
             <h1 className="mb-2 text-2xl font-bold text-blue-400">New World Crafting Calculator</h1>
             <p className="text-sm text-gray-400">Plan your crafting efficiently with advanced material calculations</p>
@@ -652,12 +831,33 @@ const filteredCraftableItems = useMemo(() => {
               </button>
 
             </div>
+            <div className='grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2'>
                           <button 
                 onClick={processClipboardImage} 
-                className="flex items-center justify-center px-4 py-3 text-sm font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg hover:bg-purple-700 hover:shadow-lg"
-              >                <span className="mr-2">✏️</span>
+                style={{  marginBottom: '10px' }}
+                className="flex items-center justify-center px-12 py-3 text-sm font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg hover:bg-purple-700 hover:shadow-lg"
+              >                <span className="mr-2">📸</span>
                 Use Image from Clipboard
               </button>
+              {/* Manual File Selection and Upload */}
+              <div className='flex content-center mb-3 text-center text-white transition-all duration-200 bg-purple-800 rounded-lg hover:bg-purple-700 hover:shadow-lg'>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".png, .jpg, .jpeg"
+                  title="Upload Image"
+                  className='hidden'
+                  onChange={handleUploadImage}
+                />
+                <button
+                  onClick={handleFileButtonClick}
+                  className='w-full px-4 py-3 text-sm font-medium text-white transition-all duration-200 bg-purple-800 rounded-lg hover:bg-purple-700 hover:shadow-lg'
+                >
+                  <span className="mr-2">📁</span>
+                  Upload Image
+                </button>
+              </div>
+              </div>
             <p className="mb-4 text-xs text-center text-gray-400">
               Use OCR to automatically detect your inventory from screenshots, or enter items manually
             </p>

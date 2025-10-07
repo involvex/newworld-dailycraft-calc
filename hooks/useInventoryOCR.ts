@@ -98,18 +98,24 @@ const useInventoryOCR = ({
         }
         setShowOCREdit(true);
         setOCREditText('Debug preview is active. Close this modal to continue analysis.');
-        await new Promise<void>(resolve => {
-          const interval = setInterval(() => {
-            if (!document.getElementById('ocr-debug-image')) {
-              clearInterval(interval);
+
+        // Wait for the modal to be closed by checking if the modal is still open
+        await new Promise<void>((resolve) => {
+          const checkModalClosed = () => {
+            // Check if the modal is still showing by looking for modal-specific elements
+            const modal = document.querySelector('.fixed.inset-0.z-50'); // Modal overlay
+            if (!modal || modal.classList.contains('hidden') || window.getComputedStyle(modal).display === 'none') {
               resolve();
+            } else {
+              setTimeout(checkModalClosed, 500);
             }
-          }, 500);
+          };
+          checkModalClosed();
         });
       }
 
       const base64Image = canvas.toDataURL('image/png').split(',')[1];
-      
+
       if (!geminiApiKey) { // Use geminiApiKey prop
         throw new Error("Gemini API Key is not configured. Please go to Settings and enter your API Key.");
       }

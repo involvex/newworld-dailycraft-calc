@@ -191,12 +191,12 @@ app.whenReady().then(() => {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file: https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://esm.sh https://unpkg.com; " +
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file: https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://esm.sh https://unpkg.com https://cdn.nwdb.info https://nwdb.info; " +
           "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: file: https://cdn.tailwindcss.com https://esm.sh https://unpkg.com https://cdn.jsdelivr.net; " +
           "style-src 'self' 'unsafe-inline' data: file: https://cdn.tailwindcss.com https://fonts.googleapis.com; " +
           "font-src 'self' data: file: https://fonts.gstatic.com; " +
-          "img-src 'self' data: blob: file:; " +
-          "connect-src 'self' blob: file: data: https://cdn.jsdelivr.net https://generativelanguage.googleapis.com;" +
+          "img-src 'self' data: blob: file: https://cdn.nwdb.info https://nwdb.info; " +
+          "connect-src 'self' blob: file: data: https://cdn.jsdelivr.net https://generativelanguage.googleapis.com https://unpkg.com;" +
           "worker-src 'self' blob:;"
         ]
       }

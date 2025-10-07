@@ -188,10 +188,11 @@ export function SettingsModal({
                 <button onClick={handleSaveApiKey} className="px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded hover:bg-green-700 whitespace-nowrap">
                   💾 Save Key
                 </button>
-                            </div>
-                          </div>
-                        )} else {
-                        <div>
+              </div>
+            </div>
+          )}
+          {!isElectron && (
+            <div>
               <h3 className="mb-2 text-lg font-semibold text-white">Gemini API Key</h3>
               <p className="mb-2 text-xs text-gray-400">Store APIKEY in browser storage.</p>
               <div className="flex items-center gap-2">
@@ -205,9 +206,9 @@ export function SettingsModal({
                 <button onClick={handleSaveApiKey} className="px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded hover:bg-green-700 whitespace-nowrap">
                   💾 Save Key
                 </button>
-                            </div>
-                          </div>
-                        }
+              </div>
+            </div>
+          )}
               
                         {/* Debug Settings */}
                         {isElectron && (
