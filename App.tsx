@@ -336,9 +336,9 @@ const filteredCraftableItems = useMemo(() => {
     <React.Fragment>
       <div className="min-h-screen font-sans text-gray-300 bg-gray-900 app-gradient-bg">
         <div className="container max-w-6xl p-4 mx-auto sm:p-6 lg:p-8">
-          <header className="mb-6 text-center">
-            <img src="logo.png" alt="New World Crafting Calculator" className="w-auto h-20 mx-auto mb-4" />
-            <h1 className="mb-2 text-3xl font-bold text-yellow-300">New World Crafting Calculator</h1>
+          <header className="mb-6 text-center bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm">
+            <img src="logo.png" alt="New World Crafting Calculator" className="w-auto h-12 mx-auto mb-1 logo" />
+            <h1 className="mb-2 text-2xl font-bold text-blue-400">New World Crafting Calculator</h1>
             <p className="text-sm text-gray-400">Plan your crafting efficiently with advanced material calculations</p>
           </header>
 
@@ -1116,7 +1116,7 @@ const filteredCraftableItems = useMemo(() => {
           )}
 
           {/* Footer */}
-          <footer className="py-8 mt-12 text-center border bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border-gray-600/30">
+          <footer className="py-8 mt-12 text-center border bg-gray-800/50 border-blue-500/20 rounded-xl">
             <div className="mb-4">
               <img alt="New World Crafting Calculator" className="w-auto h-16 mx-auto mb-3 opacity-80" src="logo.png" />
             </div>
@@ -1138,14 +1138,32 @@ const filteredCraftableItems = useMemo(() => {
               </p>
               <div className="pt-2 mt-3 border-t border-gray-600/30">
                 <p className="mb-1 text-xs text-gray-400">💝 Like this project?</p>
-                <a 
-                  href="https://paypal.me/involvex" 
-                  className="inline-flex items-center gap-1 text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Support development ☕
-                </a>
+                 <a 
+            href="https://paypal.me/involvex" 
+            className="text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            PayPal 💰 
+          </a>
+          
+          <a 
+            href="https://buymeacoffee.com/involvex" 
+            className="text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Buymeacoffee ☕ 
+          </a>
+          
+          <a 
+            href="https://github.com/sponsors/involvex" 
+            className="text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Github Sponsors 💰
+          </a>
               </div>
             </div>
           </footer>

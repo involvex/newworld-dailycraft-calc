@@ -190,7 +190,24 @@ export function SettingsModal({
                 </button>
                             </div>
                           </div>
-                        )}
+                        )} else {
+                        <div>
+              <h3 className="mb-2 text-lg font-semibold text-white">Gemini API Key</h3>
+              <p className="mb-2 text-xs text-gray-400">Store APIKEY in browser storage.</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  className="flex-grow w-full px-3 py-2 text-sm text-white bg-gray-700 border border-gray-600 rounded"
+                  placeholder="Enter your Gemini API Key"
+                />
+                <button onClick={handleSaveApiKey} className="px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded hover:bg-green-700 whitespace-nowrap">
+                  💾 Save Key
+                </button>
+                            </div>
+                          </div>
+                        }
               
                         {/* Debug Settings */}
                         {isElectron && (
@@ -291,14 +308,32 @@ export function SettingsModal({
 
         {/* Support Section */}
         <div className="pt-4 mt-4 text-center border-t border-gray-600/30">
-          <p className="mb-2 text-xs text-gray-400">💝 Enjoying the calculator?</p>
+          <p className="mb-2 text-xs text-gray-400">💝 Enjoying the calculator? Support development on</p>
           <a 
             href="https://paypal.me/involvex" 
             className="text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Support development ☕
+            PayPal 💰 
+          </a>
+          
+          <a 
+            href="https://buymeacoffee.com/involvex" 
+            className="text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Buymeacoffee ☕ 
+          </a>
+          
+          <a 
+            href="https://github.com/sponsors/involvex" 
+            className="text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Github Sponsors 💰
           </a>
         </div>
 
