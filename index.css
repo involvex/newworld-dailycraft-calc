@@ -119,4 +119,12 @@ textarea:focus {
   text-align: left;
 
   position: absolute;
+  top: 0;
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
 }

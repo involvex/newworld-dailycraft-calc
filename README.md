@@ -257,6 +257,11 @@ If this tool has saved you time and made your New World experience better, consi
 
 [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-blue?style=for-the-badge&logo=paypal)](https://paypal.me/involvex)
 
+[![Buymeacoffee](https://raw.githubusercontent.com/pachadotdev/buymeacoffee-badges/main/bmc-black.svg)](https://buymeacoffee.com/involvex)
+
+[Github Sponsor @involvex](https://github.com/sponsors/involvex)
+
+
 **Your support helps:**
 - ⚡ Faster development cycles
 - 🔧 Better OCR accuracy

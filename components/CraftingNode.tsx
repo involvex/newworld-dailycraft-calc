@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CraftingNodeData } from '../types';
+import { CraftingNodeData, PriceConfig } from '../types';
 
 interface CraftingNodeProps {
   node: CraftingNodeData;
@@ -14,9 +14,27 @@ interface CraftingNodeProps {
   viewMode?: 'net' | 'gross';
   summaryData?: any[];
   onNodeContextMenu?: (node: CraftingNodeData, event: React.MouseEvent) => void;
+  showPrices?: boolean;
+  priceConfig?: PriceConfig;
+  priceData?: Record<string, any>;
 }
 
-const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = false, isLast = false, collapsedNodes, onToggle, selectedIngredients = {}, onIngredientChange, viewMode = 'net', summaryData = [], onNodeContextMenu }) => {
+const CraftingNode: React.FC<CraftingNodeProps> = ({
+  node,
+  getIconUrl,
+  isRoot = false,
+  isLast = false,
+  collapsedNodes,
+  onToggle,
+  selectedIngredients = {},
+  onIngredientChange,
+  viewMode = 'net',
+  summaryData = [],
+  onNodeContextMenu,
+  showPrices = false,
+  priceConfig,
+  priceData = {}
+}) => {
   const hasChildren = node.children?.length > 0;
   const isExpanded = !collapsedNodes.has(node.id);
 
@@ -28,7 +46,7 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
   
   // For intermediate items, show the number of crafts. For raw materials (leaf nodes), show total quantity.
   let displayQuantity = hasChildren ? node.quantity : Math.ceil(node.totalQuantity);
-  
+
   // Override with summary data for leaf nodes in gross mode
   if (!hasChildren && viewMode === 'gross' && summaryData.length > 0) {
     const summaryItem = summaryData.find(item => item.item?.id === node.item?.id);
@@ -36,6 +54,54 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
       displayQuantity = Math.ceil(summaryItem.quantity);
     }
   }
+
+  // Get price for the item if price display is enabled
+  const getItemPrice = () => {
+    if (!showPrices || !priceConfig?.enabled || !node.item?.name) return null;
+
+    // Try multiple ways to find the price data
+    let itemPriceData = null;
+
+    // First try exact lowercase match
+    itemPriceData = priceData[node.item.name.toLowerCase()];
+
+    // If not found, try finding by item name in the price data keys
+    if (!itemPriceData) {
+      const priceDataKeys = Object.keys(priceData);
+      const matchingKey = priceDataKeys.find(key =>
+        key.toLowerCase() === node.item.name.toLowerCase()
+      );
+      if (matchingKey) {
+        itemPriceData = priceData[matchingKey];
+      }
+    }
+
+    // If still not found, try partial matching
+    if (!itemPriceData) {
+      const priceDataKeys = Object.keys(priceData);
+      const matchingKey = priceDataKeys.find(key =>
+        key.toLowerCase().includes(node.item.name.toLowerCase()) ||
+        node.item.name.toLowerCase().includes(key.toLowerCase())
+      );
+      if (matchingKey) {
+        itemPriceData = priceData[matchingKey];
+      }
+    }
+
+    if (!itemPriceData) return null;
+
+    const price = itemPriceData.price;
+    const totalValue = price * displayQuantity;
+
+    return {
+      price,
+      totalValue,
+      priceType: priceConfig.priceType,
+      server: itemPriceData.server
+    };
+  };
+
+  const itemPrice = getItemPrice();
 
   return (
     <div
@@ -60,7 +126,7 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
                 aria-label={isExpanded ? `Collapse ${node.item?.name || 'item'}` : `Expand ${node.item?.name || 'item'}`}
             >
                 <div className={`h-px w-2 ${isExpanded ? '' : 'rotate-90'} absolute bg-gray-300 transition-transform`}></div>
-                <div className="h-2 w-px bg-gray-300"></div>
+                <div className="w-px h-2 bg-gray-300"></div>
             </button>
         )}
         {!isRoot && !hasChildren && (
@@ -87,7 +153,7 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
                 <img
                   src={getIconUrl(node.item?.id || '', node.item?.tier || 0)}
                   alt={node.item?.name || ''}
-                  className="h-full w-full object-contain"
+                  className="object-contain w-full h-full"
                   onError={(e) => {
                     const fallback = '/fallback-icon.png';
                     if (e.currentTarget.src !== window.location.origin + fallback && !e.currentTarget.src.endsWith(fallback)) {
@@ -103,7 +169,7 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
                 <p className="font-bold text-white">
                     {(isRoot ? Math.ceil(node.totalQuantity) : displayQuantity).toLocaleString()} x {node.item?.name || 'Unknown Item'}
                     {node.item?.id === 'GEMSTONE_DUST' && selectedIngredients[node.item.id] && (
-                      <span className="text-xs text-yellow-400 ml-2">
+                      <span className="ml-2 text-xs text-yellow-400">
                         ({selectedIngredients[node.item.id].replace('PRISTINE_', '').toLowerCase()})
                       </span>
                     )}
@@ -113,12 +179,22 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
                         +{Math.round(node.yieldBonus * 100)}%
                     </span>
                 )}
+                {itemPrice && (
+                  <div className="text-xs text-gray-400">
+                    <div>
+                      {priceConfig?.priceType === 'sell' ? '💰' : '🛒'} {itemPrice.price.toLocaleString()} each
+                    </div>
+                    <div className="text-yellow-400">
+                      Total: {(itemPrice.totalValue / 100).toFixed(2)}g
+                    </div>
+                  </div>
+                )}
             </div>
         </div>
       </div>
 
       {hasChildren && isExpanded && (
-        <div className="mt-1 pl-5">
+        <div className="pl-5 mt-1">
           {node.children?.map((child, index) => (
             <CraftingNode
               key={child.id}
@@ -132,6 +208,9 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({ node, getIconUrl, isRoot = 
               viewMode={viewMode}
               summaryData={summaryData}
               onNodeContextMenu={onNodeContextMenu}
+              showPrices={showPrices}
+              priceConfig={priceConfig}
+              priceData={priceData}
             />
           ))}
         </div>

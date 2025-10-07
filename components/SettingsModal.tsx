@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useConfig } from '../hooks/useConfig';
-import { AllBonuses, BonusConfiguration } from '../types';
+import { AllBonuses, BonusConfiguration, PriceConfig, ServerInfo } from '../types';
+import { fetchPricesByItemName } from '../services/marketService';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -29,13 +30,70 @@ export function SettingsModal({
   const [hotkeys, setHotkeys] = useState(config?.hotkeys || {});
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [priceConfig, setPriceConfig] = useState<PriceConfig>(config?.prices?.config || {
+    enabled: false,
+    priceType: 'sell',
+    selectedServer: '',
+    autoUpdate: false,
+    updateInterval: 24,
+  });
+  const [availableServers, setAvailableServers] = useState<ServerInfo[]>([]);
+  const [isImportingPrices, setIsImportingPrices] = useState(false);
 
   useEffect(() => {
     if (config) {
       setHotkeys(config.hotkeys || {});
       setApiKeyInput(config.GEMINI_API_KEY || '');
+      setPriceConfig(config.prices?.config || {
+        enabled: false,
+        priceType: 'sell',
+        selectedServer: '', // Default to empty string to match config defaults
+        autoUpdate: false,
+        updateInterval: 24,
+      });
     }
   }, [config]); // Rerun whenever the config object changes
+
+  // Price config is now only saved when user explicitly clicks "Save Config" button
+  // This prevents flickering and infinite loops
+
+  // Load available servers on component mount
+  useEffect(() => {
+    const loadServers = async () => {
+      // Only attempt to load servers if we're in Electron
+      if (!isElectron) {
+        setAvailableServers([
+          { id: 'nysa', name: 'Nysa' },
+          { id: 'other', name: 'Other servers available in desktop app' }
+        ]);
+        return;
+      }
+
+      try {
+        const { fetchServers } = await import('../services/marketService');
+        const servers = await fetchServers();
+        setAvailableServers(servers);
+      } catch (error) {
+        console.error('Failed to load servers:', error);
+        // Set a default server list for when API is unavailable
+        setAvailableServers([
+          { id: 'nysa', name: 'Nysa' },
+          { id: 'other', name: 'Other servers available in desktop app' }
+        ]);
+      }
+    };
+
+    // Only run if isElectron is properly defined
+    if (typeof isElectron !== 'undefined') {
+      loadServers();
+    } else {
+      // Fallback for browser environment
+      setAvailableServers([
+        { id: 'nysa', name: 'Nysa' },
+        { id: 'other', name: 'Other servers available in desktop app' }
+      ]);
+    }
+  }, [isElectron]);
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -288,7 +346,152 @@ export function SettingsModal({
               </div>
             ))}
           </div>
-                    {/* Debug Settings */}
+
+          {/* Price Configuration */}
+          <div>
+            <h3 className="mb-2 text-lg font-semibold text-white">💰 Price Configuration</h3>
+            <div className="p-4 mb-2 bg-gray-700 rounded">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="enable-prices"
+                    checked={priceConfig.enabled}
+                    onChange={(e) => setPriceConfig(prev => ({ ...prev, enabled: e.target.checked }))}
+                    className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                  />
+                  <label htmlFor="enable-prices" className="text-sm font-medium text-gray-300">Enable Price Display</label>
+                </div>
+
+                {priceConfig.enabled && (
+                  <>
+                    <div>
+                      <label className="block mb-2 text-sm font-medium text-gray-300">Price Type</label>
+                      <select
+                        title='price type'
+                        value={priceConfig.priceType}
+                        onChange={(e) => setPriceConfig(prev => ({ ...prev, priceType: e.target.value as 'buy' | 'sell' }))}
+                        className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded"
+                      >
+                        <option value="sell">💰 Sell Price</option>
+                        <option value="buy">🛒 Buy Price</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block mb-2 text-sm font-medium text-gray-300">Server</label>
+                      <select
+                        title='server'
+                        value={priceConfig.selectedServer}
+                        onChange={(e) => setPriceConfig(prev => ({ ...prev, selectedServer: e.target.value }))}
+                        className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded"
+                      >
+                        <option value="">Select a server...</option>
+                        {availableServers.map(server => (
+                          <option key={server.id} value={server.name}>{server.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          if (!priceConfig.selectedServer) {
+                            showToast('Please select a server first', 'error');
+                            return;
+                          }
+
+                          if (!isElectron) {
+                            showToast('Price import is only available in the desktop Electron app', 'error');
+                            return;
+                          }
+
+                          setIsImportingPrices(true);
+                          try {
+                            const priceMap = await fetchPricesByItemName(priceConfig.selectedServer);
+                            const priceData: Record<string, any> = {};
+
+                            for (const [itemName, price] of priceMap.entries()) {
+                              priceData[itemName] = {
+                                itemName,
+                                price,
+                                lastUpdated: new Date().toISOString(),
+                                server: priceConfig.selectedServer,
+                              };
+                            }
+
+                            await updateConfig('prices', {
+                              config: priceConfig,
+                              data: priceData,
+                            });
+                            console.log(`Successfully imported prices for ${priceMap.size} items!`);
+                            showToast(`Successfully imported prices for ${priceMap.size} items!`, 'success');
+                          } catch (error) {
+                            console.error('Error importing prices:', error);
+                            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                            showToast(`Failed to import prices: ${errorMessage}`, 'error');
+                          } finally {
+                            setIsImportingPrices(false);
+                          }
+                        }}
+                        disabled={isImportingPrices || !priceConfig.selectedServer || !isElectron}
+                        className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600"
+                      >
+                        {isImportingPrices ? '⏳ Importing...' : !isElectron ? '💻 Desktop Only' : '📥 Import Prices'}
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          await updateConfig('prices', {
+                            config: priceConfig,
+                            data: config?.prices?.data || {},
+                          });
+                          showToast('Price configuration saved!', 'success');
+                        }}
+                        className="px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded hover:bg-green-700"
+                      >
+                        💾 Save Config
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="auto-update"
+                          checked={priceConfig.autoUpdate}
+                          onChange={(e) => setPriceConfig(prev => ({ ...prev, autoUpdate: e.target.checked }))}
+                          className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                        />
+                        <label htmlFor="auto-update" className="text-sm text-gray-300">Auto Update</label>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300">Update Interval (hours)</label>
+                        <input
+                          placeholder='Update Interval (hours)'
+                          type="number"
+                          value={priceConfig.updateInterval}
+                          onChange={(e) => setPriceConfig(prev => ({ ...prev, updateInterval: parseInt(e.target.value) || 24 }))}
+                          className="w-full px-2 py-1 text-white bg-gray-800 border border-gray-600 rounded"
+                          min="1"
+                          max="168"
+                        />
+                      </div>
+                    </div>
+
+                    {Object.keys(config?.prices?.data || {}).length > 0 && (
+                      <div className="p-2 text-xs text-gray-400 bg-gray-800 rounded">
+                        📊 {Object.keys(config.prices.data).length} items with price data loaded
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Debug Settings */}
           {isElectron && (
             <div>
               <h3 className="mb-2 text-lg font-semibold text-white">Debug Settings</h3>

@@ -6,22 +6,35 @@ on:
       - main
 
 jobs:
-  build:
+  create-tag:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Extract version from package.json
       id: package-version
       run: |
         VERSION=$(node -p "require('./package.json').version")
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Extracted version: $VERSION"
-    - uses: butlerlogic/action-autotag@stable
-      id: auto-tag
-      with:
-        strategy: package.json version
-        tag_prefix: "v"
-        tag_message: "Release version %tag%"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        VERSION: ${{ steps.package-version.outputs.version }}
+    - name: Check if tag already exists
+      id: tag-check
+      run: |
+        TAG_NAME="v${{ steps.package-version.outputs.version }}"
+        if git tag -l | grep -q "^${TAG_NAME}$"; then
+          echo "Tag ${TAG_NAME} already exists"
+          echo "tag_exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "Tag ${TAG_NAME} does not exist"
+          echo "tag_exists=false" >> $GITHUB_OUTPUT
+        fi
+    - name: Create and push tag
+      if: steps.tag-check.outputs.tag_exists == 'false'
+      run: |
+        TAG_NAME="v${{ steps.package-version.outputs.version }}"
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag -a "${TAG_NAME}" -m "Release version ${TAG_NAME}"
+        git push origin "${TAG_NAME}"
+        echo "Created and pushed tag: ${TAG_NAME}"

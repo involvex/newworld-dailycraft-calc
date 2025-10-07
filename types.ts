@@ -137,6 +137,21 @@ export interface Settings {
   bonuses: AllBonuses;
 }
 
+export interface PriceData {
+  itemName: string;
+  price: number;
+  lastUpdated: string;
+  server: string;
+}
+
+export interface PriceConfig {
+  enabled: boolean;
+  priceType: 'buy' | 'sell';
+  selectedServer: string;
+  autoUpdate: boolean;
+  updateInterval: number; // in hours
+}
+
 export interface Config {
   version: string;
   settings: Settings;
@@ -150,5 +165,12 @@ export interface Config {
   selectedPreset: string;
   collapsedNodes: string[];
   GEMINI_API_KEY: string;
+  prices: {
+    config: PriceConfig;
+    data: Record<string, PriceData>;
+  };
   [key: string]: any;
 }
+
+// Re-export for useConfig.ts
+export type ConfigData = Config;

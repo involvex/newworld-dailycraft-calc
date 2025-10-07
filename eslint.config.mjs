@@ -44,6 +44,7 @@ export default defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
       "@/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_", "ignoreRestSiblings": true }],
       "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
     }),
     settings: {
       react: {

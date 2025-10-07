@@ -89,7 +89,12 @@ const App: React.FC = () => {
   });
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
   const [removedNodes, setRemovedNodes] = useState<Set<string>>(new Set());
+  const [showPrices, setShowPrices] = useState<boolean>(() => getInitial('showPrices', false));
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Price state management
+  const priceConfig = configState.config?.prices?.config;
+  const priceData = configState.config?.prices?.data || {};
 
   // --- Tree expand/collapse logic ---
   const {
@@ -513,18 +518,20 @@ const filteredCraftableItems = useMemo(() => {
 
   return (
     <React.Fragment>
-      <div className="min-h-screen mt-0 font-sans text-gray-300 bg-gray-900 app-gradient-bg">
+      <div className="min-h-screen mt-5 font-sans text-gray-300 bg-gray-900 app-gradient-bg">
         <div className="container max-w-6xl p-4 mx-auto mt-0 sm:p-6 lg:p-8">
           <header className="mt-0 mb-6 text-center bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm">
-            <img src="logo.png" alt="New World Crafting Calculator" className="w-auto h-12 mx-auto mb-1 logo" />
+            
             <h1 className="mb-2 text-2xl font-bold text-blue-400">New World Crafting Calculator</h1>
             <p className="text-sm text-gray-400">Plan your crafting efficiently with advanced material calculations</p>
           </header>
 
           {/* Navigation Bar */}
-          <div className="p-3 mb-6 border bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm">
+          <div className="p-3 mb-6 border bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm navbar">
+          <img src="logo.png" alt="New World Crafting Calculator" className="w-auto h-12 mx-auto logo" />
+          <p className="mr-2 text-sm font-bold text-blue-400" style={{ marginBottom: '-25px', marginLeft: '4%' }}>New World Crafting Calculator</p>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <span className="mr-2 text-sm font-medium text-gray-300">Jump to:</span>
+              {/* <span className="mr-2 text-sm font-medium text-gray-300">Jump to:</span> */}
               <button
                 onClick={() => document.getElementById('presets-section')?.scrollIntoView({ behavior: 'smooth' })}
                 className="px-3 py-1 text-xs text-yellow-300 transition-all duration-200 border rounded-md bg-yellow-600/20 hover:bg-yellow-600/40 border-yellow-500/30"
@@ -555,11 +562,17 @@ const filteredCraftableItems = useMemo(() => {
               >
                 📊 Summary
               </button>
+              <button 
+                    onClick={() => setShowSettings(true)} 
+                    className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-purple-400/20 hover:bg-purple-600/40 border-purple-500/30"
+                  >
+                    ⚙️ Settings
+                  </button>
             </div>
           </div>
 
           {/* Quick Controls Bar */}
-          <div className="p-4 mb-6 border bg-gray-800/50 rounded-xl border-yellow-900/30 backdrop-blur-sm">
+          {/* <div className="p-4 mb-6 border bg-gray-800/50 rounded-xl border-yellow-900/30 backdrop-blur-sm">
             <div className="flex flex-wrap items-center justify-center gap-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700/50">
                 <span className="text-sm font-medium text-gray-300">View:</span>
@@ -603,7 +616,7 @@ const filteredCraftableItems = useMemo(() => {
                 {showAdvanced ? '🔧 Hide Advanced' : '⚙️ Advanced Options'}
               </button>
             </div>
-          </div>
+          </div> */}
           {/* Presets Section */}
           <div id="presets-section" className="p-4 mb-6 border shadow-lg bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl border-yellow-900/40">
             <h3 className="flex items-center mb-3 text-lg font-semibold text-yellow-300">
@@ -748,6 +761,50 @@ const filteredCraftableItems = useMemo(() => {
                   >
                     ℹ️ About
                   </button>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700/50">
+                <span className="text-sm font-medium text-gray-300">View:</span>
+                <button
+                  onClick={() => handleViewModeChange(viewMode === 'net' ? 'gross' : 'net')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                    viewMode === 'net' 
+                      ? 'bg-green-600 text-white shadow-lg' 
+                      : 'bg-blue-600 text-white shadow-lg'
+                  }`}
+                  title={`Switch to ${viewMode === 'net' ? 'Gross' : 'Net'} mode`}
+                >
+                  {viewMode === 'net' ? '📊 Net Mode' : '📈 Gross Mode'}
+                </button>
+              </div>
+              
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700/50">
+                <span className="text-sm font-medium text-gray-300">Summary:</span>
+                <button
+                  onClick={() => handleSummaryModeChange(summaryMode === 'net' ? 'xp' : 'net')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                    summaryMode === 'net' 
+                      ? 'bg-purple-600 text-white shadow-lg' 
+                      : 'bg-orange-600 text-white shadow-lg'
+                  }`}
+                  title={`Switch to ${summaryMode === 'net' ? 'XP' : 'Materials'} summary`}
+                >
+                  {summaryMode === 'net' ? '📦 Materials' : '⭐ XP Mode'}
+                </button>
+              </div>
+              <button
+                      onClick={() => {
+                        setShowPrices(!showPrices);
+                        localStorage.setItem('showPrices', JSON.stringify(!showPrices));
+                      }}
+                      className={`px-3 py-2 text-xs font-medium text-white transition-all duration-200 rounded-lg hover:shadow-lg ${
+                        showPrices
+                          ? 'bg-yellow-600 hover:bg-yellow-700'
+                          : 'bg-green-900 hover:bg-green-700'
+                      }`}
+                      style={{ width: '100%' }}
+                      title={`${showPrices ? 'Hide' : 'Show'} item prices`}
+                    >
+                      💰 {showPrices ? 'Hide Prices' : 'Display Prices'}
+                    </button>
                 </div>
               </div>
             </div>
@@ -911,14 +968,28 @@ const filteredCraftableItems = useMemo(() => {
                     Crafting Tree
                   </h2>
                   <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleExpandAll(craftingData)} 
+                    <button
+                      onClick={() => {
+                        setShowPrices(!showPrices);
+                        localStorage.setItem('showPrices', JSON.stringify(!showPrices));
+                      }}
+                      className={`px-3 py-2 text-xs font-medium text-white transition-all duration-200 rounded-lg hover:shadow-lg ${
+                        showPrices
+                          ? 'bg-yellow-600 hover:bg-yellow-700'
+                          : 'bg-green-900 hover:bg-green-700'
+                      }`}
+                      title={`${showPrices ? 'Hide' : 'Show'} item prices`}
+                    >
+                      💰 {showPrices ? 'Hide Prices' : 'Display Prices'}
+                    </button>
+                    <button
+                      onClick={() => handleExpandAll(craftingData)}
                       className="px-3 py-2 text-xs font-medium text-white transition-all duration-200 bg-green-600 rounded-lg hover:bg-green-700 hover:shadow-lg"
                     >
                       📖 Expand All
                     </button>
-                    <button 
-                      onClick={() => handleCollapseAll(craftingData)} 
+                    <button
+                      onClick={() => handleCollapseAll(craftingData)}
                       className="px-3 py-2 text-xs font-medium text-white transition-all duration-200 bg-orange-600 rounded-lg hover:bg-orange-700 hover:shadow-lg"
                     >
                       📕 Collapse All
@@ -932,6 +1003,9 @@ const filteredCraftableItems = useMemo(() => {
                     onToggle={handleToggleNode}
                     getIconUrl={getIconUrl}
                     onNodeContextMenu={handleContextMenu}
+                    showPrices={showPrices && priceConfig?.enabled}
+                    priceConfig={priceConfig}
+                    priceData={priceData}
                   />
                 </div>
               </div>
@@ -959,6 +1033,9 @@ const filteredCraftableItems = useMemo(() => {
                   onIngredientChange={(itemId: string, ingredient: string) => {
                     setSelectedIngredients(prev => ({ ...prev, [itemId]: ingredient }));
                   }}
+                  showPrices={showPrices}
+                  priceConfig={priceConfig}
+                  priceData={priceData}
                   />
                 ) : (
                   <div className="py-8 text-center text-gray-400">

@@ -1,16 +1,5 @@
 import { useState } from 'react';
-
-// Define a more specific type for the configuration data
-export interface ConfigData {
-  GEMINI_API_KEY: string;
-  hotkeys: {
-    toggleCalculator: string;
-    triggerOCR: string;
-    openSettings: string;
-  };
-  // Add other config properties as needed
-  [key: string]: any; // Allow other properties
-}
+import { ConfigData, PriceConfig, PriceData, AllBonuses } from '../types';
 
 // Type for config stored in browser (without API key for security)
 export interface StoredConfigData {
@@ -24,11 +13,39 @@ export interface StoredConfigData {
 }
 
 const defaultConfig: ConfigData = {
+  version: '1.7.0',
   GEMINI_API_KEY: '',
   hotkeys: {
     toggleCalculator: 'CommandOrControl+Alt+I',
     triggerOCR: 'CommandOrControl+Alt+O',
     openSettings: 'CommandOrControl+Alt+S',
+  },
+  settings: {
+    viewMode: 'net',
+    summaryMode: 'net',
+    showAdvanced: false,
+    debugOCRPreview: false,
+    bonuses: {
+      Smelting: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+      Weaving: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+      Tanning: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+      Woodworking: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+      Stonecutting: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+    },
+  },
+  customPresets: [],
+  inventory: {},
+  selectedPreset: '',
+  collapsedNodes: [],
+  prices: {
+    config: {
+      enabled: false,
+      priceType: 'sell',
+      selectedServer: '',
+      autoUpdate: false,
+      updateInterval: 24,
+    },
+    data: {},
   },
 };
 
@@ -86,7 +103,7 @@ export function useConfig() {
         if (GEMINI_API_KEY) {
           localStorage.setItem('nw-crafting-gemini-api-key', GEMINI_API_KEY);
         }
-        localStorage.setItem('nw-crafting-config', JSON.stringify(configToStore));
+        localStorage.setItem('nw-crafting-config', JSON.stringify(configToStore, null, 2));
         setConfig(newConfig);
       }
     } catch (err) {

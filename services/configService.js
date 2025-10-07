@@ -38,7 +38,17 @@ class ConfigService {
       inventory: {},
       selectedPreset: '',
       collapsedNodes: [],
-      encryptedGeminiApiKey: '' // Store encrypted key here
+      encryptedGeminiApiKey: '', // Store encrypted key here
+      prices: {
+        config: {
+          enabled: false,
+          priceType: 'sell',
+          selectedServer: '',
+          autoUpdate: false,
+          updateInterval: 24,
+        },
+        data: {},
+      },
     };
     this.ensureConfigDirectory();
   }
@@ -121,21 +131,29 @@ class ConfigService {
 
   mergeWithDefaults(config) {
     const merged = { ...this.defaultConfig };
-    
+
     if (config.settings) {
       merged.settings = { ...merged.settings, ...config.settings };
       if (config.settings.bonuses) {
         merged.settings.bonuses = { ...merged.settings.bonuses, ...config.settings.bonuses };
       }
     }
-    
+
     merged.hotkeys = { ...merged.hotkeys, ...config.hotkeys };
     merged.customPresets = config.customPresets || [];
     merged.inventory = config.inventory || {};
     merged.selectedPreset = config.selectedPreset || '';
     merged.collapsedNodes = config.collapsedNodes || [];
     merged.GEMINI_API_KEY = config.GEMINI_API_KEY || ''; // Ensure decrypted key is merged
-    
+
+    // Handle prices configuration - merge with defaults
+    if (config.prices) {
+      merged.prices = {
+        config: { ...merged.prices.config, ...config.prices.config },
+        data: config.prices.data || {}
+      };
+    }
+
     return merged;
   }
 
