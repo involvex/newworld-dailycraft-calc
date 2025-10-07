@@ -8,7 +8,19 @@ interface ExtendedRawMaterial extends RawMaterial {
   unitXP?: number;
 }
 
-interface _SummaryListProps {
+const SummaryList = ({
+  materials,
+  inventory,
+  onInventoryChange,
+  getIconUrl,
+  title,
+  showInventory,
+  selectedIngredients,
+  onIngredientChange,
+  showPrices,
+  priceConfig,
+  priceData: _priceData
+}: {
   materials: ExtendedRawMaterial[];
   getIconUrl: (_itemId: string, _tier: number) => string;
   title: string;
@@ -18,11 +30,15 @@ interface _SummaryListProps {
   selectedIngredients?: Record<string, string>;
   onIngredientChange?: (_itemId: string, _ingredient: string) => void;
   showPrices?: boolean;
-  priceConfig?: any;
-  priceData?: Record<string, any>;
-}
-
-const SummaryList = ({ materials, inventory, onInventoryChange, getIconUrl, title, showInventory, selectedIngredients, onIngredientChange, showPrices, priceConfig, priceData: _priceData }) => {
+  priceConfig?: {
+    enabled?: boolean;
+    priceType?: 'buy' | 'sell';
+  };
+  priceData?: Record<string, {
+    price: number;
+    server: string;
+  }>;
+}) => {
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'success' | 'error'>('idle');
@@ -99,7 +115,7 @@ const SummaryList = ({ materials, inventory, onInventoryChange, getIconUrl, titl
 
   // Get price for the item if price display is enabled
   const getItemPrice = (itemName: string, quantity: number) => {
-    if (!showPrices || !priceConfig?.enabled || !itemName) return null;
+    if (!showPrices || !priceConfig?.enabled || !itemName || !_priceData) return null;
 
     // Try multiple ways to find the price data
     let itemPriceData = null;
@@ -138,7 +154,7 @@ const SummaryList = ({ materials, inventory, onInventoryChange, getIconUrl, titl
     return {
       price,
       totalValue,
-      priceType: priceConfig.priceType,
+      priceType: priceConfig?.priceType || 'buy',
       server: itemPriceData.server
     };
   };
@@ -190,7 +206,7 @@ const SummaryList = ({ materials, inventory, onInventoryChange, getIconUrl, titl
       <div className="space-y-2">
         {materials.map((material) => {
           const { item, quantity, inInventory = 0, originalQuantity, xp, unitXP } = material;
-          const inventoryAmount = inventory[item.id] || 0;
+          const inventoryAmount = inventory?.[item.id] || 0;
           const isEditing = editingItem === item.id;
           const isXpMode = xp !== undefined;
           
@@ -204,7 +220,7 @@ const SummaryList = ({ materials, inventory, onInventoryChange, getIconUrl, titl
                   onClick={() => {
                     if (item.id === 'GEMSTONE_DUST' && onIngredientChange) {
                       const options = ['PRISTINE_AMBER', 'PRISTINE_DIAMOND', 'PRISTINE_EMERALD'];
-                      const current = selectedIngredients[item.id] || 'PRISTINE_AMBER';
+                      const current = selectedIngredients?.[item.id] || 'PRISTINE_AMBER';
                       const currentIndex = options.indexOf(current);
                       const nextIndex = (currentIndex + 1) % options.length;
                       onIngredientChange(item.id, options[nextIndex]);
@@ -286,6 +302,16 @@ const SummaryList = ({ materials, inventory, onInventoryChange, getIconUrl, titl
       </div>
       <div className="pt-3 mt-4 text-right border-t border-gray-700">
         <p className="text-sm text-gray-400">
+          Total Cost: <span className="mr-4 font-bold text-white">
+            {(() => {
+              const totalCost = materials.reduce((acc, material) => {
+                const itemPrice = getItemPrice(material.item.name, material.quantity);
+                return acc + (itemPrice ? itemPrice.totalValue : 0);
+              }, 0);
+              return (totalCost / 100).toFixed(0);
+            })()}g 🪙 {priceConfig?.priceType === 'sell' ? 'Sell 💰' : 'Buy 🛒'}
+          
+          </span>
           Total Unique Materials: <span className="font-bold text-white">{materials.length}</span>
           {showInventory && (
             <span className="ml-4">
