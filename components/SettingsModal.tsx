@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useConfig } from '../hooks/useConfig';
 import { AllBonuses, BonusConfiguration, PriceConfig, ServerInfo } from '../types';
 import { fetchPricesByItemName } from '../services/marketService';
@@ -39,6 +39,15 @@ export function SettingsModal({
   });
   const [availableServers, setAvailableServers] = useState<ServerInfo[]>([]);
   const [isImportingPrices, setIsImportingPrices] = useState(false);
+  const [recordingHotkey, setRecordingHotkey] = useState<string | null>(null);
+  const [recordedKeys, setRecordedKeys] = useState<Set<string>>(new Set());
+  const [hotkeyVersions, setHotkeyVersions] = useState<{ [key: string]: number }>({
+    toggleCalculator: 0,
+    triggerOCR: 0,
+    openSettings: 0,
+  });
+  const [forceUpdate, setForceUpdate] = useState(0);
+  const currentRecordedKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (config) {
@@ -100,9 +109,212 @@ export function SettingsModal({
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleHotkeyChange = (key: keyof typeof hotkeys, value: string) => {
-    setHotkeys(prev => ({ ...prev, [key]: value }));
+
+  // Format key combination for display
+  const formatKeyCombo = (keys: Set<string>): string => {
+    const sortedKeys = Array.from(keys).sort((a, b) => {
+      // Prioritize modifier keys
+      const modifiers = ['CommandOrControl', 'Alt', 'Shift', 'Super'];
+      const aIndex = modifiers.indexOf(a);
+      const bIndex = modifiers.indexOf(b);
+
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      return a.localeCompare(b);
+    });
+
+    return sortedKeys.join('+');
   };
+
+  // Start recording a hotkey
+  const startRecording = (hotkeyType: string) => {
+    console.log('Starting recording for:', hotkeyType);
+    setRecordingHotkey(hotkeyType);
+    setRecordedKeys(new Set());
+
+    // Test if event listener will work
+    const testHandler = (e: KeyboardEvent) => {
+      console.log('TEST HANDLER - Key pressed:', e.key);
+    };
+
+    document.addEventListener('keydown', testHandler, true);
+    setTimeout(() => {
+      document.removeEventListener('keydown', testHandler, true);
+      console.log('Test handler removed');
+    }, 100);
+  };
+
+  // Stop recording and save the hotkey
+  const stopRecording = () => {
+    if (recordingHotkey && recordedKeys.size > 0) {
+      const formattedCombo = formatKeyCombo(recordedKeys);
+      console.log('Recording hotkey:', recordingHotkey, 'with keys:', formattedCombo);
+
+      // Update specific hotkey properties and increment version to force re-render
+      setHotkeys(prev => {
+        const updated = { ...prev };
+        if (recordingHotkey === 'toggleCalculator') {
+          updated.toggleCalculator = formattedCombo;
+        } else if (recordingHotkey === 'triggerOCR') {
+          updated.triggerOCR = formattedCombo;
+        } else if (recordingHotkey === 'openSettings') {
+          updated.openSettings = formattedCombo;
+        }
+        console.log('Updated hotkeys state:', updated);
+        return updated;
+      });
+
+      setHotkeyVersions(prev => {
+        const updated = { ...prev };
+        if (recordingHotkey === 'toggleCalculator') {
+          updated.toggleCalculator = prev.toggleCalculator + 1;
+        } else if (recordingHotkey === 'triggerOCR') {
+          updated.triggerOCR = prev.triggerOCR + 1;
+        } else if (recordingHotkey === 'openSettings') {
+          updated.openSettings = prev.openSettings + 1;
+        }
+        console.log('Updated hotkey versions:', updated);
+        return updated;
+      });
+
+      // Force component re-render to ensure input fields update
+      setForceUpdate(prev => prev + 1);
+
+      showToast(`Hotkey recorded: ${formattedCombo}`, 'success');
+      console.log('Toast should show for:', formattedCombo);
+    } else {
+      console.log('No hotkey to record or no keys captured');
+    }
+    setRecordingHotkey(null);
+    setRecordedKeys(new Set());
+  };
+
+  // Handle keydown events during recording
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      console.log('Key pressed:', event.key, 'Code:', event.code, 'Ctrl:', event.ctrlKey, 'Alt:', event.altKey, 'Shift:', event.shiftKey, 'Meta:', event.metaKey);
+
+      if (!recordingHotkey) {
+        console.log('No recording hotkey set, ignoring key');
+        return;
+      }
+
+      console.log('Recording hotkey:', recordingHotkey, 'processing key event');
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Handle modifier keys
+      const currentModifiers = new Set<string>();
+      if (event.ctrlKey) currentModifiers.add('CommandOrControl');
+      if (event.altKey) currentModifiers.add('Alt');
+      if (event.shiftKey) currentModifiers.add('Shift');
+      if (event.metaKey) currentModifiers.add('Super');
+
+      // Handle regular keys - simplified logic
+      let keyName = event.key;
+
+      // Basic key mapping
+      if (keyName === ' ') {
+        keyName = 'Space';
+      } else if (keyName.length === 1) {
+        keyName = keyName.toUpperCase();
+      } else if (keyName.startsWith('F') && keyName.length <= 3) {
+        keyName = keyName.toUpperCase();
+      } else if (/^\d$/.test(keyName)) {
+        keyName = `Digit${keyName}`;
+      } else {
+        // Map special keys using event.code for better compatibility
+        const codeMap: { [key: string]: string } = {
+          'Escape': 'ESCAPE',
+          'Enter': 'RETURN',
+          'Tab': 'TAB',
+          'Delete': 'DELETE',
+          'Backspace': 'BACKSPACE',
+          'ArrowUp': 'UP',
+          'ArrowDown': 'DOWN',
+          'ArrowLeft': 'LEFT',
+          'ArrowRight': 'RIGHT',
+          'Home': 'HOME',
+          'End': 'END',
+          'PageUp': 'PAGEUP',
+          'PageDown': 'PAGEDOWN',
+        };
+        keyName = codeMap[event.code] || event.code;
+      }
+
+      // Combine modifiers and key
+      const allKeys = new Set([...currentModifiers, keyName]);
+      console.log('Setting recorded keys:', Array.from(allKeys));
+
+      // Update both ref (synchronous) and state (for React)
+      currentRecordedKeysRef.current = allKeys;
+      setRecordedKeys(allKeys);
+
+      // Use longer delay and check ref for synchronous access
+      setTimeout(() => {
+        console.log('Auto-stopping recording after timeout');
+        console.log('Current recordedKeys size:', recordedKeys.size);
+        console.log('Current ref size:', currentRecordedKeysRef.current.size);
+
+        // Use ref for immediate access to avoid race conditions
+        if (recordingHotkey && currentRecordedKeysRef.current.size > 0) {
+          const formattedCombo = formatKeyCombo(currentRecordedKeysRef.current);
+          console.log('Recording hotkey from ref:', recordingHotkey, 'with keys:', formattedCombo);
+
+          // Update specific hotkey properties and increment version to force re-render
+          setHotkeys(prev => {
+            const updated = { ...prev };
+            if (recordingHotkey === 'toggleCalculator') {
+              updated.toggleCalculator = formattedCombo;
+            } else if (recordingHotkey === 'triggerOCR') {
+              updated.triggerOCR = formattedCombo;
+            } else if (recordingHotkey === 'openSettings') {
+              updated.openSettings = formattedCombo;
+            }
+            console.log('Updated hotkeys state:', updated);
+            return updated;
+          });
+
+          setHotkeyVersions(prev => {
+            const updated = { ...prev };
+            if (recordingHotkey === 'toggleCalculator') {
+              updated.toggleCalculator = prev.toggleCalculator + 1;
+            } else if (recordingHotkey === 'triggerOCR') {
+              updated.triggerOCR = prev.triggerOCR + 1;
+            } else if (recordingHotkey === 'openSettings') {
+              updated.openSettings = prev.openSettings + 1;
+            }
+            console.log('Updated hotkey versions:', updated);
+            return updated;
+          });
+
+          // Force component re-render to ensure input fields update
+          setForceUpdate(prev => prev + 1);
+
+          showToast(`Hotkey recorded: ${formattedCombo}`, 'success');
+          console.log('Toast should show for:', formattedCombo);
+        } else {
+          console.log('No hotkey to record or no keys captured');
+        }
+        setRecordingHotkey(null);
+        setRecordedKeys(new Set());
+        currentRecordedKeysRef.current.clear();
+      }, 1500);
+    };
+
+    if (recordingHotkey) {
+      console.log('Adding keydown event listener for recording');
+      document.addEventListener('keydown', handleKeyDown, true);
+      return () => {
+        console.log('Removing keydown event listener');
+        document.removeEventListener('keydown', handleKeyDown, true);
+      };
+    }
+  }, [recordingHotkey]);
 
   const handleSaveHotkeys = async () => {
     try {
@@ -141,7 +353,6 @@ export function SettingsModal({
       }
     } catch (error) {
       showToast('Failed to export configuration', 'error');
-      console.error('Error exporting config:', error);
     }
   };
 
@@ -160,7 +371,6 @@ export function SettingsModal({
       }
     } catch (error) {
       showToast('Failed to import configuration', 'error');
-      console.error('Error importing config:', error);
     }
   };
 
@@ -176,45 +386,126 @@ export function SettingsModal({
             {toast.message}
           </div>
         )}
-        
 
-          
+        {/* Global Hotkeys */}
         <div className="pr-2 space-y-6 overflow-y-auto">
-                    {/* Global Hotkeys */}
-          <div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Global Hotkeys</h3>
-            {isElectron ? (
-              <div className="space-y-3">
+          {isElectron && (
+            <div>
+              <h3 className="mb-2 text-lg font-semibold text-white">Global Hotkeys</h3>
+              <div className="space-y-4">
                 <div>
                   <label className="block mb-1 text-sm font-medium text-gray-300">Toggle Calculator</label>
-                  <input
-                    type="text"
-                    value={hotkeys.toggleCalculator}
-                    onChange={(e) => handleHotkeyChange('toggleCalculator', e.target.value)}
-                    className="w-full px-3 py-2 text-sm text-white bg-gray-700 border border-gray-600 rounded"
-                    placeholder="e.g., CommandOrControl+Alt+I"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      key={`toggleCalculator-${hotkeyVersions.toggleCalculator}`}
+                      type="text"
+                      value={hotkeys.toggleCalculator || ''}
+                      className={`flex-1 px-3 py-2 text-sm text-white bg-gray-700 border rounded ${
+                        recordingHotkey === 'toggleCalculator'
+                          ? 'border-yellow-400 bg-yellow-900/20'
+                          : 'border-gray-600'
+                      }`}
+                      placeholder="e.g., CommandOrControl+Alt+I"
+                      readOnly
+                    />
+                    <button
+                      onClick={() => recordingHotkey === 'toggleCalculator' ? stopRecording() : startRecording('toggleCalculator')}
+                      className={`px-3 py-2 text-sm font-semibold rounded transition-colors ${
+                        recordingHotkey === 'toggleCalculator'
+                          ? 'bg-red-600 hover:bg-red-700 text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                    >
+                      {recordingHotkey === 'toggleCalculator' ? '⏹️ Stop' : '🎬 Record'}
+                    </button>
+                  </div>
+                  {recordingHotkey === 'toggleCalculator' && (
+                    <div className="mt-1 text-sm text-yellow-400">
+                      Press your desired key combination... {recordedKeys.size > 0 && (
+                        <span className="px-2 py-1 ml-2 font-mono bg-gray-600 rounded">
+                          {formatKeyCombo(recordedKeys)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
+
                 <div>
                   <label className="block mb-1 text-sm font-medium text-gray-300">Trigger OCR</label>
-                  <input
-                    type="text"
-                    value={hotkeys.triggerOCR}
-                    onChange={(e) => handleHotkeyChange('triggerOCR', e.target.value)}
-                    className="w-full px-3 py-2 text-sm text-white bg-gray-700 border border-gray-600 rounded"
-                    placeholder="e.g., CommandOrControl+Alt+O"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      key={`triggerOCR-${hotkeyVersions.triggerOCR}`}
+                      type="text"
+                      value={hotkeys.triggerOCR || ''}
+                      className={`flex-1 px-3 py-2 text-sm text-white bg-gray-700 border rounded ${
+                        recordingHotkey === 'triggerOCR'
+                          ? 'border-yellow-400 bg-yellow-900/20'
+                          : 'border-gray-600'
+                      }`}
+                      placeholder="e.g., CommandOrControl+Alt+O"
+                      readOnly
+                    />
+                    <button
+                      onClick={() => recordingHotkey === 'triggerOCR' ? stopRecording() : startRecording('triggerOCR')}
+                      // onChange={
+                      //   (e) => stopRecording.toString()  === 'triggerOCR' ?  hotkeys.triggerOCR : e.currentTarget.value}
+                      className={`px-3 py-2 text-sm font-semibold rounded transition-colors ${
+                        recordingHotkey === 'triggerOCR'
+                          ? 'bg-red-600 hover:bg-red-700 text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                    >
+                      {recordingHotkey === 'triggerOCR' ? '⏹️ Stop' : '🎬 Record'}
+                    </button>
+                  </div>
+                  {recordingHotkey === 'triggerOCR' && (
+                    <div className="mt-1 text-sm text-yellow-400">
+                      Press your desired key combination... {recordedKeys.size > 0 && (
+                        <span className="px-2 py-1 ml-2 font-mono bg-gray-600 rounded">
+                          {formatKeyCombo(recordedKeys)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
+
                 <div>
                   <label className="block mb-1 text-sm font-medium text-gray-300">Open Settings</label>
-                  <input
-                    type="text"
-                    value={hotkeys.openSettings}
-                    onChange={(e) => handleHotkeyChange('openSettings', e.target.value)}
-                    className="w-full px-3 py-2 text-sm text-white bg-gray-700 border border-gray-600 rounded"
-                    placeholder="e.g., CommandOrControl+Alt+S"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      key={`openSettings-${hotkeyVersions.openSettings}`}
+                      type="text"
+                      value={hotkeys.openSettings || ''}
+                      className={`flex-1 px-3 py-2 text-sm text-white bg-gray-700 border rounded ${
+                        recordingHotkey === 'openSettings'
+                          ? 'border-yellow-400 bg-yellow-900/20'
+                          : 'border-gray-600'
+                      }`}
+                      placeholder="e.g., CommandOrControl+Alt+S"
+                      readOnly
+                    />
+                    <button
+                      onClick={() => recordingHotkey === 'openSettings' ? stopRecording() : startRecording('openSettings')}
+                      className={`px-3 py-2 text-sm font-semibold rounded transition-colors ${
+                        recordingHotkey === 'openSettings'
+                          ? 'bg-red-600 hover:bg-red-700 text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                    >
+                      {recordingHotkey === 'openSettings' ? '⏹️ Stop' : '🎬 Record'}
+                    </button>
+                  </div>
+                  {recordingHotkey === 'openSettings' && (
+                    <div className="mt-1 text-sm text-yellow-400">
+                      Press your desired key combination... {recordedKeys.size > 0 && (
+                        <span className="px-2 py-1 ml-2 font-mono bg-gray-600 rounded">
+                          {formatKeyCombo(recordedKeys)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
+
                 <button onClick={handleSaveHotkeys} className="px-4 py-2 text-sm bg-green-600 rounded hover:bg-green-700">
                   💾 Save Hotkeys
                 </button>
@@ -223,13 +514,11 @@ export function SettingsModal({
                   <p>Keys: A-Z, 0-9, F1-F12, Space, etc.</p>
                 </div>
               </div>
-            ) : (
-              <div className="text-sm text-gray-400">
-                <p>Hotkeys only available in desktop app</p>
-              </div>
-            )}
-            <br />
-          </div>
+            </div>
+          )}
+          
+          
+
           {/* API Key Config */}
           {isElectron && (
             <div>
@@ -360,7 +649,7 @@ export function SettingsModal({
                     onChange={(e) => setPriceConfig(prev => ({ ...prev, enabled: e.target.checked }))}
                     className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
                   />
-                  <label htmlFor="enable-prices" className="text-sm font-medium text-gray-300">Enable Price Display</label>
+                  <label htmlFor="enable-prices" className="text-sm text-gray-300">Enable Price Display</label>
                 </div>
 
                 {priceConfig.enabled && (
