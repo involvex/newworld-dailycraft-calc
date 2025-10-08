@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 interface Preset {
   name: string;
@@ -20,15 +20,37 @@ interface UsePresetsProps {
 }
 
 const PRESETS: Preset[] = [
-  { name: 'Daily Cooldowns (10)', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 },{ id: 'ASMODEUM', qty: 10 }, { id: 'PHOENIXWEAVE', qty: 10 }, { id: 'RUNIC_LEATHER', qty: 10 }, { id: 'GLITTERING_EBONY', qty: 10 }] },
-  { name: 'Prismatic Set (10)', items: [{ id: 'PRISMATIC_INGOT', qty: 10 }, { id: 'PRISMATIC_CLOTH', qty: 10 }, { id: 'PRISMATIC_LEATHER', qty: 10 }, { id: 'PRISMATIC_PLANKS', qty: 10 }] },
+  {
+    name: "Daily Cooldowns (10)",
+    items: [
+      { id: "PRISMATIC_INGOT", qty: 10 },
+      { id: "PRISMATIC_CLOTH", qty: 10 },
+      { id: "PRISMATIC_LEATHER", qty: 10 },
+      { id: "PRISMATIC_PLANKS", qty: 10 },
+      { id: "ASMODEUM", qty: 10 },
+      { id: "PHOENIXWEAVE", qty: 10 },
+      { id: "RUNIC_LEATHER", qty: 10 },
+      { id: "GLITTERING_EBONY", qty: 10 }
+    ]
+  },
+  {
+    name: "Prismatic Set (10)",
+    items: [
+      { id: "PRISMATIC_INGOT", qty: 10 },
+      { id: "PRISMATIC_CLOTH", qty: 10 },
+      { id: "PRISMATIC_LEATHER", qty: 10 },
+      { id: "PRISMATIC_PLANKS", qty: 10 }
+    ]
+  }
 ];
 
-const getInitial = <T,>(key: string, fallback: T): T => {
+const getInitial = <T>(key: string, fallback: T): T => {
   try {
     const val = localStorage.getItem(key);
     return val ? JSON.parse(val) : fallback;
-  } catch { return fallback; }
+  } catch {
+    return fallback;
+  }
 };
 
 export default function usePresets({
@@ -41,11 +63,13 @@ export default function usePresets({
   setQuantity,
   restoreCollapsedNodes,
   selectedPreset, // Destructure from props
-  setSelectedPreset, // Destructure from props
+  setSelectedPreset // Destructure from props
 }: UsePresetsProps) {
-  const [customPresets, setCustomPresets] = useState<Preset[]>(() => getInitial('customPresets', []));
+  const [customPresets, setCustomPresets] = useState<Preset[]>(() =>
+    getInitial("customPresets", [])
+  );
   const [showCreatePreset, setShowCreatePreset] = useState(false);
-  const [presetName, setPresetName] = useState('');
+  const [presetName, setPresetName] = useState("");
   // selectedPreset state is now managed in App.tsx
 
   // Select a preset and restore state
@@ -59,24 +83,30 @@ export default function usePresets({
           setSelectedItemId(preset.items[0].id);
           setQuantity(preset.items[0].qty);
           setMultiItems([]);
-          localStorage.setItem('selectedItemId', JSON.stringify(preset.items[0].id));
-          localStorage.setItem('quantity', JSON.stringify(preset.items[0].qty));
+          localStorage.setItem(
+            "selectedItemId",
+            JSON.stringify(preset.items[0].id)
+          );
+          localStorage.setItem("quantity", JSON.stringify(preset.items[0].qty));
         } else {
           setMultiItems([...preset.items]); // Ensure a new array reference to trigger re-render
-          setSelectedItemId('');
+          setSelectedItemId("");
           setQuantity(preset.items[0]?.qty || 10);
         }
 
         // Restore collapsedNodes if present in the preset
         if (
-          Object.prototype.hasOwnProperty.call(preset, 'collapsedNodes') &&
+          Object.prototype.hasOwnProperty.call(preset, "collapsedNodes") &&
           Array.isArray(preset.collapsedNodes)
         ) {
           restoreCollapsedNodes(preset.collapsedNodes);
         } else {
           restoreCollapsedNodes([]);
         }
-        localStorage.setItem('multiItems', JSON.stringify(preset.items.length > 1 ? preset.items : []));
+        localStorage.setItem(
+          "multiItems",
+          JSON.stringify(preset.items.length > 1 ? preset.items : [])
+        );
       }
     }
   };
@@ -84,16 +114,18 @@ export default function usePresets({
   // Create or overwrite a preset
   const handlePresetCreate = (name: string) => {
     if (!name.trim()) return;
-    
+
     // Validate that there's something to save
     if (multiItems.length === 0 && !selectedItemId) {
-      alert('Please select an item or add items to your list before creating a preset.');
+      alert(
+        "Please select an item or add items to your list before creating a preset."
+      );
       return;
     }
-    
+
     const trimmedName = name.trim();
     const existingIndex = customPresets.findIndex(p => p.name === trimmedName);
-    
+
     // Prepare items array with validation
     let items: { id: string; qty: number }[];
     if (multiItems.length > 0) {
@@ -101,22 +133,24 @@ export default function usePresets({
     } else if (selectedItemId) {
       items = [{ id: selectedItemId, qty: quantity }];
     } else {
-      alert('Please select an item or add items to your list before creating a preset.');
+      alert(
+        "Please select an item or add items to your list before creating a preset."
+      );
       return;
     }
-    
+
     // Ensure we have valid items
     if (items.length === 0) {
-      alert('No valid items found. Please check your selections.');
+      alert("No valid items found. Please check your selections.");
       return;
     }
-    
+
     const newPreset: Preset = {
       name: trimmedName,
       items: items,
       collapsedNodes: [...collapsedNodes]
     };
-    
+
     let updatedPresets;
     if (existingIndex !== -1) {
       updatedPresets = [...customPresets];
@@ -125,16 +159,16 @@ export default function usePresets({
       updatedPresets = [...customPresets, newPreset];
     }
     setCustomPresets(updatedPresets);
-    localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
+    localStorage.setItem("customPresets", JSON.stringify(updatedPresets));
     setShowCreatePreset(false);
-    setPresetName('');
+    setPresetName("");
   };
 
   // Delete a preset
   const handlePresetDelete = (name: string) => {
     const updatedPresets = customPresets.filter(p => p.name !== name);
     setCustomPresets(updatedPresets);
-    localStorage.setItem('customPresets', JSON.stringify(updatedPresets));
+    localStorage.setItem("customPresets", JSON.stringify(updatedPresets));
   };
 
   return {
@@ -149,6 +183,6 @@ export default function usePresets({
     setPresetName,
     handlePresetSelect,
     handlePresetCreate,
-    handlePresetDelete,
+    handlePresetDelete
   };
 }

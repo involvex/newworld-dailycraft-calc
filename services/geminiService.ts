@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalyzedItem } from '../types';
+import { AnalyzedItem } from "../types";
 
 const responseSchema = {
   type: Type.ARRAY,
@@ -8,30 +8,38 @@ const responseSchema = {
     properties: {
       itemName: {
         type: Type.STRING,
-        description: "The exact name of the item in the game.",
+        description: "The exact name of the item in the game."
       },
       quantity: {
         type: Type.INTEGER,
-        description: "The quantity of the item.",
-      },
+        description: "The quantity of the item."
+      }
     },
-    required: ["itemName", "quantity"],
-  },
+    required: ["itemName", "quantity"]
+  }
 };
 
-export const analyzeInventoryImage = async (base64Image: string, apiKey: string): Promise<AnalyzedItem[]> => {
+export const analyzeInventoryImage = async (
+  base64Image: string,
+  apiKey: string
+): Promise<AnalyzedItem[]> => {
   if (!apiKey) {
     console.error("analyzeInventoryImage: API Key is not provided.");
     throw new Error("Gemini API Key is not provided.");
   }
 
-  console.log("analyzeInventoryImage: Using API Key (first 5 chars):", apiKey.substring(0, 5));
+  console.log(
+    "analyzeInventoryImage: Using API Key (first 5 chars):",
+    apiKey.substring(0, 5)
+  );
   let ai;
   try {
     ai = new GoogleGenAI({ apiKey });
   } catch (initError) {
     console.error("Error initializing GoogleGenAI:", initError);
-    throw new Error("Failed to initialize AI service. Check your API key and network connection.");
+    throw new Error(
+      "Failed to initialize AI service. Check your API key and network connection."
+    );
   }
 
   const prompt = `
@@ -181,39 +189,52 @@ OUTPUT FORMAT: Return ONLY a valid JSON array. Each object must strictly adhere 
         parts: [
           {
             inlineData: {
-              mimeType: 'image/jpeg',
-              data: base64Image,
-            },
+              mimeType: "image/jpeg",
+              data: base64Image
+            }
           },
-          { text: prompt },
-        ],
+          { text: prompt }
+        ]
       },
       config: {
         responseMimeType: "application/json",
-        responseSchema: responseSchema,
+        responseSchema: responseSchema
         // Add a timeout to prevent indefinite hanging
-         // 30 seconds
-      },
+        // 30 seconds
+      }
     });
 
     const jsonText = response.text?.trim();
-    console.log("analyzeInventoryImage: Raw Gemini API response text:", jsonText);
+    console.log(
+      "analyzeInventoryImage: Raw Gemini API response text:",
+      jsonText
+    );
     if (!jsonText) {
-      console.warn("analyzeInventoryImage: Gemini API returned empty response text.");
+      console.warn(
+        "analyzeInventoryImage: Gemini API returned empty response text."
+      );
       return [];
     }
 
     const result = JSON.parse(jsonText);
     console.log("analyzeInventoryImage: Parsed Gemini API result:", result);
     return result as AnalyzedItem[];
-
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    let errorMessage = "Failed to analyze image with AI. The AI may have returned an invalid format.";
-    if (error instanceof Error && error.toString().includes("RESOURCE_EXHAUSTED")) {
-        errorMessage = "You have exceeded your Gemini API request quota. Please wait a while before trying again or check your plan and billing details.";
-    } else if (error instanceof Error && error.toString().includes("400 Bad Request")) {
-        errorMessage = "Gemini API returned a Bad Request error. This might be due to an invalid API key or an issue with the image data.";
+    let errorMessage =
+      "Failed to analyze image with AI. The AI may have returned an invalid format.";
+    if (
+      error instanceof Error &&
+      error.toString().includes("RESOURCE_EXHAUSTED")
+    ) {
+      errorMessage =
+        "You have exceeded your Gemini API request quota. Please wait a while before trying again or check your plan and billing details.";
+    } else if (
+      error instanceof Error &&
+      error.toString().includes("400 Bad Request")
+    ) {
+      errorMessage =
+        "Gemini API returned a Bad Request error. This might be due to an invalid API key or an issue with the image data.";
     }
     throw new Error(errorMessage);
   }

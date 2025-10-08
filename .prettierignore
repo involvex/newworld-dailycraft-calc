@@ -1,0 +1,14 @@
+node_modules
+dist
+.clinerules
+data
+dist-electron
+docs
+icons
+*.env
+*.env.local
+.gitignore
+eslint.config.mjs
+LICENSE
+*.ps1
+.github

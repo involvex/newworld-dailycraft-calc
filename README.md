@@ -20,6 +20,7 @@
 The **New World Crafting Calculator** is a sophisticated tool designed to streamline your crafting experience in Amazon's New World MMO. Whether you're planning complex gear upgrades or optimizing resource gathering, this calculator provides everything you need with advanced features like OCR inventory scanning, customizable hotkeys, and persistent configuration management.
 
 ### 🎮 **Perfect for:**
+
 - **Endgame Crafters** planning expensive gear upgrades
 - **Company Leaders** organizing crafting sessions
 - **Casual Players** optimizing resource usage
@@ -77,7 +78,7 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 
 ## 📥 Installation
 
-### 🖥️ **Desktop Application** *(Recommended)*
+### 🖥️ **Desktop Application** _(Recommended)_
 
 **Latest Release:** [Download v1.1.1](https://github.com/involvex/newworld-dailycraft-calc/releases/latest)
 
@@ -89,6 +90,7 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 ```
 
 **System Requirements:**
+
 - Windows 10/11 (x64)
 - 100MB free disk space
 - Screen capture permissions for OCR
@@ -100,28 +102,28 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 ```bash
 # Works in any modern browser
 ✅ Chrome/Edge (recommended)
-✅ Firefox  
+✅ Firefox
 ✅ Safari
 ```
 
 ### 📊 **Feature Matrix**
 
-| Feature | Desktop App | Web Version |
-|---------|:-----------:|:-----------:|
-| **Core Functionality** |
-| Crafting Tree & Calculations | ✅ | ✅ |
-| Yield Bonus Calculations | ✅ | ✅ |
-| Multi-Item Support | ✅ | ✅ |
-| **Advanced Features** |
-| OCR Inventory Detection | ✅ | ✅ |
-| Preset Management | ✅ | ✅ |
-| Configuration Persistence | ✅ | ⚠️ *localStorage* |
-| **Desktop Exclusive** |
-| Global Hotkeys | ✅ | ❌ |
-| System Tray Integration | ✅ | ❌ |
-| Background Operation | ✅ | ❌ |
-| Config Import/Export | ✅ | ❌ |
-| Auto-Updates | ✅ | ✅ |
+| Feature                      | Desktop App |    Web Version    |
+| ---------------------------- | :---------: | :---------------: |
+| **Core Functionality**       |
+| Crafting Tree & Calculations |     ✅      |        ✅         |
+| Yield Bonus Calculations     |     ✅      |        ✅         |
+| Multi-Item Support           |     ✅      |        ✅         |
+| **Advanced Features**        |
+| OCR Inventory Detection      |     ✅      |        ✅         |
+| Preset Management            |     ✅      |        ✅         |
+| Configuration Persistence    |     ✅      | ⚠️ _localStorage_ |
+| **Desktop Exclusive**        |
+| Global Hotkeys               |     ✅      |        ❌         |
+| System Tray Integration      |     ✅      |        ❌         |
+| Background Operation         |     ✅      |        ❌         |
+| Config Import/Export         |     ✅      |        ❌         |
+| Auto-Updates                 |     ✅      |        ✅         |
 
 ---
 
@@ -137,7 +139,7 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 ### For Web Users
 
 1. **Open Browser** – Visit the [live demo](https://involvex.github.io/newworld-dailycraft-calc/)
-2. **Allow Permissions** – Enable screen capture for OCR functionality  
+2. **Allow Permissions** – Enable screen capture for OCR functionality
 3. **Import Inventory** – Use the OCR button or manual text entry
 4. **Calculate Away** – All features work in-browser!
 
@@ -147,18 +149,19 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 
 <div align="center">
 
-| Category | Technology | Version |
-|----------|------------|---------|
-| **Frontend** | React + TypeScript | 19.1.0 + 5.8.3 |
-| **Styling** | Tailwind CSS | 4.1.11 |
-| **Build System** | Vite | 7.0.4 |
-| **Desktop Runtime** | Electron | 37.2.1 |
-| **OCR Engine** | Tesseract.js | 6.0.1 |
-| **Configuration** | JSON + FileSystem | Native |
+| Category            | Technology         | Version        |
+| ------------------- | ------------------ | -------------- |
+| **Frontend**        | React + TypeScript | 19.1.0 + 5.8.3 |
+| **Styling**         | Tailwind CSS       | 4.1.11         |
+| **Build System**    | Vite               | 7.0.4          |
+| **Desktop Runtime** | Electron           | 37.2.1         |
+| **OCR Engine**      | Tesseract.js       | 6.0.1          |
+| **Configuration**   | JSON + FileSystem  | Native         |
 
 </div>
 
 **Security Features:**
+
 - Context isolation enabled
 - No remote code execution
 - Local-only data processing
@@ -222,6 +225,7 @@ npm run build-all    # Build everything
 ```
 
 **Project Structure:**
+
 ```
 ├── src/             # React components and styles
 ├── data/            # Game data (items, recipes)
@@ -261,14 +265,14 @@ If this tool has saved you time and made your New World experience better, consi
 
 [Github Sponsor @involvex](https://github.com/sponsors/involvex)
 
-
 **Your support helps:**
+
 - ⚡ Faster development cycles
 - 🔧 Better OCR accuracy
 - 📱 Mobile optimization
 - 🌐 Server hosting costs
 
-*Every contribution makes a difference!* 🙏
+_Every contribution makes a difference!_ 🙏
 
 </div>
 
@@ -290,6 +294,7 @@ If this tool has saved you time and made your New World experience better, consi
 **Created with ❤️ by [Involvex](https://github.com/involvex)**
 
 **Special Thanks:**
+
 - [nw-buddy.de](https://nw-buddy.de/) – Inspiration and game data reference
 - [nwdb.info](https://nwdb.info/) – Item images and additional data
 - New World community – Feedback and feature suggestions
@@ -306,7 +311,6 @@ If this tool has saved you time and made your New World experience better, consi
 [![Powered by Electron](https://img.shields.io/badge/Powered%20by-Electron-47848f?style=flat-square&logo=electron)](https://electronjs.org/)
 [![Built with TypeScript](https://img.shields.io/badge/Built%20with-TypeScript-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 
-*New World Crafting Calculator v1.1.1 • Licensed under MIT • Made for the New World community*
+_New World Crafting Calculator v1.1.1 • Licensed under MIT • Made for the New World community_
 
-</div> 
-
+</div>

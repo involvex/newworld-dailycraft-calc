@@ -16,10 +16,10 @@ export interface Ingredient {
 }
 
 export interface Recipe {
-  itemId:string;
+  itemId: string;
   ingredients: Ingredient[];
   baseYield: number; // How many items one craft makes
-  category: 'Smelting' | 'Weaving' | 'Tanning' | 'Woodworking';
+  category: "Smelting" | "Weaving" | "Tanning" | "Woodworking";
   isCooldown?: boolean; // Is this a daily cooldown recipe?
   // Fields for advanced yield calculation
   baseTier?: number;
@@ -70,7 +70,6 @@ export interface AllBonuses {
   [category: string]: BonusConfiguration;
 }
 
-
 export interface AnalyzedItem {
   itemName: string;
   quantity: number;
@@ -79,11 +78,11 @@ export interface AnalyzedItem {
 export interface ProcessedItem extends AnalyzedItem {
   price: number;
   totalValue: number;
-  status: 'loading' | 'complete' | 'not_found';
+  status: "loading" | "complete" | "not_found";
 }
 
 export interface RawPriceData {
-  item_id: string; 
+  item_id: string;
   price: number;
 }
 
@@ -95,18 +94,22 @@ export interface ServerInfo {
 // A map where the key is the lowercase item ID and the value is the item's display name.
 export type ItemDefinitionMap = Record<string, string>;
 
-
 // Electron API types
 declare global {
   interface Window {
     electronAPI?: {
       getDesktopSources: () => Promise<any[]>;
-      runPSScript: (_scriptPath: string) => Promise<{ stdout: string; stderr: string; }>;
+      runPSScript: (
+        _scriptPath: string
+      ) => Promise<{ stdout: string; stderr: string }>;
       readClipboardImage: () => Promise<string>;
       isDev: () => Promise<boolean>;
-      onTriggerOCR: (_callback: () => void) => (() => void);
-      onShowSettings: (_callback: () => void) => (() => void);
-      onShowAbout: (_callback: () => void) => (() => void);
+      onTriggerOCR: (_callback: () => void) => () => void;
+      onShowSettings: (_callback: () => void) => () => void;
+      onShowAbout: (_callback: () => void) => () => void;
+      onShowQuickNote: (_callback: () => void) => () => void;
+      onShowInventory: (_callback: () => void) => () => void;
+
       exitApp: () => Promise<void>;
       closeApp: () => Promise<void>;
       config: {
@@ -126,13 +129,19 @@ export interface Preset {
   items: { id: string; qty: number }[];
 }
 
+export interface QuickNote {
+  id: string;
+  content: string;
+  timestamp: string;
+}
+
 export interface GEMINI_API_KEY {
   GEMINI_API_KEY: string;
 }
 
 export interface Settings {
-  viewMode: 'net' | 'gross';
-  summaryMode: 'net' | 'gross';
+  viewMode: "net" | "gross";
+  summaryMode: "net" | "gross";
   showAdvanced: boolean;
   debugOCRPreview: boolean;
   bonuses: AllBonuses;
@@ -147,7 +156,7 @@ export interface PriceData {
 
 export interface PriceConfig {
   enabled: boolean;
-  priceType: 'buy' | 'sell';
+  priceType: "buy" | "sell";
   selectedServer: string;
   autoUpdate: boolean;
   updateInterval: number; // in hours
@@ -160,11 +169,13 @@ export interface Config {
     toggleCalculator: string;
     triggerOCR: string;
     openSettings: string;
+    quickNote: string;
   };
   customPresets: Preset[];
   inventory: Record<string, number>;
   selectedPreset: string;
   collapsedNodes: string[];
+  quickNotes: QuickNote[];
   GEMINI_API_KEY: string;
   prices: {
     config: PriceConfig;
