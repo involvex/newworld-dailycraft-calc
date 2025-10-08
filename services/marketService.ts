@@ -136,7 +136,7 @@ export async function fetchPricesByItemName(serverName: string): Promise<Map<str
   const priceMap = new Map<string, number>();
 
   for (const priceEntry of rawPrices) {
-      const itemName = itemDefs[priceEntry.item_id];
+      const _itemName = itemDefs[priceEntry.item_id];
       for (const  itempricename of Object.values(itemDefs))
       {
         //console.log('Item price name:', itempricename);

@@ -123,8 +123,15 @@ textarea:focus {
 }
 
 .navbar {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
+  z-index: 1000;
+  background: rgba(31, 41, 55, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
+  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 2px;
+  text-align: center;
 }

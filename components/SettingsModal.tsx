@@ -26,7 +26,7 @@ export function SettingsModal({
   onBonusChange,
   configState,
 }: SettingsModalProps) {
-  const { config, updateConfig, registerHotkeys, exportConfig, importConfig, getConfigPath, isElectron } = configState;
+  const { config, updateConfig, registerHotkeys, exportConfig, importConfig, isElectron } = configState;
   const [hotkeys, setHotkeys] = useState(config?.hotkeys || {});
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, useDeferredValue } from 'react';
 import { APP_VERSION } from './src/version';
 import { ITEMS } from './data/items';
 import { RECIPES } from './data/recipes';
@@ -57,8 +57,11 @@ const App: React.FC = () => {
 
   // UI state
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [showAdvanced, _setShowAdvanced] = useState<boolean>(false);
   const [showBackToTop, setShowBackToTop] = useState<boolean>(false);
+
+  // Performance optimization: defer search term to avoid excessive filtering during typing
+  const deferredSearchTerm = useDeferredValue(searchTerm);
 
   // Modal states
   const [showManualEntry, setShowManualEntry] = useState<boolean>(false);
@@ -155,12 +158,12 @@ const App: React.FC = () => {
     []
   );
 
-  // Memoized filtered list for search
-const filteredCraftableItems = useMemo(() => {
-  return allCraftableItems.filter((item: Item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-}, [allCraftableItems, searchTerm]);
+  // Memoized filtered list for search - now uses deferred search term for better performance
+  const filteredCraftableItems = useMemo(() => {
+    return allCraftableItems.filter((item: Item) =>
+      item.name.toLowerCase().includes(deferredSearchTerm.toLowerCase())
+    );
+  }, [allCraftableItems, deferredSearchTerm]);
 
   const {
     captureAndProcessScreenshot,
@@ -516,60 +519,79 @@ const filteredCraftableItems = useMemo(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Close app function for Electron
+  const handleCloseApp = useCallback(() => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.closeApp();
+    } else {
+      // Fallback for web version - just close the window
+      window.close();
+    }
+  }, []);
+
   return (
     <React.Fragment>
-      <div className="min-h-screen mt-5 font-sans text-gray-300 bg-gray-900 app-gradient-bg">
-        <div className="container max-w-6xl p-4 mx-auto mt-0 sm:p-6 lg:p-8">
-          <header className="mt-0 mb-6 text-center bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm">
-            
-            <h1 className="mb-2 text-2xl font-bold text-blue-400">New World Crafting Calculator</h1>
-            <p className="text-sm text-gray-400">Plan your crafting efficiently with advanced material calculations</p>
-          </header>
+      <div className="min-h-screen font-sans text-gray-300 bg-gray-900 app-gradient-bg">
+        {/* Navigation Bar - Very first element, sticky at top */}
+        <div className="sticky top-0 z-50 p-3 mb-3 border bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm navbar">
+          {/* Close button for Electron app */}
+          {typeof window !== 'undefined' && window.electronAPI && (
+            <button
+              onClick={handleCloseApp}
+              className="absolute p-2 text-gray-400 transition-colors rounded-lg top-3 right-3 hover:text-white hover:bg-gray-700/50"
+              title="Close Application"
+              aria-label="Close Application"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
 
-          {/* Navigation Bar */}
-          <div className="p-3 mb-6 border bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm navbar">
           <img src="logo.png" alt="New World Crafting Calculator" className="w-auto h-12 mx-auto logo" />
           <p className="mr-2 text-sm font-bold text-blue-400" style={{ marginBottom: '-25px', marginLeft: '4%' }}>New World Crafting Calculator</p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {/* <span className="mr-2 text-sm font-medium text-gray-300">Jump to:</span> */}
-              <button
-                onClick={() => document.getElementById('presets-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 text-xs text-yellow-300 transition-all duration-200 border rounded-md bg-yellow-600/20 hover:bg-yellow-600/40 border-yellow-500/30"
-              >
-                📋 Presets
-              </button>
-              <button
-                onClick={() => document.getElementById('selection-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 text-xs text-yellow-300 transition-all duration-200 border rounded-md bg-yellow-600/20 hover:bg-yellow-600/40 border-yellow-500/30"
-              >
-                🎯 Item Selection
-              </button>
-              <button
-                onClick={() => document.getElementById('inventory-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 text-xs text-blue-300 transition-all duration-200 border rounded-md bg-blue-600/20 hover:bg-blue-600/40 border-blue-500/30"
-              >
-                🎒 Inventory
-              </button>
-              <button
-                onClick={() => document.getElementById('crafting-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 text-xs text-green-300 transition-all duration-200 border rounded-md bg-green-600/20 hover:bg-green-600/40 border-green-500/30"
-              >
-                🌳 Crafting Tree
-              </button>
-              <button
-                onClick={() => document.getElementById('summary-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-purple-600/20 hover:bg-purple-600/40 border-purple-500/30"
-              >
-                📊 Summary
-              </button>
-              <button 
-                    onClick={() => setShowSettings(true)} 
-                    className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-purple-400/20 hover:bg-purple-600/40 border-purple-500/30"
-                  >
-                    ⚙️ Settings
-                  </button>
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {/* <span className="mr-2 text-sm font-medium text-gray-300">Jump to:</span> */}
+            <button
+              onClick={() => document.getElementById('presets-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-3 py-1 text-xs text-yellow-300 transition-all duration-200 border rounded-md bg-yellow-600/20 hover:bg-yellow-600/40 border-yellow-500/30"
+            >
+              📋 Presets
+            </button>
+            <button
+              onClick={() => document.getElementById('selection-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-3 py-1 text-xs text-yellow-300 transition-all duration-200 border rounded-md bg-yellow-600/20 hover:bg-yellow-600/40 border-yellow-500/30"
+            >
+              🎯 Item Selection
+            </button>
+            <button
+              onClick={() => document.getElementById('inventory-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-3 py-1 text-xs text-blue-300 transition-all duration-200 border rounded-md bg-blue-600/20 hover:bg-blue-600/40 border-blue-500/30"
+            >
+              🎒 Inventory
+            </button>
+            <button
+              onClick={() => document.getElementById('crafting-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-3 py-1 text-xs text-green-300 transition-all duration-200 border rounded-md bg-green-600/20 hover:bg-green-600/40 border-green-500/30"
+            >
+              🌳 Crafting Tree
+            </button>
+            <button
+              onClick={() => document.getElementById('summary-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-purple-600/20 hover:bg-purple-600/40 border-purple-500/30"
+            >
+              📊 Summary
+            </button>
+            <button 
+                  onClick={() => setShowSettings(true)} 
+                  className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-purple-400/20 hover:bg-purple-600/40 border-purple-500/30"
+                >
+                  ⚙️ Settings
+                </button>
           </div>
+        </div>
+
+        <div className="container max-w-6xl p-4 mx-auto sm:p-6 lg:p-8">
 
           {/* Quick Controls Bar */}
           {/* <div className="p-4 mb-6 border bg-gray-800/50 rounded-xl border-yellow-900/30 backdrop-blur-sm">

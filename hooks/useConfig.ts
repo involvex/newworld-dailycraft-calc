@@ -145,9 +145,7 @@ export function useConfig() {
     return false;
   };
 
-  const getConfigPath = async () => {
-    return isElectron() && window.electronAPI?.config ? window.electronAPI.config.getPath() : Promise.resolve('');
-  };
+
 
   return {
     config,
@@ -159,7 +157,6 @@ export function useConfig() {
     registerHotkeys,
     exportConfig,
     importConfig,
-    getConfigPath,
     isElectron: isElectron(),
   };
 }

@@ -101,20 +101,21 @@ declare global {
   interface Window {
     electronAPI?: {
       getDesktopSources: () => Promise<any[]>;
-      runPSScript: (scriptPath: string) => Promise<{ stdout: string; stderr: string; }>;
+      runPSScript: (_scriptPath: string) => Promise<{ stdout: string; stderr: string; }>;
       readClipboardImage: () => Promise<string>;
       isDev: () => Promise<boolean>;
-      onTriggerOCR: (callback: () => void) => (() => void);
-      onShowSettings: (callback: () => void) => (() => void);
-      onShowAbout: (callback: () => void) => (() => void);
+      onTriggerOCR: (_callback: () => void) => (() => void);
+      onShowSettings: (_callback: () => void) => (() => void);
+      onShowAbout: (_callback: () => void) => (() => void);
       exitApp: () => Promise<void>;
+      closeApp: () => Promise<void>;
       config: {
         load: () => Promise<any>;
-        save: (config: any) => Promise<boolean>;
+        save: (_config: any) => Promise<boolean>;
         getPath: () => Promise<string>;
         export: () => Promise<boolean>;
         import: () => Promise<any | false>;
-        registerHotkeys: (hotkeys: any) => Promise<boolean>;
+        registerHotkeys: (_hotkeys: any) => Promise<boolean>;
       };
     };
   }
