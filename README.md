@@ -4,7 +4,7 @@
 
 **A comprehensive crafting calculator for Amazon's New World MMO with automatic inventory detection via OCR**
 
-[![Version](https://img.shields.io/github/package-json/v/involvex/newworld-dailycraft-calc?label=version&style=for-the-badge)](https://github.com/involvex/newworld-dailycraft-calc/blob/main/package.json)
+[![Version](https://img.shields.io/badge/version-2.0.0-brightgreen?style=for-the-badge)](https://github.com/involvex/newworld-dailycraft-calc/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/involvex/newworld-dailycraft-calc/total?style=for-the-badge&color=brightgreen)](https://github.com/involvex/newworld-dailycraft-calc/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Web-blue?style=for-the-badge)](#installation)
 [![License](https://img.shields.io/github/license/involvex/newworld-dailycraft-calc?style=for-the-badge)](LICENSE)
@@ -17,18 +17,75 @@
 
 ## 🎯 Overview
 
-The **New World Crafting Calculator** is a sophisticated tool designed to streamline your crafting experience in Amazon's New World MMO. Whether you're planning complex gear upgrades or optimizing resource gathering, this calculator provides everything you need with advanced features like OCR inventory scanning, customizable hotkeys, and persistent configuration management.
+The **New World Crafting Calculator** is the most comprehensive crafting tool for Amazon's New World MMO. Version 2.0 introduces a complete **Tradeskill Management System** with 10 game-changing features including AI-powered recipe recommendations, profit analysis, bulk calculators, and skill leveling guides—all wrapped in a beautiful light/dark themed interface.
 
 ### 🎮 **Perfect for:**
 
-- **Endgame Crafters** planning expensive gear upgrades
-- **Company Leaders** organizing crafting sessions
-- **Casual Players** optimizing resource usage
-- **Traders** calculating material costs and profits
+- **Endgame Crafters** planning expensive gear upgrades with profit analysis
+- **Company Leaders** organizing crafting sessions with shopping lists
+- **Casual Players** optimizing resource usage with cost recommendations
+- **Traders** calculating material costs and profit margins
+- **Power Levelers** using efficient XP/cost ratio guides
+- **Goal-Oriented Players** tracking progress toward skill targets
 
 ---
 
 ## ✨ Core Features
+
+<details open>
+<summary><b>⚔️ Complete Tradeskill Management System (NEW in v2.0)</b></summary>
+
+### 🔍 **Recipe Search & Filter**
+- Real-time search by item name across 100+ recipes
+- Filter by tradeskill category (Weaponsmithing, Armoring, Engineering, Jewelcrafting, Furnishing, Arcana)
+- Favorite recipes appear first with visual indicators
+
+### 🔢 **Bulk Crafting Calculator**
+- Calculate materials for 1-10,000 crafts at once
+- Consolidated material requirements with totals
+- Total cost and XP projections for batch crafting
+
+### 💡 **Cost Optimizer**
+- Automatically finds cheapest alternative materials
+- Shows potential savings percentage (e.g., "15% saved!")
+- Supports material tier upgrades (Iron → Asmodeum path)
+
+### 📈 **Skill Leveling Guide**
+- Calculate exact XP needed from current to target level
+- Find top 10 most efficient recipes by cost/XP ratio
+- See total materials and gold needed for leveling goals
+
+### ⚖️ **Recipe Comparison**
+- Side-by-side comparison of up to 3 recipes
+- Compare gear score, XP, cost, and efficiency metrics
+- Visual highlighting of best cost per XP
+
+### 📥 **Export Functionality**
+- Export all calculations to CSV with one click
+- Shopping list export with inventory tracking
+- Timestamp-based file naming for organization
+
+### 🎯 **Crafting Goals System**
+- Set target levels for each tradeskill
+- Visual progress bars with percentage completion
+- XP tracking to goal with persistent storage
+
+### 🛒 **Material Shopping List**
+- Auto-generated from your favorite recipes
+- Shows materials needed vs. current inventory
+- Highlights items to buy with total cost
+
+### 💰 **Profit Calculator**
+- Calculate profit margins for all craftable items
+- Sort by highest profit or margin percentage
+- Color-coded profitable/unprofitable indicators
+
+### 🌟 **AI-Powered Recommendations**
+- Smart recipe suggestions based on your skill levels
+- Considers available inventory for feasibility
+- Scores recipes by cost efficiency and gear score potential
+
+</details>
 
 <details>
 <summary><b>🌳 Advanced Crafting System</b></summary>
@@ -38,6 +95,7 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 - **Multi-Item Planning** – Plan entire gear sets or multiple items simultaneously
 - **Real-time Calculations** – Instant updates as you modify quantities or bonuses
 - **Context Actions** – Right-click nodes for quick expand/collapse/remove operations
+- **Light & Dark Themes** – Beautiful UI that adapts to your preference
 
 </details>
 
@@ -60,6 +118,7 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 - **AppData Persistence** – Settings survive updates and system changes
 - **Configuration Backup** – Import/export complete settings for sharing or backup
 - **Background Operation** – Runs silently until you need it
+- **VS Code Debugging** – Full debugging support with comprehensive launch configs
 
 </details>
 
@@ -67,10 +126,11 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 <summary><b>🎛️ Smart Configuration</b></summary>
 
 - **Preset Management** – Save complex crafting scenarios for instant recall
-- **Skill Profiles** – Multiple character configurations with different skill levels
-- **Bonus Tracking** – Gear, food, and territory buff management
+- **Skill Profiles** – All 11 tradeskills with individual bonuses
+- **Bonus Tracking** – Gear, Morningdale fort, and territory buff management
 - **Material Substitution** – Handle gemstone dust and other interchangeable materials
 - **Toast Notifications** – Clear feedback for all actions and updates
+- **Favorite Recipes** – Mark recipes for quick access and shopping lists
 
 </details>
 
@@ -80,13 +140,14 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 
 ### 🖥️ **Desktop Application** _(Recommended)_
 
-**Latest Release:** [Download v1.1.1](https://github.com/involvex/newworld-dailycraft-calc/releases/latest)
+**Latest Release:** [Download v2.0.0](https://github.com/involvex/newworld-dailycraft-calc/releases/latest)
 
 ```bash
 # No installation required - portable executable
-1. Download "New World Crafting Calculator 1.1.1.exe"
+1. Download "New World Crafting Calculator 2.0.0.exe"
 2. Run the executable
 3. Configure hotkeys in Settings (default: Ctrl+Shift+C to toggle)
+4. Explore the new Tradeskill Calculator tab!
 ```
 
 **System Requirements:**
@@ -108,22 +169,35 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 
 ### 📊 **Feature Matrix**
 
-| Feature                      | Desktop App |    Web Version    |
-| ---------------------------- | :---------: | :---------------: |
-| **Core Functionality**       |
-| Crafting Tree & Calculations |     ✅      |        ✅         |
-| Yield Bonus Calculations     |     ✅      |        ✅         |
-| Multi-Item Support           |     ✅      |        ✅         |
-| **Advanced Features**        |
-| OCR Inventory Detection      |     ✅      |        ✅         |
-| Preset Management            |     ✅      |        ✅         |
-| Configuration Persistence    |     ✅      | ⚠️ _localStorage_ |
-| **Desktop Exclusive**        |
-| Global Hotkeys               |     ✅      |        ❌         |
-| System Tray Integration      |     ✅      |        ❌         |
-| Background Operation         |     ✅      |        ❌         |
-| Config Import/Export         |     ✅      |        ❌         |
-| Auto-Updates                 |     ✅      |        ✅         |
+| Feature                           | Desktop App |    Web Version    |
+| --------------------------------- | :---------: | :---------------: |
+| **Core Functionality**            |
+| Crafting Tree & Calculations      |     ✅      |        ✅         |
+| Yield Bonus Calculations          |     ✅      |        ✅         |
+| Multi-Item Support                |     ✅      |        ✅         |
+| **Tradeskill System (v2.0)**      |
+| Recipe Search & Filter            |     ✅      |        ✅         |
+| Bulk Crafting Calculator          |     ✅      |        ✅         |
+| Cost Optimizer                    |     ✅      |        ✅         |
+| Skill Leveling Guide              |     ✅      |        ✅         |
+| Recipe Comparison                 |     ✅      |        ✅         |
+| Crafting Goals & Progress         |     ✅      |        ✅         |
+| Shopping List Generator           |     ✅      |        ✅         |
+| Profit Calculator                 |     ✅      |        ✅         |
+| AI Recipe Recommendations         |     ✅      |        ✅         |
+| Export to CSV                     |     ✅      |        ✅         |
+| **Additional Features**           |
+| OCR Inventory Detection           |     ✅      |        ✅         |
+| Preset Management                 |     ✅      |        ✅         |
+| Light & Dark Themes               |     ✅      |        ✅         |
+| Configuration Persistence         |     ✅      | ⚠️ _localStorage_ |
+| **Desktop Exclusive**             |
+| Global Hotkeys                    |     ✅      |        ❌         |
+| System Tray Integration           |     ✅      |        ❌         |
+| Background Operation              |     ✅      |        ❌         |
+| Config Import/Export              |     ✅      |        ❌         |
+| VS Code Debugging Support         |     ✅      |        ❌         |
+| Auto-Updates                      |     ✅      |        ✅         |
 
 ---
 
@@ -134,14 +208,18 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 1. **Download & Launch** – Get the latest `.exe` from releases
 2. **Set Hotkeys** – Configure your preferred shortcuts in Settings
 3. **First OCR** – Press `Ctrl+Shift+S` to capture your inventory
-4. **Start Crafting** – Select an item and see the magic happen!
+4. **Explore Tradeskills** – Navigate to the ⚔️ Tradeskills tab
+5. **Set Goals** – Create leveling goals and track progress
+6. **Start Crafting** – Use AI recommendations and profit analysis!
 
 ### For Web Users
 
 1. **Open Browser** – Visit the [live demo](https://involvex.github.io/newworld-dailycraft-calc/)
 2. **Allow Permissions** – Enable screen capture for OCR functionality
 3. **Import Inventory** – Use the OCR button or manual text entry
-4. **Calculate Away** – All features work in-browser!
+4. **Use Tradeskills** – Access the complete tradeskill management system
+5. **Export Data** – Save calculations and shopping lists to CSV
+6. **Calculate Away** – All v2.0 features work in-browser!
 
 ---
 
@@ -153,10 +231,12 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 | ------------------- | ------------------ | -------------- |
 | **Frontend**        | React + TypeScript | 19.1.0 + 5.8.3 |
 | **Styling**         | Tailwind CSS       | 4.1.11         |
-| **Build System**    | Vite               | 7.0.4          |
-| **Desktop Runtime** | Electron           | 37.2.1         |
+| **Build System**    | Vite               | 7.1.9          |
+| **Desktop Runtime** | Electron           | 38.2.1         |
 | **OCR Engine**      | Tesseract.js       | 6.0.1          |
 | **Configuration**   | JSON + FileSystem  | Native         |
+| **State Management**| React Hooks        | Built-in       |
+| **Data Processing** | Custom Algorithms  | Native         |
 
 </div>
 
@@ -171,24 +251,52 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 
 ## 💡 Usage Examples
 
-### 📋 **Planning a Void Gauntlet**
+### 📋 **Planning a Legendary Void Gauntlet**
 
 ```
-1. Select "Void Gauntlet" from item list
-2. Set quantity to 1, desired gear score
-3. Configure your Arcana skill level and bonuses
-4. OCR scan your arcane repository storage
-5. View crafting tree and buy order for missing materials
+1. Navigate to ⚔️ Tradeskills tab
+2. Search for "Void Gauntlet" in recipe search
+3. Compare different Void Gauntlet recipes side-by-side
+4. Check profit calculator for market viability
+5. View optimized material costs with alternatives
+6. Add to favorites and generate shopping list
+7. Track Arcana leveling progress toward target
 ```
 
-### 🏰 **Company Crafting Session**
+### 🏰 **Company Crafting Session (NEW v2.0)**
 
 ```
-1. Create preset for "Daily Crafting Goals"
-2. Add multiple items (tools, consumables, gear)
-3. Export configuration to share with company members
-4. Import individual inventory scans
-5. Generate consolidated material shopping list
+1. Set crafting goals for all company members
+2. Use bulk calculator for mass consumable production
+3. Generate consolidated shopping list from favorites
+4. Export to CSV and share with company
+5. Track individual progress with XP goals
+6. Use AI recommendations for efficient leveling paths
+7. Calculate profit margins for trading post sales
+```
+
+### 📈 **Power Leveling Weaponsmithing (NEW v2.0)**
+
+```
+1. Open Skill Leveling Guide tab
+2. Set current level (150) and target level (250)
+3. View top 10 most efficient recipes by cost/XP
+4. Check total materials and gold needed
+5. Create a crafting goal to track progress
+6. Use bulk calculator to plan batch crafting
+7. Export shopping list for material gathering
+```
+
+### 💰 **Profit Trading Strategy (NEW v2.0)**
+
+```
+1. Navigate to Profit Calculator view
+2. Sort recipes by highest profit margin
+3. Filter by Weaponsmithing for specialization
+4. Compare material costs with optimizer
+5. Check if you have materials in inventory
+6. Export profitable recipes to CSV
+7. Mark best recipes as favorites for quick access
 ```
 
 ### ⚡ **Speed Crafting Workflow**
@@ -197,8 +305,9 @@ The **New World Crafting Calculator** is a sophisticated tool designed to stream
 1. Set global hotkey for instant OCR (Ctrl+Shift+S)
 2. Keep calculator in system tray
 3. Quick-scan inventory between crafting sessions
-4. Use presets for common crafting goals
-5. Track XP gains and material efficiency
+4. Use AI recommendations for next crafts
+5. Track XP gains toward goals with progress bars
+6. Export session data to CSV for records
 ```
 
 ---
@@ -222,19 +331,35 @@ npm run electron-dev # Start Electron in dev mode
 npm run build        # Build web version
 npm run dist         # Build Electron app
 npm run build-all    # Build everything
+npm run lint         # Check code quality
+npm run format       # Format code with Prettier
+
+# Debugging (VS Code)
+Press F5              # Launch debug session
+Select configuration  # Choose from 7 debug modes
 ```
 
 **Project Structure:**
 
 ```
-├── src/             # React components and styles
-├── data/            # Game data (items, recipes)
-├── services/        # Configuration and utility services
-├── hooks/           # Custom React hooks
-├── components/      # Reusable UI components
-├── electron.js      # Electron main process
-├── preload.js       # Secure context bridge
-└── docs/            # Documentation and GitHub Pages
+├── src/                      # React components and styles
+├── data/                     # Game data (items, recipes)
+├── services/                 # Business logic and calculations
+│   ├── tradeskillService.ts # NEW: Tradeskill calculations
+│   ├── craftingService.ts   # Crafting tree logic
+│   ├── dataService.ts       # Data loading from nw-buddy
+│   └── marketService.ts     # Price data management
+├── hooks/                    # Custom React hooks
+├── components/               # Reusable UI components
+│   ├── TradeskillCalculatorV2.tsx # NEW: Complete tradeskill system
+│   ├── CraftingNode.tsx     # Tree visualization
+│   └── SummaryList.tsx      # Material summaries
+├── electron.js               # Electron main process
+├── preload.js                # Secure context bridge
+├── .vscode/                  # NEW: Debug configurations
+│   ├── launch.json          # 7 debug profiles
+│   └── tasks.json           # Build tasks
+└── docs/                     # Documentation and GitHub Pages
 ```
 
 </details>
@@ -310,7 +435,8 @@ _Every contribution makes a difference!_ 🙏
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61dafb?style=flat-square&logo=react)](https://reactjs.org/)
 [![Powered by Electron](https://img.shields.io/badge/Powered%20by-Electron-47848f?style=flat-square&logo=electron)](https://electronjs.org/)
 [![Built with TypeScript](https://img.shields.io/badge/Built%20with-TypeScript-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Styled with Tailwind](https://img.shields.io/badge/Styled%20with-Tailwind-38bdf8?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
 
-_New World Crafting Calculator v1.1.1 • Licensed under MIT • Made for the New World community_
+_New World Crafting Calculator v2.0.0 • Licensed under MIT • Made for the New World community_
 
 </div>
