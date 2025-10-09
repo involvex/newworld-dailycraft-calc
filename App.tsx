@@ -1517,17 +1517,20 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {craftingData && (
-            <div id="crafting-section" className="mb-6">
-              <div className="p-6 glass-card">
-                <div className="flex items-center justify-between mb-4">
-                  <h2
-                    className="flex items-center text-2xl font-bold"
-                    style={{ color: "var(--accent-primary)" }}
-                  >
-                    <span className="mr-2">🌳</span>
-                    Crafting Tree
-                  </h2>
+          {craftingData &&
+            selectedItemId &&
+            items[selectedItemId]?.name &&
+            !items[selectedItemId].name.startsWith("@") && (
+              <div id="crafting-section" className="mb-6">
+                <div className="p-6 glass-card">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2
+                      className="flex items-center text-2xl font-bold"
+                      style={{ color: "var(--accent-primary)" }}
+                    >
+                      <span className="mr-2">🌳</span>
+                      Crafting Tree
+                    </h2>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => {
@@ -1585,16 +1588,20 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {summaryData && (summaryData.materials || summaryData.xpGains) && (
-            <div id="summary-section" className="mb-6">
-              <div className="p-6 glass-card">
-                <h2
-                  className="flex items-center mb-4 text-2xl font-bold"
-                  style={{ color: "var(--accent-primary)" }}
-                >
-                  <span className="mr-2">📊</span>
-                  {summaryData.title || "Summary"}
-                </h2>
+          {summaryData &&
+            (summaryData.materials || summaryData.xpGains) &&
+            selectedItemId &&
+            items[selectedItemId]?.name &&
+            !items[selectedItemId].name.startsWith("@") && (
+              <div id="summary-section" className="mb-6">
+                <div className="p-6 glass-card">
+                  <h2
+                    className="flex items-center mb-4 text-2xl font-bold"
+                    style={{ color: "var(--accent-primary)" }}
+                  >
+                    <span className="mr-2">📊</span>
+                    {summaryData.title || "Summary"}
+                  </h2>
                 {summaryMode === "xp" && summaryData.xpGains ? (
                   <XPSummaryList xpGains={summaryData.xpGains} />
                 ) : summaryData.materials ? (
