@@ -146,6 +146,128 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 
 ---
 
+## 🚀 Upcoming Features - Season 10 Nighthaven
+
+<details>
+<summary><b>⚔️ Season 10 Updates (Planned for v2.1.0+)</b></summary>
+
+### 🎯 Critical Updates (Coming Soon)
+
+#### **Gear Score 800 Support**
+- Update maximum gear score from 700 → 800
+- Adjust all tradeskill calculations for new cap
+- Visual tier indicators for 780-800 legendary items
+- Enhanced gear score progression tracking
+
+#### **Umbral Shard Calculator** ⭐ Priority Feature
+- Calculate shard costs for 500 → 800 GS upgrades
+- Weekly upgrade limit planner (5 for 800 GS, 10 for 790 GS, 15 for 780 GS)
+- Shard accumulation tracker (new cap: 4,000 shards)
+- Visual upgrade path planner showing weekly progression
+- Alert system for approaching upgrade limits
+
+#### **Level 70 Cap Integration**
+- Support for new character level cap (65 → 70)
+- Updated XP calculations for levels 65-70
+- Attribute point calculator for max level characters
+- Enhanced tradeskill bonuses at level 70
+
+### 🔥 New Systems (High Priority)
+
+#### **Set Bonus Planner** ⭐ Unique Feature
+- Interactive gear set builder with visual preview
+- Mix & match optimizer (find best 2-piece + 3-piece combinations)
+- Active bonus tracking showing what's enabled
+- 300+ armor sets with full bonus database
+- Export builds to share with company members
+- Set recommendations based on playstyle
+
+#### **Perk Charm Socket Planner** ⭐ New S10 System
+- 4 socket slots per item (Offensive, Defensive, Skill x2)
+- Comprehensive perk charm database with all effects
+- Socket optimizer based on build type (DPS, Tank, Healer, Hybrid)
+- Cost calculator for socketing charms
+- Best-in-slot charm recommendations
+- Visual socket preview showing all active perks
+
+#### **Attribute System Overhaul**
+- New simplified attribute calculator matching S10 changes
+- Loadout manager - save/load complete attribute setups
+- Preset templates: Tank, DPS, Mage, Healer, Hybrid builds
+- Quick swap between saved loadouts
+- Attribute breakpoint indicators
+- Build comparison tool
+
+### 💎 Content Features
+
+#### **Catacombs Preparation Planner**
+- Recommended gear sets for 3-player procedural dungeons
+- Consumables calculator for extended runs
+- Boss encounter preparation checklists
+- Loot table tracker and drop rates
+
+#### **Isle of Night Raid Planner**
+- 10-player raid material aggregator
+- Role assignment tool (2 tanks, 2 healers, 6 DPS)
+- Company raid shopping list merger
+- Boss strategy notes integration
+- Progression tracker for raid tiers
+
+### 🚀 Quality of Life
+
+#### **Build Import/Export**
+- Export complete builds as shareable codes
+- Import builds from nwdb.info links
+- Community build library with tags (PvP, PvE, Solo, Group)
+- Build versioning and history
+- One-click build sharing
+
+#### **Material Upgrade Path Visualizer**
+- Interactive flowchart showing T1 → T5 progression
+- Visual representation of crafting dependencies
+- "How to get X" reverse lookup
+- Highlight missing materials in upgrade path
+- Alternative path suggestions
+
+#### **Enhanced Mobile Support**
+- Mobile-optimized responsive layout
+- Quick lookup mode for on-the-go checking
+- Touch-friendly interface improvements
+- Progressive Web App (PWA) support
+
+### 🔬 Advanced Features (Long Term)
+
+- **AI Build Optimizer**: Multi-objective optimization for best builds
+- **Real-Time Market Integration**: Live trading post price data
+- **Company Crafting Coordinator**: Multi-player resource pooling
+- **Crafting Session Tracker**: Track XP, costs, and achievements
+- **Trading Post Arbitrage**: Find profitable buy/craft/sell opportunities
+
+### 📅 Development Timeline
+
+- **v2.1.0** (Late October): Gear Score 800, Umbral Calculator, Level 70
+- **v2.2.0** (November): Set Bonus & Perk Charm Planners, Build Import/Export
+- **v2.3.0** (December): Catacombs/Raid planners, Mobile optimization
+- **v3.0.0** (Q1 2026): Advanced features, AI optimizer, Market integration
+
+</details>
+
+<details>
+<summary><b>💡 Want to Suggest a Feature?</b></summary>
+
+We're actively developing features for Season 10 Nighthaven! If you have ideas or feedback:
+
+- 💬 [Open a Discussion](https://github.com/involvex/newworld-dailycraft-calc/discussions)
+- 🐛 [Submit a Feature Request](https://github.com/involvex/newworld-dailycraft-calc/issues/new)
+- ⭐ Star the repo to show support for planned features
+- 📖 Check out [SEASON_10_FEATURE_RECOMMENDATIONS.md](SEASON_10_FEATURE_RECOMMENDATIONS.md) for full details
+
+Your feedback helps prioritize development!
+
+</details>
+
+---
+
 ## 📥 Installation
 
 ### 🖥️ **Desktop Application** _(Recommended)_
