@@ -20,7 +20,18 @@ export interface Recipe {
   itemId: string;
   ingredients: Ingredient[];
   baseYield: number; // How many items one craft makes
-  category: "Smelting" | "Weaving" | "Tanning" | "Woodworking" | "Stonecutting";
+  category:
+    | "Smelting"
+    | "Weaving"
+    | "Tanning"
+    | "Woodworking"
+    | "Stonecutting"
+    | "Weaponsmithing"
+    | "Armoring"
+    | "Engineering"
+    | "Jewelcrafting"
+    | "Furnishing"
+    | "Arcana";
   isCooldown?: boolean; // Is this a daily cooldown recipe?
   // Fields for advanced yield calculation
   baseTier?: number;
@@ -32,6 +43,11 @@ export interface Recipe {
   // XP data from CSV
   tradeskillXP?: number; // Base tradeskill XP gained per craft
   standingXP?: number; // Base standing XP gained per craft
+  // Tradeskill-specific fields
+  gearScore?: number; // Base gear score for crafted items
+  requiredLevel?: number; // Minimum tradeskill level required
+  perkChances?: { tier: number; chance: number }[]; // Perk chances based on tier
+  isFavorite?: boolean; // User marked as favorite
 }
 
 export interface CraftingNodeData {

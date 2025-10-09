@@ -37,40 +37,40 @@ const getItem = (itemId: string, items: Record<string, Item>): Item => {
 
   // Special mappings for known item ID mismatches
   const itemMappings: Record<string, string> = {
-    'PRISMATIC_INGOT': 'IngotT53',
-    'PRISMATIC_CLOTH': 'ClothT53',
-    'PRISMATIC_LEATHER': 'LeatherT53',
-    'PRISMATIC_PLANKS': 'TimberT53',
-    'PRISMATIC_BLOCK': 'BlockT53',
-    'ASMODEUM': 'IngotT51',
-    'MYTHRIL_INGOT': 'IngotT52',
-    'ORICHALCUM_INGOT': 'IngotT5',
-    'STARMETAL_INGOT': 'IngotT4',
-    'STEEL_INGOT': 'IngotT3',
-    'IRON_INGOT': 'IngotT2',
-    'PHOENIXWEAVE': 'ClothT51',
-    'SPINWEAVE': 'ClothT52',
-    'INFUSED_SILK': 'ClothT5',
-    'SILK': 'ClothT4',
-    'SATEEN': 'ClothT3',
-    'LINEN': 'ClothT2',
-    'RUNIC_LEATHER': 'LeatherT51',
-    'DARK_LEATHER': 'LeatherT52',
-    'INFUSED_LEATHER': 'LeatherT5',
-    'LAYERED_LEATHER': 'LeatherT4',
-    'RUGGED_LEATHER': 'LeatherT3',
-    'COARSE_LEATHER': 'LeatherT2',
-    'GLITTERING_EBONY': 'TimberT51',
-    'IRONWOOD_PLANKS': 'TimberT5',
-    'WYRDWOOD_PLANKS': 'TimberT4',
-    'LUMBER': 'TimberT3',
-    'TIMBER': 'TimberT2',
-    'RUNESTONE': 'BlockT51',
-    'RUNIC_VOIDSTONE': 'BlockT52',
-    'OBSIDIAN_VOIDSTONE': 'BlockT5',
-    'LODESTONE_BRICK': 'BlockT4',
-    'STONE_BRICK': 'BlockT3',
-    'STONE_BLOCK': 'BlockT2'
+    PRISMATIC_INGOT: "IngotT53",
+    PRISMATIC_CLOTH: "ClothT53",
+    PRISMATIC_LEATHER: "LeatherT53",
+    PRISMATIC_PLANKS: "TimberT53",
+    PRISMATIC_BLOCK: "BlockT53",
+    ASMODEUM: "IngotT51",
+    MYTHRIL_INGOT: "IngotT52",
+    ORICHALCUM_INGOT: "IngotT5",
+    STARMETAL_INGOT: "IngotT4",
+    STEEL_INGOT: "IngotT3",
+    IRON_INGOT: "IngotT2",
+    PHOENIXWEAVE: "ClothT51",
+    SPINWEAVE: "ClothT52",
+    INFUSED_SILK: "ClothT5",
+    SILK: "ClothT4",
+    SATEEN: "ClothT3",
+    LINEN: "ClothT2",
+    RUNIC_LEATHER: "LeatherT51",
+    DARK_LEATHER: "LeatherT52",
+    INFUSED_LEATHER: "LeatherT5",
+    LAYERED_LEATHER: "LeatherT4",
+    RUGGED_LEATHER: "LeatherT3",
+    COARSE_LEATHER: "LeatherT2",
+    GLITTERING_EBONY: "TimberT51",
+    IRONWOOD_PLANKS: "TimberT5",
+    WYRDWOOD_PLANKS: "TimberT4",
+    LUMBER: "TimberT3",
+    TIMBER: "TimberT2",
+    RUNESTONE: "BlockT51",
+    RUNIC_VOIDSTONE: "BlockT52",
+    OBSIDIAN_VOIDSTONE: "BlockT5",
+    LODESTONE_BRICK: "BlockT4",
+    STONE_BRICK: "BlockT3",
+    STONE_BLOCK: "BlockT2"
   };
 
   const mappedId = itemMappings[itemId];
@@ -83,11 +83,18 @@ const getItem = (itemId: string, items: Record<string, Item>): Item => {
 
   // If still not found, log available items for debugging
   console.error(`Item with ID ${itemId} not found in items`);
-  console.error(`Available item keys (first 50):`, Object.keys(items).slice(0, 50));
+  console.error(
+    `Available item keys (first 50):`,
+    Object.keys(items).slice(0, 50)
+  );
   console.error(`Looking for mappings of common items:`);
-  Object.entries(itemMappings).slice(0, 10).forEach(([key, value]) => {
-    console.error(`  ${key} -> ${value}: ${items[value] ? 'FOUND' : 'NOT FOUND'}`);
-  });
+  Object.entries(itemMappings)
+    .slice(0, 10)
+    .forEach(([key, value]) => {
+      console.error(
+        `  ${key} -> ${value}: ${items[value] ? "FOUND" : "NOT FOUND"}`
+      );
+    });
   throw new Error(`Item with ID ${itemId} not found`);
 };
 

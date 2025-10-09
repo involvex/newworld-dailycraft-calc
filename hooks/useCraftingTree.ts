@@ -117,6 +117,12 @@ const useCraftingTree = ({
     return filterNodes(craftingData);
   }, [craftingData, removedNodes]);
 
+  // Convert collapsedNodes Set to array for proper React dependency tracking
+  const collapsedNodesArray = useMemo(
+    () => Array.from(collapsedNodes).sort(),
+    [collapsedNodes]
+  );
+
   const summaryData = useMemo(() => {
     if (!filteredCraftingData) return { materials: [], title: "", xpGains: [] };
 
@@ -171,7 +177,7 @@ const useCraftingTree = ({
     };
   }, [
     filteredCraftingData,
-    collapsedNodes,
+    collapsedNodesArray.join(","), // Use serialized array instead of Set
     viewMode,
     summaryMode,
     JSON.stringify(inventory),

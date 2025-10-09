@@ -24,7 +24,7 @@ data/*.csv
 AppKopie.tsx
 .vscode/
 data
-
+.genkit/
 # gemini-cli settings
 .gemini/
 

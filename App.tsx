@@ -13,6 +13,7 @@ import SummaryList from "./components/SummaryList";
 import XPSummaryList from "./components/XPSummaryList";
 import ContextMenu from "./components/ContextMenu";
 import { SettingsModal } from "./components/SettingsModal";
+import { TradeskillCalculator } from "./components/TradeskillCalculator";
 import {
   Item,
   AllBonuses,
@@ -40,7 +41,13 @@ const DEFAULT_BONUSES = {
   Weaving: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
   Tanning: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
   Woodworking: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
-  Stonecutting: { skillLevel: 250, gearBonus: 0.1, fortActive: true }
+  Stonecutting: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+  Weaponsmithing: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+  Armoring: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+  Engineering: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+  Jewelcrafting: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+  Furnishing: { skillLevel: 250, gearBonus: 0.1, fortActive: true },
+  Arcana: { skillLevel: 250, gearBonus: 0.1, fortActive: true }
 };
 
 const getInitial = <T,>(key: string, fallback: T): T => {
@@ -53,6 +60,11 @@ const getInitial = <T,>(key: string, fallback: T): T => {
 };
 
 const App: React.FC = () => {
+  // Theme state
+  const [theme, setTheme] = useState<"light" | "dark">(() =>
+    getInitial("theme", "dark")
+  );
+
   // Centralized config management
   const configState = useConfig();
   const { loadConfig } = configState;
@@ -61,6 +73,15 @@ const App: React.FC = () => {
   const [items, setItems] = useState<Record<string, Item>>({});
   const [_recipes, setRecipes] = useState<Record<string, Recipe[]>>({});
   const [isDataLoading, setIsDataLoading] = useState(true);
+
+  // Toggle theme function
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => {
+      const newTheme = prev === "dark" ? "light" : "dark";
+      localStorage.setItem("theme", JSON.stringify(newTheme));
+      return newTheme;
+    });
+  }, []);
 
   useEffect(() => {
     loadConfig();
@@ -156,6 +177,10 @@ const App: React.FC = () => {
   const [showPrices, setShowPrices] = useState<boolean>(() =>
     getInitial("showPrices", false)
   );
+  const [favoriteRecipes, setFavoriteRecipes] = useState<Set<string>>(() => {
+    const saved = getInitial<string[]>("favoriteRecipes", []);
+    return new Set(saved);
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Price state management
@@ -309,6 +334,22 @@ const App: React.FC = () => {
       return updated;
     });
   };
+
+  const toggleFavoriteRecipe = useCallback((recipeId: string) => {
+    setFavoriteRecipes(prev => {
+      const updated = new Set(prev);
+      if (updated.has(recipeId)) {
+        updated.delete(recipeId);
+      } else {
+        updated.add(recipeId);
+      }
+      localStorage.setItem(
+        "favoriteRecipes",
+        JSON.stringify(Array.from(updated))
+      );
+      return updated;
+    });
+  }, []);
 
   const handleContextMenu = (node: any, event: React.MouseEvent) => {
     event.preventDefault();
@@ -676,120 +717,281 @@ const App: React.FC = () => {
 
   if (isDataLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen font-sans text-gray-300 bg-gray-900 app-gradient-bg">
-        <div className="text-2xl font-bold text-yellow-300">
-          Loading game data...
+      <div className={`theme-${theme}`}>
+        <div className="flex items-center justify-center min-h-screen font-sans app-gradient-bg">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 border-4 rounded-full animate-spin border-t-transparent border-accent-primary"></div>
+            <div
+              className="text-2xl font-bold"
+              style={{ color: "var(--accent-primary)" }}
+            >
+              Loading game data...
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <React.Fragment>
-      <div className="min-h-screen font-sans text-gray-300 bg-gray-900 app-gradient-bg">
-        {/* Navigation Bar - Very first element, sticky at top */}
-        <div className="sticky top-0 z-50 p-3 mb-3 border bg-gray-800/30 rounded-xl border-gray-600/30 backdrop-blur-sm navbar">
-          {/* Close button for Electron app */}
-          {typeof window !== "undefined" && window.electronAPI && (
-            <button
-              onClick={handleCloseApp}
-              className="absolute p-2 text-gray-400 transition-colors rounded-lg top-3 right-3 hover:text-white hover:bg-gray-700/50"
-              title="Close Application"
-              aria-label="Close Application"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          )}
+    <div className={`theme-${theme}`}>
+      <div className="min-h-screen font-sans app-gradient-bg">
+        {/* Navigation Bar - Enhanced with theme toggle */}
+        <nav className="navbar">
+          <div className="container relative flex items-center justify-between mx-auto max-w-7xl">
+            {/* Logo Section */}
+            <div className="flex items-center gap-3">
+              <img
+                src="logo.png"
+                alt="New World Crafting Calculator"
+                className="w-12 h-12"
+              />
+              <div className="flex-col hidden md:flex">
+                <span
+                  className="text-lg font-bold"
+                  style={{ color: "var(--accent-primary)" }}
+                >
+                  New World
+                </span>
+                <span
+                  className="text-xs"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Crafting Calculator
+                </span>
+              </div>
+            </div>
 
-          <img
-            src="logo.png"
-            alt="New World Crafting Calculator"
-            className="w-auto h-12 mx-auto logo"
-          />
-          <p className="mr-4 text-xs font-bold text-left text-blue-400 left-4 display-flex logo"
-            // className="left-0 mr-2 text-xs font-bold text-left text-blue-400"
-            style={{ marginLeft: "3%", marginTop: "1%", marginRight: "2rem" }}
-          >
-            New World Crafting Calculator
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {/* <span className="mr-2 text-sm font-medium text-gray-300">Jump to:</span> */}
-            <button
-              onClick={() =>
-                document
-                  .getElementById("presets-section")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="px-3 py-1 text-xs text-yellow-300 transition-all duration-200 border rounded-md bg-yellow-600/20 hover:bg-yellow-600/40 border-yellow-500/30"
-            >
-              📋 Presets
-            </button>
-            <button
-              onClick={() =>
-                document
-                  .getElementById("selection-section")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="px-3 py-1 text-xs text-yellow-300 transition-all duration-200 border rounded-md bg-yellow-600/20 hover:bg-yellow-600/40 border-yellow-500/30"
-            >
-              🎯 Item Selection
-            </button>
-            <button
-              onClick={() =>
-                document
-                  .getElementById("inventory-section")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="px-3 py-1 text-xs text-blue-300 transition-all duration-200 border rounded-md bg-blue-600/20 hover:bg-blue-600/40 border-blue-500/30"
-            >
-              🎒 Inventory
-            </button>
-            <button
-              onClick={() =>
-                document
-                  .getElementById("crafting-section")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="px-3 py-1 text-xs text-green-300 transition-all duration-200 border rounded-md bg-green-600/20 hover:bg-green-600/40 border-green-500/30"
-            >
-              🌳 Crafting Tree
-            </button>
-            <button
-              onClick={() =>
-                document
-                  .getElementById("summary-section")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-purple-600/20 hover:bg-purple-600/40 border-purple-500/30"
-            >
-              📊 Summary
-            </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-purple-400/20 hover:bg-purple-600/40 border-purple-500/30"
-            >
-              ⚙️ Settings
-            </button>
-            <button
-              className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-orange-400/20 hover:bg-orange-600/40 border-orange-500/30"
-              onClick={() => setShowQuickNote(true)}
-            >
-              📝 Quick Note
-            </button>
+            {/* Navigation Buttons */}
+            <div className="flex flex-wrap items-center justify-center flex-1 gap-2 mx-4">
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("presets-section")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+                className="px-4 py-2 text-sm font-semibold transition-all duration-200 rounded-lg hover:scale-105"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)"
+                }}
+              >
+                📋 Presets
+              </button>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("selection-section")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+                className="px-4 py-2 text-sm font-semibold transition-all duration-200 rounded-lg hover:scale-105"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)"
+                }}
+              >
+                🎯 Selection
+              </button>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("inventory-section")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+                className="px-4 py-2 text-sm font-semibold transition-all duration-200 rounded-lg hover:scale-105"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)"
+                }}
+              >
+                🎒 Inventory
+              </button>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("crafting-section")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+                className="px-4 py-2 text-sm font-semibold transition-all duration-200 rounded-lg hover:scale-105"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)"
+                }}
+              >
+                🌳 Tree
+              </button>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("summary-section")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+                className="px-4 py-2 text-sm font-semibold transition-all duration-200 rounded-lg hover:scale-105"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)"
+                }}
+              >
+                📊 Summary
+              </button>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("tradeskill-section")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+                className="px-4 py-2 text-sm font-semibold transition-all duration-200 rounded-lg hover:scale-105"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)"
+                }}
+              >
+                ⚔️ Tradeskills
+              </button>
+            </div>
+
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2.5 rounded-lg transition-all duration-200 hover:scale-110"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  color: "var(--accent-primary)",
+                  border: "2px solid var(--border-accent)"
+                }}
+                title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
+                aria-label="Toggle theme"
+              >
+                {theme === "dark" ? (
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                    />
+                  </svg>
+                )}
+              </button>
+
+              {/* Settings Button */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2.5 rounded-lg transition-all duration-200 hover:scale-110"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)"
+                }}
+                title="Settings"
+                aria-label="Settings"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </button>
+
+              {/* Quick Note Button */}
+              <button
+                onClick={() => setShowQuickNote(true)}
+                className="p-2.5 rounded-lg transition-all duration-200 hover:scale-110"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)"
+                }}
+                title="Quick Note"
+                aria-label="Quick Note"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+
+              {/* Close button for Electron app */}
+              {typeof window !== "undefined" && window.electronAPI && (
+                <button
+                  onClick={handleCloseApp}
+                  className="p-2.5 rounded-lg transition-all duration-200 hover:scale-110"
+                  style={{
+                    background: "var(--danger)",
+                    color: "#fff",
+                    border: "1px solid rgba(239, 68, 68, 0.5)"
+                  }}
+                  title="Close Application"
+                  aria-label="Close Application"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        </nav>
 
         <div className="container max-w-6xl p-4 mx-auto sm:p-6 lg:p-8">
           {/* Quick Controls Bar */}
@@ -839,11 +1041,11 @@ const App: React.FC = () => {
             </div>
           </div> */}
           {/* Presets Section */}
-          <div
-            id="presets-section"
-            className="p-4 mb-6 border shadow-lg bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl border-yellow-900/40"
-          >
-            <h3 className="flex items-center mb-3 text-lg font-semibold text-yellow-300">
+          <div id="presets-section" className="glass-card p-6 mb-6">
+            <h3
+              className="flex items-center mb-4 text-xl font-bold"
+              style={{ color: "var(--accent-primary)" }}
+            >
               <span className="mr-2">📋</span>
               Crafting Presets
             </h3>
@@ -910,8 +1112,11 @@ const App: React.FC = () => {
           <div id="selection-section" className="mb-6">
             <div className="grid items-start grid-cols-1 gap-6 lg:grid-cols-4">
               {/* Left Side: Item Selection */}
-              <div className="p-6 border shadow-lg lg:col-span-3 bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl border-yellow-900/40">
-                <h3 className="flex items-center mb-4 text-lg font-semibold text-yellow-300">
+              <div className="glass-card p-6 lg:col-span-3">
+                <h3
+                  className="flex items-center mb-4 text-xl font-bold"
+                  style={{ color: "var(--accent-primary)" }}
+                >
                   <span className="mr-2">🎯</span>
                   Item Selection
                 </h3>
@@ -972,8 +1177,11 @@ const App: React.FC = () => {
               </div>
 
               {/* Right Side: Quantity and Controls */}
-              <div className="p-6 border shadow-lg bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl border-yellow-900/40">
-                <h3 className="flex items-center mb-4 text-lg font-semibold text-yellow-300">
+              <div className="glass-card p-6">
+                <h3
+                  className="flex items-center mb-4 text-xl font-bold"
+                  style={{ color: "var(--accent-primary)" }}
+                >
                   <span className="mr-2">📊</span>
                   Controls
                 </h3>
@@ -1116,11 +1324,11 @@ const App: React.FC = () => {
           </div>
 
           {/* Inventory Tools */}
-          <div
-            id="inventory-section"
-            className="p-6 mb-6 border shadow-lg bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl border-blue-500/30"
-          >
-            <h3 className="flex items-center mb-4 text-lg font-semibold text-blue-300">
+          <div id="inventory-section" className="glass-card p-6 mb-6">
+            <h3
+              className="flex items-center mb-4 text-xl font-bold"
+              style={{ color: "var(--accent-primary)" }}
+            >
               <span className="mr-2">🎒</span>
               Inventory Management
             </h3>
@@ -1240,9 +1448,12 @@ const App: React.FC = () => {
 
           {craftingData && (
             <div id="crafting-section" className="mb-6">
-              <div className="p-6 border shadow-lg bg-gradient-to-r from-green-900/20 to-emerald-900/20 rounded-xl border-green-500/30">
+              <div className="glass-card p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="flex items-center text-xl font-bold text-green-300">
+                  <h2
+                    className="flex items-center text-2xl font-bold"
+                    style={{ color: "var(--accent-primary)" }}
+                  >
                     <span className="mr-2">🌳</span>
                     Crafting Tree
                   </h2>
@@ -1296,8 +1507,11 @@ const App: React.FC = () => {
 
           {summaryData && (summaryData.materials || summaryData.xpGains) && (
             <div id="summary-section" className="mb-6">
-              <div className="p-6 border shadow-lg bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-xl border-purple-500/30">
-                <h2 className="flex items-center mb-4 text-xl font-bold text-purple-300">
+              <div className="glass-card p-6">
+                <h2
+                  className="flex items-center mb-4 text-2xl font-bold"
+                  style={{ color: "var(--accent-primary)" }}
+                >
                   <span className="mr-2">📊</span>
                   {summaryData.title || "Summary"}
                 </h2>
@@ -1333,6 +1547,34 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Tradeskill Calculator Section */}
+          <div id="tradeskill-section" className="mb-6">
+            <div className="glass-card p-6">
+              <h2
+                className="flex items-center mb-4 text-2xl font-bold"
+                style={{ color: "var(--accent-primary)" }}
+              >
+                <span className="mr-2">⚔️</span>
+                Tradeskill Calculator
+              </h2>
+              <p
+                className="mb-4 text-sm"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Calculate gear score, XP gains, perk chances, and material costs
+                for crafting items. Click the ⭐ to mark recipes as favorites.
+              </p>
+              <TradeskillCalculator
+                recipes={_recipes}
+                items={items}
+                bonuses={bonuses}
+                priceData={priceData}
+                favoriteRecipes={favoriteRecipes}
+                onToggleFavorite={toggleFavoriteRecipe}
+              />
+            </div>
+          </div>
 
           <SettingsModal
             isOpen={showSettings}
@@ -1815,7 +2057,7 @@ const App: React.FC = () => {
           </footer>
         </div>
       </div>
-    </React.Fragment>
+    </div>
   );
 };
 
