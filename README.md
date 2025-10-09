@@ -36,51 +36,61 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 <summary><b>⚔️ Complete Tradeskill Management System (NEW in v2.0)</b></summary>
 
 ### 🔍 **Recipe Search & Filter**
+
 - Real-time search by item name across 100+ recipes
 - Filter by tradeskill category (Weaponsmithing, Armoring, Engineering, Jewelcrafting, Furnishing, Arcana)
 - Favorite recipes appear first with visual indicators
 
 ### 🔢 **Bulk Crafting Calculator**
+
 - Calculate materials for 1-10,000 crafts at once
 - Consolidated material requirements with totals
 - Total cost and XP projections for batch crafting
 
 ### 💡 **Cost Optimizer**
+
 - Automatically finds cheapest alternative materials
 - Shows potential savings percentage (e.g., "15% saved!")
 - Supports material tier upgrades (Iron → Asmodeum path)
 
 ### 📈 **Skill Leveling Guide**
+
 - Calculate exact XP needed from current to target level
 - Find top 10 most efficient recipes by cost/XP ratio
 - See total materials and gold needed for leveling goals
 
 ### ⚖️ **Recipe Comparison**
+
 - Side-by-side comparison of up to 3 recipes
 - Compare gear score, XP, cost, and efficiency metrics
 - Visual highlighting of best cost per XP
 
 ### 📥 **Export Functionality**
+
 - Export all calculations to CSV with one click
 - Shopping list export with inventory tracking
 - Timestamp-based file naming for organization
 
 ### 🎯 **Crafting Goals System**
+
 - Set target levels for each tradeskill
 - Visual progress bars with percentage completion
 - XP tracking to goal with persistent storage
 
 ### 🛒 **Material Shopping List**
+
 - Auto-generated from your favorite recipes
 - Shows materials needed vs. current inventory
 - Highlights items to buy with total cost
 
 ### 💰 **Profit Calculator**
+
 - Calculate profit margins for all craftable items
 - Sort by highest profit or margin percentage
 - Color-coded profitable/unprofitable indicators
 
 ### 🌟 **AI-Powered Recommendations**
+
 - Smart recipe suggestions based on your skill levels
 - Considers available inventory for feasibility
 - Scores recipes by cost efficiency and gear score potential
@@ -169,35 +179,35 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 
 ### 📊 **Feature Matrix**
 
-| Feature                           | Desktop App |    Web Version    |
-| --------------------------------- | :---------: | :---------------: |
-| **Core Functionality**            |
-| Crafting Tree & Calculations      |     ✅      |        ✅         |
-| Yield Bonus Calculations          |     ✅      |        ✅         |
-| Multi-Item Support                |     ✅      |        ✅         |
-| **Tradeskill System (v2.0)**      |
-| Recipe Search & Filter            |     ✅      |        ✅         |
-| Bulk Crafting Calculator          |     ✅      |        ✅         |
-| Cost Optimizer                    |     ✅      |        ✅         |
-| Skill Leveling Guide              |     ✅      |        ✅         |
-| Recipe Comparison                 |     ✅      |        ✅         |
-| Crafting Goals & Progress         |     ✅      |        ✅         |
-| Shopping List Generator           |     ✅      |        ✅         |
-| Profit Calculator                 |     ✅      |        ✅         |
-| AI Recipe Recommendations         |     ✅      |        ✅         |
-| Export to CSV                     |     ✅      |        ✅         |
-| **Additional Features**           |
-| OCR Inventory Detection           |     ✅      |        ✅         |
-| Preset Management                 |     ✅      |        ✅         |
-| Light & Dark Themes               |     ✅      |        ✅         |
-| Configuration Persistence         |     ✅      | ⚠️ _localStorage_ |
-| **Desktop Exclusive**             |
-| Global Hotkeys                    |     ✅      |        ❌         |
-| System Tray Integration           |     ✅      |        ❌         |
-| Background Operation              |     ✅      |        ❌         |
-| Config Import/Export              |     ✅      |        ❌         |
-| VS Code Debugging Support         |     ✅      |        ❌         |
-| Auto-Updates                      |     ✅      |        ✅         |
+| Feature                      | Desktop App |    Web Version    |
+| ---------------------------- | :---------: | :---------------: |
+| **Core Functionality**       |
+| Crafting Tree & Calculations |     ✅      |        ✅         |
+| Yield Bonus Calculations     |     ✅      |        ✅         |
+| Multi-Item Support           |     ✅      |        ✅         |
+| **Tradeskill System (v2.0)** |
+| Recipe Search & Filter       |     ✅      |        ✅         |
+| Bulk Crafting Calculator     |     ✅      |        ✅         |
+| Cost Optimizer               |     ✅      |        ✅         |
+| Skill Leveling Guide         |     ✅      |        ✅         |
+| Recipe Comparison            |     ✅      |        ✅         |
+| Crafting Goals & Progress    |     ✅      |        ✅         |
+| Shopping List Generator      |     ✅      |        ✅         |
+| Profit Calculator            |     ✅      |        ✅         |
+| AI Recipe Recommendations    |     ✅      |        ✅         |
+| Export to CSV                |     ✅      |        ✅         |
+| **Additional Features**      |
+| OCR Inventory Detection      |     ✅      |        ✅         |
+| Preset Management            |     ✅      |        ✅         |
+| Light & Dark Themes          |     ✅      |        ✅         |
+| Configuration Persistence    |     ✅      | ⚠️ _localStorage_ |
+| **Desktop Exclusive**        |
+| Global Hotkeys               |     ✅      |        ❌         |
+| System Tray Integration      |     ✅      |        ❌         |
+| Background Operation         |     ✅      |        ❌         |
+| Config Import/Export         |     ✅      |        ❌         |
+| VS Code Debugging Support    |     ✅      |        ❌         |
+| Auto-Updates                 |     ✅      |        ✅         |
 
 ---
 
@@ -227,16 +237,16 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 
 <div align="center">
 
-| Category            | Technology         | Version        |
-| ------------------- | ------------------ | -------------- |
-| **Frontend**        | React + TypeScript | 19.1.0 + 5.8.3 |
-| **Styling**         | Tailwind CSS       | 4.1.11         |
-| **Build System**    | Vite               | 7.1.9          |
-| **Desktop Runtime** | Electron           | 38.2.1         |
-| **OCR Engine**      | Tesseract.js       | 6.0.1          |
-| **Configuration**   | JSON + FileSystem  | Native         |
-| **State Management**| React Hooks        | Built-in       |
-| **Data Processing** | Custom Algorithms  | Native         |
+| Category             | Technology         | Version        |
+| -------------------- | ------------------ | -------------- |
+| **Frontend**         | React + TypeScript | 19.1.0 + 5.8.3 |
+| **Styling**          | Tailwind CSS       | 4.1.11         |
+| **Build System**     | Vite               | 7.1.9          |
+| **Desktop Runtime**  | Electron           | 38.2.1         |
+| **OCR Engine**       | Tesseract.js       | 6.0.1          |
+| **Configuration**    | JSON + FileSystem  | Native         |
+| **State Management** | React Hooks        | Built-in       |
+| **Data Processing**  | Custom Algorithms  | Native         |
 
 </div>
 

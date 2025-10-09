@@ -1110,9 +1110,9 @@ const App: React.FC = () => {
 
           {/* Main Content */}
           <div id="selection-section" className="mb-6">
-            <div className="grid items-start grid-cols-1 gap-6 lg:grid-cols-4">
+            <div className="grid items-stretch grid-cols-1 gap-6 lg:grid-cols-4">
               {/* Left Side: Item Selection */}
-              <div className="p-6 glass-card lg:col-span-3">
+              <div className="flex flex-col p-6 glass-card lg:col-span-3">
                 <h3
                   className="flex items-center mb-4 text-xl font-bold"
                   style={{ color: "var(--accent-primary)" }}
@@ -1145,6 +1145,15 @@ const App: React.FC = () => {
                     setMultiItems([]); // Clear multi-items when a single item is selected
                   }}
                   className="w-full px-4 py-3 text-white transition-all bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  style={{
+                    backgroundImage: selectedItemId
+                      ? `url(${getIconUrl(selectedItemId)})`
+                      : "none",
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "8px center",
+                    backgroundSize: "24px 24px",
+                    paddingLeft: selectedItemId ? "40px" : "16px"
+                  }}
                   aria-label="Select item"
                 >
                   <option value="">📦 Select an item to craft...</option>
@@ -1154,6 +1163,31 @@ const App: React.FC = () => {
                     </option>
                   ))}
                 </select>
+
+                {/* Selected Item Preview */}
+                {selectedItemId && items[selectedItemId] && (
+                  <div className="p-4 mt-4 border rounded-lg bg-gradient-to-br from-gray-700/50 to-gray-800/50 border-yellow-900/30">
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={getIconUrl(selectedItemId)}
+                        alt={items[selectedItemId].name}
+                        className="w-16 h-16 rounded-lg shadow-lg ring-2 ring-yellow-500/30"
+                        onError={e => {
+                          (e.target as HTMLImageElement).src =
+                            "https://nwdb.info/images/db/icons/filters/itemtypes/all.png";
+                        }}
+                      />
+                      <div className="flex-1">
+                        <h4 className="mb-1 text-lg font-bold text-yellow-400">
+                          {items[selectedItemId].name}
+                        </h4>
+                        <p className="text-xs text-gray-400">
+                          Crafting quantity: {quantity.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {multiItems.length > 0 && (
                   <div className="p-4 mt-4 border rounded-lg bg-gray-700/50 border-yellow-900/30">
@@ -1165,10 +1199,20 @@ const App: React.FC = () => {
                       {multiItems.map(item => (
                         <li
                           key={item.id}
-                          className="flex items-center p-2 text-sm text-gray-300 rounded bg-gray-600/50"
+                          className="flex items-center gap-3 p-2 text-sm text-gray-300 rounded bg-gray-600/50"
                         >
-                          <span className="mr-2">📦</span>
-                          {item.qty}x {items[item.id]?.name}
+                          <img
+                            src={getIconUrl(item.id)}
+                            alt={items[item.id]?.name}
+                            className="w-8 h-8 rounded"
+                            onError={e => {
+                              (e.target as HTMLImageElement).src =
+                                "https://nwdb.info/images/db/icons/filters/itemtypes/all.png";
+                            }}
+                          />
+                          <span>
+                            {item.qty}x {items[item.id]?.name}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -1177,7 +1221,7 @@ const App: React.FC = () => {
               </div>
 
               {/* Right Side: Quantity and Controls */}
-              <div className="p-6 glass-card">
+              <div className="flex flex-col p-6 glass-card">
                 <h3
                   className="flex items-center mb-4 text-xl font-bold"
                   style={{ color: "var(--accent-primary)" }}
@@ -1201,7 +1245,7 @@ const App: React.FC = () => {
                     max="10000"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="flex-1 space-y-2">
                   <button
                     onClick={() => setShowSettings(true)}
                     className="w-full px-4 py-3 text-sm font-medium transition-all duration-200 bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-lg"

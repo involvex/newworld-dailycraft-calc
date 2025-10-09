@@ -14,6 +14,7 @@ This is a massive update that transforms the calculator into a complete tradeski
 ### ✨ Added - New Features
 
 #### Tradeskill Calculator System
+
 - **Recipe Search & Filter** - Real-time search and category filtering across 100+ recipes
 - **Bulk Crafting Calculator** - Calculate materials for 1-10,000 crafts with consolidated requirements
 - **Cost Optimizer** - Automatically find cheapest alternative materials with savings percentage
@@ -26,6 +27,7 @@ This is a massive update that transforms the calculator into a complete tradeski
 - **AI Recipe Recommendations** - Smart suggestions based on skill, inventory, and efficiency
 
 #### UI/UX Improvements
+
 - Added light and dark theme support with smooth transitions
 - Enhanced navbar with theme toggle and better navigation
 - Applied glass-card effect to all section cards
@@ -34,6 +36,7 @@ This is a massive update that transforms the calculator into a complete tradeski
 - Added 8-tab interface in Tradeskill Calculator
 
 #### Technical Additions
+
 - Created `TradeskillCalculatorV2` component (1,800+ lines)
 - Added `services/tradeskillService.ts` with 6 calculation functions:
   - `calculateXPToLevel()` - Level progression calculations
@@ -49,6 +52,7 @@ This is a massive update that transforms the calculator into a complete tradeski
 ### 🔧 Changed
 
 #### Type System Updates
+
 - Extended `Recipe` type to support 6 new tradeskill categories:
   - Weaponsmithing
   - Armoring
@@ -59,11 +63,13 @@ This is a massive update that transforms the calculator into a complete tradeski
 - Added recipe fields: `gearScore`, `requiredLevel`, `perkChances`, `isFavorite`
 
 #### Configuration Updates
+
 - Extended `DEFAULT_BONUSES` to include all 11 tradeskill categories
 - Added favorite recipes persistence to localStorage
 - Made `showPrices` state persistent across app restarts
 
 #### Data Management
+
 - Dynamic data loading from nw-buddy GitHub repository (from v1.9.0)
 - Merged static and dynamic data with quality control fallbacks
 
@@ -103,6 +109,7 @@ None - Fully backward compatible. Old `TradeskillCalculator` component still inc
 ### ✨ Added
 
 #### Initial Tradeskill Features
+
 - Basic tradeskill calculator with gear score calculations
 - Tradeskill XP and standing XP display
 - Perk chance calculations (Legendary to Common)
@@ -111,18 +118,21 @@ None - Fully backward compatible. Old `TradeskillCalculator` component still inc
 - Direct NWDB.info links for all craftable items
 
 #### UI Improvements
+
 - Implemented light and dark theme support
 - Enhanced navbar with theme toggle
 - Improved section card styling
 - Better button hierarchy and visual feedback
 
 #### Technical
+
 - Created initial `TradeskillCalculator` component
 - Added `services/tradeskillService.ts`
 - Extended Recipe type for tradeskill categories
 - Updated DEFAULT_BONUSES configuration
 
 ### 🔧 Changed
+
 - Made `showPrices` state persistent
 - Applied theme-aware styling throughout app
 - Improved glass-card effects
@@ -132,6 +142,7 @@ None - Fully backward compatible. Old `TradeskillCalculator` component still inc
 ## [1.8.1] - Previous Release
 
 ### Features
+
 - Crafting tree visualization with expand/collapse
 - OCR inventory detection
 - Preset management
@@ -146,11 +157,13 @@ None - Fully backward compatible. Old `TradeskillCalculator` component still inc
 ## Development Notes
 
 ### Versioning Strategy
+
 - **Major version (X.0.0)**: Breaking changes or major feature additions
 - **Minor version (0.X.0)**: New features, no breaking changes
 - **Patch version (0.0.X)**: Bug fixes and minor improvements
 
 ### Release Process
+
 1. Update version in `package.json`
 2. Update CHANGELOG.md
 3. Run full build and test cycle:
@@ -165,8 +178,8 @@ None - Fully backward compatible. Old `TradeskillCalculator` component still inc
 6. Push with tags: `git push origin main --tags`
 
 ### Links
+
 - [GitHub Releases](https://github.com/involvex/newworld-dailycraft-calc/releases)
 - [Live Demo](https://involvex.github.io/newworld-dailycraft-calc/)
 - [Documentation](docs/documentation.html)
 - [Issues](https://github.com/involvex/newworld-dailycraft-calc/issues)
-

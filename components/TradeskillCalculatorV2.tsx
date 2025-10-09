@@ -1339,7 +1339,8 @@ const GoalsView: React.FC<{
           style={{ background: "var(--bg-tertiary)" }}
         >
           <p style={{ color: "var(--text-secondary)" }}>
-            No crafting goals yet. Click &quot;Add New Goal&quot; to get started!
+            No crafting goals yet. Click &quot;Add New Goal&quot; to get
+            started!
           </p>
         </div>
       ) : (
