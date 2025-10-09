@@ -9,7 +9,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Web-blue?style=for-the-badge)](#installation)
 [![License](https://img.shields.io/github/license/involvex/newworld-dailycraft-calc?style=for-the-badge)](LICENSE)
 
-[🚀 **Try Live Demo**](https://involvex.github.io/newworld-dailycraft-calc/) • [📥 **Download Desktop App**](https://github.com/involvex/newworld-dailycraft-calc/releases/latest) • [📖 **Documentation**](docs/documentation.html) • [🐛 **Report Issues**](https://github.com/involvex/newworld-dailycraft-calc/issues)
+[🚀 **Try Live Demo**](https://involvex.github.io/newworld-dailycraft-calc/) • [📥 **Download Desktop App**](https://github.com/involvex/newworld-dailycraft-calc/releases/latest) • [📖 **Documentation**](https://involvex.github.io/newworld-dailycraft-calc/documentation.html) • [🐛 **Report Issues**](https://github.com/involvex/newworld-dailycraft-calc/issues)
 
 </div>
 
@@ -539,7 +539,7 @@ _Every contribution makes a difference!_ 🙏
 
 - **🐛 Bug Reports:** [GitHub Issues](https://github.com/involvex/newworld-dailycraft-calc/issues)
 - **💬 Discussions:** [GitHub Discussions](https://github.com/involvex/newworld-dailycraft-calc/discussions)
-- **📖 Documentation:** [Full Docs](docs/documentation.html)
+- **📖 Documentation:** [Full Docs](https://involvex.github.io/newworld-dailycraft-calc/documentation.html)
 - **🔒 Security:** [Security Policy](SECURITY.md)
 
 ---
