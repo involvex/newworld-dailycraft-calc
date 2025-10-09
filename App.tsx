@@ -105,7 +105,7 @@ const App: React.FC = () => {
     getInitial("collapsedNodes", new Set())
   );
   const [selectedItemId, setSelectedItemId] = useState<string>(() =>
-    getInitial("selectedItemId", "ingott53")
+    getInitial("selectedItemId", "IngotT53")
   );
   const [quantity, setQuantity] = useState<number>(() =>
     getInitial("quantity", 10)
