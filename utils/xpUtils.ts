@@ -74,7 +74,7 @@ export function parseCSVForXPData(
 export const XP_DATA: Record<string, CSVRecipeData> = {
   // Smelting XP Data
   PRISMATIC_INGOT: {
-    itemId: "PRISMATIC_INGOT",
+    itemId: "Ingott53",
     tradeskillXP: 157105,
     standingXP: 38,
     category: "Smelting"

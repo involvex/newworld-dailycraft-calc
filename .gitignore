@@ -23,3 +23,10 @@ data/*.csv
 .clinerules/*
 AppKopie.tsx
 .vscode/
+data
+
+# gemini-cli settings
+.gemini/
+
+# GitHub App credentials
+gha-creds-*.json

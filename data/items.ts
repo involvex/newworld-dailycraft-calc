@@ -3,7 +3,7 @@ import { Item } from '../types';
 // The 'icon' property is removed. It will be generated dynamically.
 export const ITEMS: Record<string, Item> = {
   // Ingots
-  PRISMATIC_INGOT: { id: 'PRISMATIC_INGOT', name: 'Prismatic Ingot', iconId: 'ingott53', tier: 5, type: 'Legendary Resource', weight: 0.3, maxStack: 10000, types: 'Tier 5 Metals, Metals, Precious Metals, Legendary Metals, Prismatic Ingot, Tier 5 Ingot (Rare)' },
+  PRISMATIC_INGOT: { id: 'Ingott53', name: 'Prismatic Ingot', iconId: 'ingott53', tier: 5, type: 'Legendary Resource', weight: 0.3, maxStack: 10000, types: 'Tier 5 Metals, Metals, Precious Metals, Legendary Metals, Prismatic Ingot, Tier 5 Ingot (Rare)' },
   ASMODEUM: { id: 'ASMODEUM', name: 'Asmodeum', iconId: 'ingott51', tier: 5, type: 'Refining Ingredient', weight: 0.2, maxStack: 10000, types: 'Tier 5 Metals, Metals, Precious Metals' },
   MYTHRIL_INGOT: { id: 'MYTHRIL_INGOT', name: 'Mythril Ingot', iconId: 'ingott52', tier: 5, type: 'Refining Ingredient', weight: 0.2, maxStack: 10000, types: 'Tier 5 Metals, Metals' },
   ORICHALCUM_INGOT: { id: 'ORICHALCUM_INGOT', name: 'Orichalcum Ingot', iconId: 'ingott5', tier: 5, type: 'Refining Ingredient', weight: 0.2, maxStack: 10000, types: 'Tier 5 Metals, Metals' },

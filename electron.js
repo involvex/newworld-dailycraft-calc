@@ -256,7 +256,7 @@ app
               "style-src 'self' 'unsafe-inline' data: file: https://cdn.tailwindcss.com https://fonts.googleapis.com; " +
               "font-src 'self' data: file: https://fonts.gstatic.com; " +
               "img-src 'self' data: blob: file: https://cdn.nwdb.info https://nwdb.info; " +
-              "connect-src 'self' blob: file: data: https://cdn.jsdelivr.net https://generativelanguage.googleapis.com https://unpkg.com https://api.allorigins.win https://nwmpapi.gaming.tools https://scdn.gaming.tools https://gaming.tools https://gaming.tools/prices/nwmp;" +
+              "connect-src 'self' blob: file: data: https://raw.githubusercontent.com https://cdn.jsdelivr.net https://generativelanguage.googleapis.com https://unpkg.com https://api.allorigins.win https://nwmpapi.gaming.tools https://scdn.gaming.tools https://gaming.tools https://gaming.tools/prices/nwmp;" +
               "worker-src 'self' blob:;"
           ]
         }

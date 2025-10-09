@@ -13,9 +13,9 @@ interface SettingsModalProps {
   onClose: () => void;
   bonuses: AllBonuses;
   onBonusChange: (
-    category: string,
-    field: keyof BonusConfiguration,
-    value: string | boolean
+    _category: string,
+    _field: keyof BonusConfiguration,
+    _value: string | boolean
   ) => void;
   onExportData: () => void;
   onImportData: () => void;
@@ -627,7 +627,9 @@ export function SettingsModal({
                           : "bg-blue-600 hover:bg-blue-700 text-white"
                       }`}
                     >
-                      {recordingHotkey === "quickNote" ? "⏹️ Stop" : "🎬 Record"}
+                      {recordingHotkey === "quickNote"
+                        ? "⏹️ Stop"
+                        : "🎬 Record"}
                     </button>
                   </div>
                   {recordingHotkey === "quickNote" && (

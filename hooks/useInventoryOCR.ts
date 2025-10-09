@@ -1,16 +1,16 @@
 import { useCallback } from "react";
-import { ITEMS } from "../data/items";
 import { ITEM_MAPPINGS } from "../constants";
 import { analyzeInventoryImage } from "../services/geminiService";
-import { AnalyzedItem } from "../types";
+import { AnalyzedItem, Item } from "../types";
 
 interface UseInventoryOCRProps {
-  setOCREditText: (text: string) => void;
-  setShowOCREdit: (show: boolean) => void;
-  setIsProcessingOCR: (isProcessing: boolean) => void;
+  setOCREditText: (_text: string) => void;
+  setShowOCREdit: (_show: boolean) => void;
+  setIsProcessingOCR: (_isProcessing: boolean) => void;
   geminiApiKey: string | undefined; // New prop
   debugOCRPreview: boolean | undefined; // New prop
-  onOCRComplete?: (result: string) => void; // New optional prop
+  onOCRComplete?: (_result: string) => void; // New optional prop
+  items: Record<string, Item>;
 }
 
 const useInventoryOCR = ({
@@ -19,7 +19,8 @@ const useInventoryOCR = ({
   setIsProcessingOCR,
   geminiApiKey, // Destructure new prop
   debugOCRPreview, // Destructure new prop
-  onOCRComplete // Destructure new prop
+  onOCRComplete, // Destructure new prop
+  items
 }: UseInventoryOCRProps) => {
   const findBestItemMatch = (itemNameRaw: string): string | null => {
     let matchedItemId: string | null = null;
@@ -33,7 +34,7 @@ const useInventoryOCR = ({
       return exactMapping;
     }
 
-    for (const item of Object.values(ITEMS)) {
+    for (const item of Object.values(items)) {
       const itemNameLower = item.name.toLowerCase();
       const score = calculateMatchScore(lowerItemName, itemNameLower);
       if (score > bestMatchScore && score > 0.85) {
@@ -165,7 +166,7 @@ const useInventoryOCR = ({
             `🎯 Found ${totalFound} items!\n\n` +
             Object.entries(foundItems)
               .map(([id, qty]) => {
-                const item = ITEMS[id];
+                const item = items[id];
                 return `${item ? item.name : id}: ${qty.toLocaleString()}`;
               })
               .join("\n") +
@@ -201,7 +202,8 @@ const useInventoryOCR = ({
       setIsProcessingOCR,
       setOCREditText,
       setShowOCREdit,
-      onOCRComplete
+      onOCRComplete,
+      items
     ]
   );
 

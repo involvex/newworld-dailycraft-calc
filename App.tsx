@@ -7,21 +7,27 @@ import React, {
   useDeferredValue
 } from "react";
 import { APP_VERSION } from "./src/version";
-import { ITEMS } from "./data/items";
-import { RECIPES } from "./data/recipes";
 import { ITEM_MAPPINGS } from "./constants";
 import CraftingNode from "./components/CraftingNode";
 import SummaryList from "./components/SummaryList";
 import XPSummaryList from "./components/XPSummaryList";
 import ContextMenu from "./components/ContextMenu";
 import { SettingsModal } from "./components/SettingsModal";
-import { Item, AllBonuses, BonusConfiguration, QuickNote } from "./types";
+import {
+  Item,
+  AllBonuses,
+  BonusConfiguration,
+  QuickNote,
+  Recipe
+} from "./types";
 import useCraftingTree from "./hooks/useCraftingTree";
 import useInventoryOCR from "./hooks/useInventoryOCR";
 import usePresets from "./hooks/usePresets";
 import { useConfig } from "./hooks/useConfig";
 import useTreeCollapse from "./hooks/useTreeCollapse";
 import QuickNoteModal from "./components/QuickNoteModal";
+import { loadDynamicData } from "./services/dataService";
+import { RECIPES } from "./data/recipes";
 
 // Types
 type SummaryMode = "net" | "xp";
@@ -51,8 +57,26 @@ const App: React.FC = () => {
   const configState = useConfig();
   const { loadConfig } = configState;
 
+  // Data state
+  const [items, setItems] = useState<Record<string, Item>>({});
+  const [_recipes, setRecipes] = useState<Record<string, Recipe[]>>({});
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
   useEffect(() => {
     loadConfig();
+    const fetchData = async () => {
+      setIsDataLoading(true);
+      const data = await loadDynamicData();
+      setItems(data.items);
+      console.log("Items loaded in App.tsx:", data.items);
+      // Transform data.recipes from Record<string, Recipe> to Record<string, Recipe[]>
+      const transformedRecipes = Object.fromEntries(
+        Object.entries(data.recipes).map(([key, recipe]) => [key, [recipe]])
+      );
+      setRecipes(transformedRecipes);
+      setIsDataLoading(false);
+    };
+    fetchData();
   }, []); // Empty dependency array ensures this runs only once on mount
 
   // App state
@@ -60,7 +84,7 @@ const App: React.FC = () => {
     getInitial("collapsedNodes", new Set())
   );
   const [selectedItemId, setSelectedItemId] = useState<string>(() =>
-    getInitial("selectedItemId", "")
+    getInitial("selectedItemId", "ingott53")
   );
   const [quantity, setQuantity] = useState<number>(() =>
     getInitial("quantity", 10)
@@ -160,10 +184,10 @@ const App: React.FC = () => {
     handlePresetCreate,
     handlePresetDelete
   } = usePresets({
-    multiItems,
-    selectedItemId,
-    quantity,
-    collapsedNodes,
+    _multiItems: multiItems,
+    _selectedItemId: selectedItemId,
+    _quantity: quantity,
+    _collapsedNodes: collapsedNodes,
     setMultiItems,
     setSelectedItemId,
     setQuantity,
@@ -178,7 +202,6 @@ const App: React.FC = () => {
     await configState.updateConfig("quickNotes", notes);
   };
 
-  // --- Refactored hooks ---
   const { craftingData, summaryData } = useCraftingTree({
     selectedItemId,
     quantity,
@@ -190,24 +213,26 @@ const App: React.FC = () => {
     collapsedNodes,
     inventory,
     removedNodes,
-    selectedPreset
+    _selectedPreset: selectedPreset,
+    items: isDataLoading ? {} : items
   });
 
   // Define allCraftableItems directly in App.tsx
-  const allCraftableItems: Item[] = useMemo(
-    () =>
-      Object.values(ITEMS)
-        .filter(item => RECIPES[item.id])
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    []
-  );
+  const allCraftableItems: Item[] = useMemo(() => {
+    if (isDataLoading) return [];
+    const craftableItems = Object.values(items)
+      .filter(item => RECIPES[item.id])
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return craftableItems;
+  }, [items, isDataLoading]);
 
   // Memoized filtered list for search - now uses deferred search term for better performance
   const filteredCraftableItems = useMemo(() => {
+    if (isDataLoading) return [];
     return allCraftableItems.filter((item: Item) =>
       item.name.toLowerCase().includes(deferredSearchTerm.toLowerCase())
     );
-  }, [allCraftableItems, deferredSearchTerm]);
+  }, [allCraftableItems, deferredSearchTerm, isDataLoading]);
 
   const {
     captureAndProcessScreenshot,
@@ -220,20 +245,24 @@ const App: React.FC = () => {
     setIsProcessingOCR,
     geminiApiKey: configState.config?.GEMINI_API_KEY, // Pass API key as prop
     debugOCRPreview: configState.config?.settings?.debugOCRPreview, // Pass debug setting as prop
-    onOCRComplete: setQuickNoteContent
+    onOCRComplete: setQuickNoteContent,
+    items
   });
 
-  const getIconUrl = useCallback((itemId: string) => {
-    if (itemId === "MULTI") {
-      return "https://nwdb.info/images/db/icons/filters/itemtypes/all.png";
-    }
-    if (itemId === "GEMSTONE_DUST") {
-      return "https://cdn.nwdb.info/db/images/live/v55/icons/items/consumable/gemstonedustt5.png";
-    }
-    const iconId =
-      ITEMS[itemId]?.iconId || itemId.toLowerCase().replace(/_/g, "");
-    return `https://cdn.nwdb.info/db/images/live/v55/icons/items/resource/${iconId}.png`;
-  }, []);
+  const getIconUrl = useCallback(
+    (itemId: string) => {
+      if (itemId === "MULTI") {
+        return "https://nwdb.info/images/db/icons/filters/itemtypes/all.png";
+      }
+      if (itemId === "GEMSTONE_DUST") {
+        return "https://cdn.nwdb.info/db/images/live/v55/icons/items/consumable/gemstonedustt5.png";
+      }
+      const iconId =
+        items[itemId]?.iconId || itemId.toLowerCase().replace(/_/g, "");
+      return `https://cdn.nwdb.info/db/images/live/v55/icons/items/resource/${iconId}.png`;
+    },
+    [items]
+  );
 
   const handleBonusChange = (
     category: string,
@@ -460,7 +489,7 @@ const App: React.FC = () => {
                 `🎯 Found ${totalFound} items!\n\n` +
                 Object.entries(foundItems)
                   .map(([id, qty]) => {
-                    const item = ITEMS[id];
+                    const item = items[id];
                     return `${item ? item.name : id}: ${qty.toLocaleString()}`;
                   })
                   .join("\n") +
@@ -526,7 +555,7 @@ const App: React.FC = () => {
       return exactMapping;
     }
 
-    for (const item of Object.values(ITEMS)) {
+    for (const item of Object.values(items)) {
       const itemNameLower = item.name.toLowerCase();
       const score = calculateMatchScore(lowerItemName, itemNameLower);
       if (score > bestMatchScore && score > 0.85) {
@@ -594,7 +623,7 @@ const App: React.FC = () => {
           captureAndProcessScreenshotForQuickNote();
         }
         setShowQuickNote(true);
-      }
+      };
       // Set up about menu listener
       const handleShowAbout = () => {
         setShowAbout(true);
@@ -605,9 +634,12 @@ const App: React.FC = () => {
       const cleanupSettings =
         window.electronAPI.onShowSettings(handleShowSettings);
       const cleanupAbout = window.electronAPI.onShowAbout(handleShowAbout);
-      const cleanupQuickNote = window.electronAPI.onShowQuickNote(handleShowQuickNote);
+      const cleanupQuickNote =
+        window.electronAPI.onShowQuickNote(handleShowQuickNote);
       const cleanupInventory = window.electronAPI.onShowInventory(() => {
-        document.getElementById("inventory-section")?.scrollIntoView({ behavior: "smooth" });
+        document
+          .getElementById("inventory-section")
+          ?.scrollIntoView({ behavior: "smooth" });
       });
 
       console.log("Electron event listeners registered");
@@ -622,7 +654,11 @@ const App: React.FC = () => {
         console.log("Electron event listeners cleaned up");
       };
     }
-  }, [captureAndProcessScreenshot, isProcessingOCR, captureAndProcessScreenshotForQuickNote]);
+  }, [
+    captureAndProcessScreenshot,
+    isProcessingOCR,
+    captureAndProcessScreenshotForQuickNote
+  ]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -637,6 +673,16 @@ const App: React.FC = () => {
       window.close();
     }
   }, []);
+
+  if (isDataLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen font-sans text-gray-300 bg-gray-900 app-gradient-bg">
+        <div className="text-2xl font-bold text-yellow-300">
+          Loading game data...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <React.Fragment>
@@ -672,9 +718,9 @@ const App: React.FC = () => {
             alt="New World Crafting Calculator"
             className="w-auto h-12 mx-auto logo"
           />
-          <p
-            className="mr-2 text-sm font-bold text-blue-400"
-            style={{ marginBottom: "-25px", marginLeft: "4%" }}
+          <p className="mr-4 text-xs font-bold text-left text-blue-400 left-4 display-flex logo"
+            // className="left-0 mr-2 text-xs font-bold text-left text-blue-400"
+            style={{ marginLeft: "3%", marginTop: "1%", marginRight: "2rem" }}
           >
             New World Crafting Calculator
           </p>
@@ -736,12 +782,12 @@ const App: React.FC = () => {
             >
               ⚙️ Settings
             </button>
-            <button 
-            className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-orange-400/20 hover:bg-orange-600/40 border-orange-500/30"
-            onClick={() => setShowQuickNote(true)}
-           >
-            📝 Quick Note
-           </button>
+            <button
+              className="px-3 py-1 text-xs text-purple-300 transition-all duration-200 border rounded-md bg-orange-400/20 hover:bg-orange-600/40 border-orange-500/30"
+              onClick={() => setShowQuickNote(true)}
+            >
+              📝 Quick Note
+            </button>
           </div>
         </div>
 
@@ -917,7 +963,7 @@ const App: React.FC = () => {
                           className="flex items-center p-2 text-sm text-gray-300 rounded bg-gray-600/50"
                         >
                           <span className="mr-2">📦</span>
-                          {item.qty}x {ITEMS[item.id]?.name}
+                          {item.qty}x {items[item.id]?.name}
                         </li>
                       ))}
                     </ul>
@@ -1173,9 +1219,9 @@ const App: React.FC = () => {
                       >
                         <span
                           className="mr-2 text-gray-300 truncate"
-                          title={ITEMS[itemId]?.name || itemId}
+                          title={items[itemId]?.name || itemId}
                         >
-                          {ITEMS[itemId]?.name || itemId}:{" "}
+                          {items[itemId]?.name || itemId}:{" "}
                           {qty.toLocaleString()}
                         </span>
                         <button
@@ -1309,7 +1355,7 @@ const App: React.FC = () => {
             showPrices={showPrices}
             priceData={priceData}
             findBestItemMatch={findBestItemMatch}
-            />
+          />
           {contextMenu && (
             <ContextMenu
               x={contextMenu.x}

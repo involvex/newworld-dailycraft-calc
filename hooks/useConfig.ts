@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConfigData, PriceConfig, PriceData, AllBonuses } from "../types";
 
 // Type for config stored in browser (without API key for security)
@@ -96,9 +96,7 @@ export function useConfig() {
       setError(null);
       if (isElectron() && window.electronAPI?.config) {
         const success = await window.electronAPI.config.save(newConfig);
-        if (success) {
-          setConfig(newConfig);
-        } else {
+        if (!success) {
           throw new Error("Failed to save configuration to file");
         }
       } else {
@@ -111,7 +109,6 @@ export function useConfig() {
           "nw-crafting-config",
           JSON.stringify(configToStore, null, 2)
         );
-        setConfig(newConfig);
       }
     } catch (err) {
       console.error("Error saving config:", err);
@@ -123,10 +120,13 @@ export function useConfig() {
   };
 
   // Simplified update function for top-level keys
-  const updateConfig = async (key: keyof ConfigData, value: any) => {
-    const updatedConfig = { ...config, [key]: value };
-    await saveConfig(updatedConfig);
+  const updateConfig = (key: keyof ConfigData, value: any) => {
+    setConfig(prev => ({ ...prev, [key]: value }));
   };
+
+  useEffect(() => {
+    saveConfig(config);
+  }, [config]);
 
   const registerHotkeys = async (hotkeys: ConfigData["hotkeys"]) => {
     if (isElectron() && window.electronAPI?.config) {

@@ -16,10 +16,11 @@ export interface Ingredient {
 }
 
 export interface Recipe {
+  recipeId: string;
   itemId: string;
   ingredients: Ingredient[];
   baseYield: number; // How many items one craft makes
-  category: "Smelting" | "Weaving" | "Tanning" | "Woodworking";
+  category: "Smelting" | "Weaving" | "Tanning" | "Woodworking" | "Stonecutting";
   isCooldown?: boolean; // Is this a daily cooldown recipe?
   // Fields for advanced yield calculation
   baseTier?: number;
@@ -127,6 +128,7 @@ declare global {
 export interface Preset {
   name: string;
   items: { id: string; qty: number }[];
+  collapsedNodes?: string[];
 }
 
 export interface QuickNote {

@@ -1,16 +1,22 @@
 import { useMemo } from "react";
-import { AllBonuses, RawMaterial, XPSummary, CraftingSummary } from "../types";
+import {
+  AllBonuses,
+  RawMaterial,
+  XPSummary,
+  CraftingSummary,
+  Item,
+  Recipe
+} from "../types";
 import {
   calculateCraftingTree,
   aggregateRawMaterials,
   calculateXPGains
 } from "../services/craftingService";
-import { ITEMS } from "../data/items";
+import { CraftingNodeData } from "../types";
 import { RECIPES } from "../data/recipes";
-import { Item, CraftingNodeData } from "../types";
 
 interface UseCraftingTreeProps {
-  selectedPreset: string;
+  _selectedPreset: string;
   selectedItemId: string;
   quantity: number;
   multiItems: any[];
@@ -19,8 +25,9 @@ interface UseCraftingTreeProps {
   viewMode: string;
   summaryMode: string;
   collapsedNodes: Set<string>;
-  inventory: Record<string, number>;
   removedNodes: Set<string>;
+  items: Record<string, Item>;
+  inventory: Record<string, number>;
 }
 
 const useCraftingTree = ({
@@ -34,9 +41,13 @@ const useCraftingTree = ({
   collapsedNodes,
   inventory,
   removedNodes,
-  selectedPreset
+  _selectedPreset,
+  items
 }: UseCraftingTreeProps) => {
   const craftingData: CraftingNodeData | null = useMemo(() => {
+    if (Object.keys(items).length === 0 || Object.keys(RECIPES).length === 0) {
+      return null;
+    }
     if (multiItems.length > 0) {
       const children = multiItems
         .map(item =>
@@ -44,6 +55,7 @@ const useCraftingTree = ({
             item.id,
             item.qty,
             bonuses,
+            items,
             selectedIngredients,
             viewMode as "net" | "gross"
           )
@@ -72,6 +84,7 @@ const useCraftingTree = ({
         selectedItemId,
         quantity,
         bonuses,
+        items,
         selectedIngredients,
         viewMode as "net" | "gross"
       );
@@ -84,7 +97,8 @@ const useCraftingTree = ({
     bonuses,
     selectedIngredients,
     viewMode,
-    selectedPreset
+    _selectedPreset,
+    items
   ]);
 
   const filteredCraftingData = useMemo(() => {
@@ -109,6 +123,7 @@ const useCraftingTree = ({
     const allMaterials = aggregateRawMaterials(
       filteredCraftingData,
       collapsedNodes,
+      items,
       viewMode as "net" | "gross",
       bonuses,
       selectedIngredients
@@ -162,15 +177,16 @@ const useCraftingTree = ({
     JSON.stringify(inventory),
     JSON.stringify(bonuses),
     JSON.stringify(selectedIngredients),
-    selectedPreset
+    _selectedPreset,
+    items
   ]);
 
   const allCraftableItems: Item[] = useMemo(
     () =>
-      Object.values(ITEMS)
+      Object.values(items)
         .filter(item => RECIPES[item.id])
         .sort((a, b) => a.name.localeCompare(b.name)),
-    []
+    [items]
   );
 
   const netRequirementsWithInventory = useMemo(() => {

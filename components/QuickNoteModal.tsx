@@ -6,7 +6,7 @@ interface QuickNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialContent: string;
-  onSave: (notes: QuickNote[]) => void;
+  onSave: (_notes: QuickNote[]) => void;
   savedNotes: QuickNote[];
   onManualOCR: () => void;
   showPrices: boolean;
@@ -23,7 +23,7 @@ export function QuickNoteModal({
   onManualOCR,
   showPrices,
   priceData,
-  findBestItemMatch,
+  findBestItemMatch
 }: QuickNoteModalProps) {
   const [content, setContent] = useState("");
 
@@ -37,7 +37,7 @@ export function QuickNoteModal({
     const newNote: QuickNote = {
       id: new Date().toISOString(),
       content,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     };
     onSave([newNote, ...savedNotes]);
     setContent("");
@@ -45,14 +45,14 @@ export function QuickNoteModal({
   };
 
   const handleDelete = (id: string) => {
-    const updatedNotes = savedNotes.filter((note) => note.id !== id);
+    const updatedNotes = savedNotes.filter(note => note.id !== id);
     onSave(updatedNotes);
   };
 
   const handleExport = () => {
     const textToCopy = savedNotes
       .map(
-        (note) =>
+        note =>
           `[${new Date(note.timestamp).toLocaleString()}]\n${note.content}`
       )
       .join("\n\n---\n\n");
@@ -64,7 +64,7 @@ export function QuickNoteModal({
 
     const lines = noteContent.split("\n");
     return lines
-      .map((line) => {
+      .map(line => {
         const match = line.match(/^(.*?):\s*([\d,]+)$/);
         if (match) {
           const itemName = match[1].trim();
@@ -102,7 +102,7 @@ export function QuickNoteModal({
 
         <textarea
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={e => setContent(e.target.value)}
           placeholder="OCR results will appear here..."
           className="w-full h-40 p-2 mt-4 text-white bg-gray-700 rounded"
         />
@@ -134,7 +134,7 @@ export function QuickNoteModal({
             <p className="text-gray-400">No saved notes yet.</p>
           ) : (
             <ul className="space-y-2">
-              {savedNotes.map((note) => (
+              {savedNotes.map(note => (
                 <li key={note.id} className="p-3 bg-gray-700 rounded">
                   <div className="flex items-start justify-between">
                     <pre className="font-sans text-sm text-gray-300 whitespace-pre-wrap">

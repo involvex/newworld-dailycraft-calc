@@ -1,16 +1,11 @@
 import { useState } from "react";
-
-interface Preset {
-  name: string;
-  items: { id: string; qty: number }[];
-  collapsedNodes?: string[];
-}
+import { Preset } from "../types";
 
 interface UsePresetsProps {
-  multiItems: any[];
-  selectedItemId: string;
-  quantity: number;
-  collapsedNodes: Set<string>;
+  _multiItems: any[];
+  _selectedItemId: string;
+  _quantity: number;
+  _collapsedNodes: Set<string>;
   setMultiItems: (items: any[]) => void;
   setSelectedItemId: (itemId: string) => void;
   setQuantity: (quantity: number) => void;
@@ -23,20 +18,16 @@ const PRESETS: Preset[] = [
   {
     name: "Daily Cooldowns (10)",
     items: [
-      { id: "PRISMATIC_INGOT", qty: 10 },
+      { id: "Ingott53", qty: 10 },
       { id: "PRISMATIC_CLOTH", qty: 10 },
       { id: "PRISMATIC_LEATHER", qty: 10 },
       { id: "PRISMATIC_PLANKS", qty: 10 },
-      { id: "ASMODEUM", qty: 10 },
-      { id: "PHOENIXWEAVE", qty: 10 },
-      { id: "RUNIC_LEATHER", qty: 10 },
-      { id: "GLITTERING_EBONY", qty: 10 }
+      { id: "ASMODEUM", qty: 10 }
     ]
   },
   {
     name: "Prismatic Set (10)",
     items: [
-      { id: "PRISMATIC_INGOT", qty: 10 },
       { id: "PRISMATIC_CLOTH", qty: 10 },
       { id: "PRISMATIC_LEATHER", qty: 10 },
       { id: "PRISMATIC_PLANKS", qty: 10 }
@@ -54,10 +45,10 @@ const getInitial = <T>(key: string, fallback: T): T => {
 };
 
 export default function usePresets({
-  multiItems,
-  selectedItemId,
-  quantity,
-  collapsedNodes,
+  _multiItems,
+  _selectedItemId,
+  _quantity,
+  _collapsedNodes,
   setMultiItems,
   setSelectedItemId,
   setQuantity,
@@ -116,7 +107,7 @@ export default function usePresets({
     if (!name.trim()) return;
 
     // Validate that there's something to save
-    if (multiItems.length === 0 && !selectedItemId) {
+    if (_multiItems.length === 0 && !_selectedItemId) {
       alert(
         "Please select an item or add items to your list before creating a preset."
       );
@@ -128,10 +119,10 @@ export default function usePresets({
 
     // Prepare items array with validation
     let items: { id: string; qty: number }[];
-    if (multiItems.length > 0) {
-      items = multiItems.filter(item => item.id && item.qty > 0); // Filter out invalid items
-    } else if (selectedItemId) {
-      items = [{ id: selectedItemId, qty: quantity }];
+    if (_multiItems.length > 0) {
+      items = _multiItems.filter(item => item.id && item.qty > 0); // Filter out invalid items
+    } else if (_selectedItemId) {
+      items = [{ id: _selectedItemId, qty: _quantity }];
     } else {
       alert(
         "Please select an item or add items to your list before creating a preset."
@@ -148,7 +139,7 @@ export default function usePresets({
     const newPreset: Preset = {
       name: trimmedName,
       items: items,
-      collapsedNodes: [...collapsedNodes]
+      collapsedNodes: [..._collapsedNodes]
     };
 
     let updatedPresets;

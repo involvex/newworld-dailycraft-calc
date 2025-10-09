@@ -130,6 +130,7 @@ textarea:focus {
 
   position: absolute;
   top: 0;
+  left: 1px;
 }
 
 .navbar {
@@ -149,4 +150,7 @@ textarea:focus {
   outline: 2px solid rgba(255, 255, 255, 0.3);
   outline-offset: 2px;
   text-align: center;
+  
+  justify-content: center;
+
 }

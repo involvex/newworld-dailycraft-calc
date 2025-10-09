@@ -3,7 +3,7 @@ import { CraftingNodeData, PriceConfig } from "../types";
 
 interface CraftingNodeProps {
   node: CraftingNodeData;
-  getIconUrl: (itemId: string, tier: number) => string;
+  getIconUrl: (itemId: string, _tier: number) => string;
   isRoot?: boolean;
   isLast?: boolean;
   collapsedNodes: Set<string>;
@@ -51,7 +51,7 @@ const CraftingNode: React.FC<CraftingNodeProps> = ({
   // Override with summary data for leaf nodes in gross mode
   if (!hasChildren && viewMode === "gross" && summaryData.length > 0) {
     const summaryItem = summaryData.find(
-      item => item.item?.id === node.item?.id
+      (item: any) => item.item?.id === node.item?.id
     );
     if (summaryItem) {
       displayQuantity = Math.ceil(summaryItem.quantity);

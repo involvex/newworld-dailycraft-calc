@@ -5,7 +5,8 @@ import { Recipe } from '../types';
 export const RECIPES: Record<string, Recipe> = {
   // --- Smelting (Fixed based on smelting.csv) ---
   PRISMATIC_INGOT: {
-    itemId: 'PRISMATIC_INGOT',
+    recipeId: 'PRISMATIC_INGOT',
+    itemId: 'Ingott53',
     baseYield: 1,
     category: 'Smelting',
     isCooldown: true,
@@ -20,6 +21,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   MYTHRIL_INGOT: {
+    recipeId: 'MYTHRIL_INGOT',
     itemId: 'MYTHRIL_INGOT',
     baseYield: 1,
     category: 'Smelting',
@@ -34,6 +36,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   ORICHALCUM_INGOT: {
+    recipeId: 'ORICHALCUM_INGOT',
     itemId: 'ORICHALCUM_INGOT',
     baseYield: 1,
     category: 'Smelting',
@@ -42,12 +45,12 @@ export const RECIPES: Record<string, Recipe> = {
     craftAll: true,
     ingredients: [
       { itemId: 'ORICHALCUM_ORE', quantity: 8 }, // OreT5
-      { itemId: 'STARMETAL_INGOT', quantity: 2 }, // IngotT4
       { itemId: 'OBSIDIAN_FLUX', quantity: 1 }, // FluxT5
       { itemId: 'CHARCOAL', quantity: 2 } // CharcoalT1
     ]
   },
   STARMETAL_INGOT: {
+    recipeId: 'STARMETAL_INGOT',
     itemId: 'STARMETAL_INGOT',
     baseYield: 1,
     category: 'Smelting',
@@ -56,12 +59,12 @@ export const RECIPES: Record<string, Recipe> = {
     craftAll: true,
     ingredients: [
       { itemId: 'STARMETAL_ORE', quantity: 6 }, // OreT4
-      { itemId: 'STEEL_INGOT', quantity: 2 }, // IngotT3
       { itemId: 'OBSIDIAN_FLUX', quantity: 1 }, // FluxT5
       { itemId: 'CHARCOAL', quantity: 2 } // CharcoalT1
     ]
   },
   STEEL_INGOT: {
+    recipeId: 'STEEL_INGOT',
     itemId: 'STEEL_INGOT',
     baseYield: 1,
     category: 'Smelting',
@@ -75,6 +78,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   IRON_INGOT: {
+    recipeId: 'IRON_INGOT',
     itemId: 'IRON_INGOT',
     baseYield: 1,
     category: 'Smelting',
@@ -86,6 +90,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   CHARCOAL: {
+    recipeId: 'CHARCOAL',
     itemId: 'CHARCOAL',
     baseYield: 1,
     category: 'Smelting',
@@ -97,6 +102,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   ASMODEUM: {
+    recipeId: 'ASMODEUM',
     itemId: 'ASMODEUM',
     baseYield: 1,
     category: 'Smelting',
@@ -114,6 +120,7 @@ export const RECIPES: Record<string, Recipe> = {
 
   // --- Weaving (Fixed based on weaving.csv) ---
   PRISMATIC_CLOTH: {
+    recipeId: 'PRISMATIC_CLOTH',
     itemId: 'PRISMATIC_CLOTH',
     baseYield: 1,
     category: 'Weaving',
@@ -128,6 +135,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   PHOENIXWEAVE: {
+    recipeId: 'PHOENIXWEAVE',
     itemId: 'PHOENIXWEAVE',
     baseYield: 1,
     category: 'Weaving',
@@ -142,6 +150,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   SPINWEAVE: {
+    recipeId: 'SPINWEAVE',
     itemId: 'SPINWEAVE',
     baseYield: 1,
     category: 'Weaving',
@@ -150,11 +159,11 @@ export const RECIPES: Record<string, Recipe> = {
     craftAll: true,
     ingredients: [
       { itemId: 'SPINFIBER', quantity: 12 }, // FiberT52
-      { itemId: 'INFUSED_SILK', quantity: 2 }, // ClothT5
       { itemId: 'WIREWEAVE', quantity: 1 } // ClothWeaveT5
     ]
   },
   INFUSED_SILK: {
+    recipeId: 'INFUSED_SILK',
     itemId: 'INFUSED_SILK',
     baseYield: 1,
     category: 'Weaving',
@@ -168,6 +177,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   SILK: {
+    recipeId: 'SILK',
     itemId: 'SILK',
     baseYield: 1,
     category: 'Weaving',
@@ -181,6 +191,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   SATEEN: {
+    recipeId: 'SATEEN',
     itemId: 'SATEEN',
     baseYield: 1,
     category: 'Weaving',
@@ -193,6 +204,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   LINEN: {
+    recipeId: 'LINEN',
     itemId: 'LINEN',
     baseYield: 1,
     category: 'Weaving',
@@ -206,6 +218,7 @@ export const RECIPES: Record<string, Recipe> = {
 
   // --- Tanning (Fixed based on leatherworking.csv) ---
   PRISMATIC_LEATHER: {
+    recipeId: 'PRISMATIC_LEATHER',
     itemId: 'PRISMATIC_LEATHER',
     baseYield: 1,
     category: 'Tanning',
@@ -220,6 +233,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   RUNIC_LEATHER: {
+    recipeId: 'RUNIC_LEATHER',
     itemId: 'RUNIC_LEATHER',
     baseYield: 1,
     category: 'Tanning',
@@ -234,6 +248,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   DARK_LEATHER: {
+    recipeId: 'DARK_LEATHER',
     itemId: 'DARK_LEATHER',
     baseYield: 1,
     category: 'Tanning',
@@ -247,6 +262,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   INFUSED_LEATHER: {
+    recipeId: 'INFUSED_LEATHER',
     itemId: 'INFUSED_LEATHER',
     baseYield: 1,
     category: 'Tanning',
@@ -260,6 +276,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   LAYERED_LEATHER: {
+    recipeId: 'LAYERED_LEATHER',
     itemId: 'LAYERED_LEATHER',
     baseYield: 1,
     category: 'Tanning',
@@ -273,6 +290,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   RUGGED_LEATHER: {
+    recipeId: 'RUGGED_LEATHER',
     itemId: 'RUGGED_LEATHER',
     baseYield: 1,
     category: 'Tanning',
@@ -285,6 +303,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   COARSE_LEATHER: {
+    recipeId: 'COARSE_LEATHER',
     itemId: 'COARSE_LEATHER',
     baseYield: 1,
     category: 'Tanning',
@@ -298,6 +317,7 @@ export const RECIPES: Record<string, Recipe> = {
 
   // --- Woodworking (Fixed based on woodworking.csv) ---
   PRISMATIC_PLANKS: {
+    recipeId: 'PRISMATIC_PLANKS',
     itemId: 'PRISMATIC_PLANKS',
     baseYield: 1,
     category: 'Woodworking',
@@ -312,6 +332,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   GLITTERING_EBONY: {
+    recipeId: 'GLITTERING_EBONY',
     itemId: 'GLITTERING_EBONY',
     baseYield: 1,
     category: 'Woodworking',
@@ -326,6 +347,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   IRONWOOD_PLANKS: {
+    recipeId: 'IRONWOOD_PLANKS',
     itemId: 'IRONWOOD_PLANKS',
     baseYield: 1,
     category: 'Woodworking',
@@ -339,6 +361,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   WYRDWOOD_PLANKS: {
+    recipeId: 'WYRDWOOD_PLANKS',
     itemId: 'WYRDWOOD_PLANKS',
     baseYield: 1,
     category: 'Woodworking',
@@ -352,6 +375,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   LUMBER: {
+    recipeId: 'LUMBER',
     itemId: 'LUMBER',
     baseYield: 1,
     category: 'Woodworking',
@@ -364,6 +388,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   TIMBER: {
+    recipeId: 'TIMBER',
     itemId: 'TIMBER',
     baseYield: 1,
     category: 'Woodworking',
@@ -376,6 +401,7 @@ export const RECIPES: Record<string, Recipe> = {
   },
     // --- Stonecutting (Fixed based on stonecutting.csv) ---
   PRISMATIC_BLOCK: {
+    recipeId: 'PRISMATIC_BLOCK',
     itemId: 'PRISMATIC_BLOCK',
     baseYield: 1,
     category: 'Stonecutting',
@@ -390,6 +416,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   RUNESTONE: {
+    recipeId: 'RUNESTONE',
     itemId: 'RUNESTONE',
     baseYield: 1,
     category: 'Stonecutting',
@@ -404,6 +431,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   RUNIC_VOIDSTONE: {
+    recipeId: 'RUNIC_VOIDSTONE',
     itemId: 'RUNIC_VOIDSTONE',
     baseYield: 1,
     category: 'Stonecutting',
@@ -417,6 +445,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   OBSIDIAN_VOIDSTONE: {
+    recipeId: 'OBSIDIAN_VOIDSTONE',
     itemId: 'OBSIDIAN_VOIDSTONE',
     baseYield: 1,
     category: 'Stonecutting',
@@ -430,6 +459,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   MOLTEN_LODESTONE: {
+    recipeId: 'MOLTEN_LODESTONE',
     itemId: 'MOLTEN_LODESTONE',
     baseYield: 1,
     category: 'Stonecutting',
@@ -441,6 +471,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   LODESTONE_BRICK: {
+    recipeId: 'LODESTONE_BRICK',
     itemId: 'LODESTONE_BRICK',
     baseYield: 1,
     category: 'Stonecutting',
@@ -454,6 +485,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   STONE_BRICK: {
+    recipeId: 'STONE_BRICK',
     itemId: 'STONE_BRICK',
     baseYield: 1,
     category: 'Stonecutting',
@@ -466,6 +498,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   STONE_BLOCK: {
+    recipeId: 'STONE_BLOCK',
     itemId: 'STONE_BLOCK',
     baseYield: 1,
     category: 'Stonecutting',
@@ -477,6 +510,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   CHARGED_SAND: {
+    recipeId: 'CHARGED_SAND',
     itemId: 'CHARGED_SAND',
     baseYield: 1,
     category: 'Stonecutting',
@@ -489,6 +523,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   PRISMATIC_SCARAB: {
+    recipeId: 'PRISMATIC_SCARAB',
     itemId: 'PRISMATIC_SCARAB',
     baseYield: 1,
     category: 'Stonecutting',
@@ -502,6 +537,7 @@ export const RECIPES: Record<string, Recipe> = {
     ]
   },
   GEMSTONE_DUST: {
+    recipeId: 'GEMSTONE_DUST',
     itemId: 'GEMSTONE_DUST',
     baseYield: 1,
     category: 'Stonecutting',

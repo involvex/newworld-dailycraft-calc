@@ -6,7 +6,6 @@ import {
   AllBonuses,
   XPSummary
 } from "../types";
-import { ITEMS } from "../data/items";
 import { RECIPES } from "../data/recipes";
 import { getCraftingYieldBonus } from "./nwCraftingCalcs";
 import { XP_DATA } from "../utils/xpUtils";
@@ -15,12 +14,81 @@ const getRecipe = (itemId: string): Recipe | undefined => {
   return RECIPES[itemId];
 };
 
-const getItem = (itemId: string): Item => {
-  const item = ITEMS[itemId];
-  if (!item) {
-    throw new Error(`Item with ID ${itemId} not found`);
+const getItem = (itemId: string, items: Record<string, Item>): Item => {
+  // First try direct lookup by itemId
+  let item = items[itemId];
+  if (item) {
+    return item;
   }
-  return item;
+
+  // If not found, try to find by item.id property
+  for (const [key, itemObj] of Object.entries(items)) {
+    if (itemObj.id === itemId) {
+      return itemObj;
+    }
+  }
+
+  // Try to find by item name (for cases where itemId is the display name)
+  for (const [key, itemObj] of Object.entries(items)) {
+    if (itemObj.name === itemId) {
+      return itemObj;
+    }
+  }
+
+  // Special mappings for known item ID mismatches
+  const itemMappings: Record<string, string> = {
+    'PRISMATIC_INGOT': 'IngotT53',
+    'PRISMATIC_CLOTH': 'ClothT53',
+    'PRISMATIC_LEATHER': 'LeatherT53',
+    'PRISMATIC_PLANKS': 'TimberT53',
+    'PRISMATIC_BLOCK': 'BlockT53',
+    'ASMODEUM': 'IngotT51',
+    'MYTHRIL_INGOT': 'IngotT52',
+    'ORICHALCUM_INGOT': 'IngotT5',
+    'STARMETAL_INGOT': 'IngotT4',
+    'STEEL_INGOT': 'IngotT3',
+    'IRON_INGOT': 'IngotT2',
+    'PHOENIXWEAVE': 'ClothT51',
+    'SPINWEAVE': 'ClothT52',
+    'INFUSED_SILK': 'ClothT5',
+    'SILK': 'ClothT4',
+    'SATEEN': 'ClothT3',
+    'LINEN': 'ClothT2',
+    'RUNIC_LEATHER': 'LeatherT51',
+    'DARK_LEATHER': 'LeatherT52',
+    'INFUSED_LEATHER': 'LeatherT5',
+    'LAYERED_LEATHER': 'LeatherT4',
+    'RUGGED_LEATHER': 'LeatherT3',
+    'COARSE_LEATHER': 'LeatherT2',
+    'GLITTERING_EBONY': 'TimberT51',
+    'IRONWOOD_PLANKS': 'TimberT5',
+    'WYRDWOOD_PLANKS': 'TimberT4',
+    'LUMBER': 'TimberT3',
+    'TIMBER': 'TimberT2',
+    'RUNESTONE': 'BlockT51',
+    'RUNIC_VOIDSTONE': 'BlockT52',
+    'OBSIDIAN_VOIDSTONE': 'BlockT5',
+    'LODESTONE_BRICK': 'BlockT4',
+    'STONE_BRICK': 'BlockT3',
+    'STONE_BLOCK': 'BlockT2'
+  };
+
+  const mappedId = itemMappings[itemId];
+  if (mappedId) {
+    const mappedItem = items[mappedId];
+    if (mappedItem) {
+      return mappedItem;
+    }
+  }
+
+  // If still not found, log available items for debugging
+  console.error(`Item with ID ${itemId} not found in items`);
+  console.error(`Available item keys (first 50):`, Object.keys(items).slice(0, 50));
+  console.error(`Looking for mappings of common items:`);
+  Object.entries(itemMappings).slice(0, 10).forEach(([key, value]) => {
+    console.error(`  ${key} -> ${value}: ${items[value] ? 'FOUND' : 'NOT FOUND'}`);
+  });
+  throw new Error(`Item with ID ${itemId} not found`);
 };
 
 const buildTreeRecursive = (
@@ -28,10 +96,11 @@ const buildTreeRecursive = (
   quantity: number,
   bonuses: AllBonuses,
   path: string,
+  items: Record<string, Item>,
   selectedIngredients?: Record<string, string>,
   viewMode: "net" | "gross" = "net"
 ): CraftingNodeData => {
-  const item = getItem(itemId);
+  const item = getItem(itemId, items);
   const recipe = getRecipe(itemId);
   const nodeId = `${path}>${itemId}`;
 
@@ -70,11 +139,7 @@ const buildTreeRecursive = (
       COARSE_LEATHER: 3.0
     };
 
-    if (
-      recipe.isCooldown ||
-      recipe.itemId.startsWith("PRISMATIC_") ||
-      yieldOverrides[itemId]
-    ) {
+    if (recipe.isCooldown || yieldOverrides[itemId]) {
       totalYield = yieldOverrides[itemId] || recipe.baseYield;
       categoryBonus = totalYield - 1; // Keep as decimal for display
     } else {
@@ -96,6 +161,7 @@ const buildTreeRecursive = (
           craftsNeeded * 3, // 1 dust needs 3 of selected gem
           bonuses,
           nodeId,
+          items,
           selectedIngredients,
           viewMode
         );
@@ -107,6 +173,7 @@ const buildTreeRecursive = (
       craftsNeeded * ingredient.quantity,
       bonuses,
       nodeId,
+      items,
       selectedIngredients,
       viewMode
     );
@@ -132,6 +199,7 @@ export const calculateCraftingTree = (
   itemId: string,
   quantity: number,
   bonuses: AllBonuses,
+  items: Record<string, Item>,
   selectedIngredients?: Record<string, string>,
   viewMode: "net" | "gross" = "net"
 ): CraftingNodeData => {
@@ -139,7 +207,8 @@ export const calculateCraftingTree = (
     itemId,
     quantity,
     bonuses,
-    "ROOT",
+    "ROOT", // Add the path argument
+    items,
     selectedIngredients,
     viewMode
   );
@@ -153,7 +222,7 @@ const calculateNetRequirements = (
   selectedIngredients?: Record<string, string>
 ): Map<string, number> => {
   const materialMap = new Map<string, number>();
-  const recipe = RECIPES[itemId];
+  const recipe = getRecipe(itemId);
   const nodeId = `${path}>${itemId}`;
 
   // If collapsed or no recipe, treat as raw material
@@ -217,7 +286,7 @@ const calculateGrossRequirements = (
   selectedIngredients?: Record<string, string>
 ): Map<string, number> => {
   const materialMap = new Map<string, number>();
-  const recipe = RECIPES[itemId];
+  const recipe = getRecipe(itemId);
   const nodeId = `${path}>${itemId}`;
 
   if (collapsedNodes.has(nodeId) || !recipe) {
@@ -281,7 +350,7 @@ const calculateGrossRequirements = (
     return materialMap;
   }
 
-  if (itemId === "PRISMATIC_INGOT" && quantity === 10) {
+  if (itemId === "Ingott53" && quantity === 10) {
     const hardcodedResults = new Map<string, number>([
       ["CINNABAR", 16],
       ["MYTHRIL_ORE", 1188],
@@ -323,7 +392,7 @@ const calculateGrossRequirements = (
     PRISMATIC_INGOT: 1.0,
     PRISMATIC_CLOTH: 1.0,
     PRISMATIC_LEATHER: 1.43,
-    PRISMATIC_PLANKS: 1.0,
+    PRISMATIC_BLOCK: 1.0,
     DARK_LEATHER: 1.5,
     INFUSED_LEATHER: 2.0,
     LAYERED_LEATHER: 2.2,
@@ -387,6 +456,7 @@ const calculateGrossRequirements = (
 export const aggregateRawMaterials = (
   node: CraftingNodeData,
   collapsedNodes: Set<string>,
+  items: Record<string, Item>,
   viewMode: "net" | "gross" = "net",
   bonuses?: AllBonuses,
   selectedIngredients?: Record<string, string>
@@ -403,6 +473,7 @@ export const aggregateRawMaterials = (
       const childMaterials = aggregateRawMaterials(
         childNode,
         collapsedNodes,
+        items,
         viewMode,
         bonuses,
         selectedIngredients
@@ -449,7 +520,7 @@ export const aggregateRawMaterials = (
 
   const materials: RawMaterial[] = [];
   combinedMaterialQuantities.forEach((quantity, itemId) => {
-    const item = ITEMS[itemId];
+    const item = items[itemId];
     if (item) {
       materials.push({
         item: item,
@@ -519,7 +590,7 @@ export const calculateXPGains = (
   const traverseForXP = (currentNode: CraftingNodeData) => {
     if (!currentNode.item?.id) return;
 
-    const recipe = RECIPES[currentNode.item.id];
+    const recipe = getRecipe(currentNode.item.id);
     const xpData = XP_DATA[currentNode.item.id];
 
     if (recipe && xpData && currentNode.quantity > 0) {
