@@ -13,7 +13,7 @@ import SummaryList from "./components/SummaryList";
 import XPSummaryList from "./components/XPSummaryList";
 import ContextMenu from "./components/ContextMenu";
 import { SettingsModal } from "./components/SettingsModal";
-import { TradeskillCalculator } from "./components/TradeskillCalculator";
+import { TradeskillCalculatorV2 } from "./components/TradeskillCalculatorV2";
 import {
   Item,
   AllBonuses,
@@ -1041,7 +1041,7 @@ const App: React.FC = () => {
             </div>
           </div> */}
           {/* Presets Section */}
-          <div id="presets-section" className="glass-card p-6 mb-6">
+          <div id="presets-section" className="p-6 mb-6 glass-card">
             <h3
               className="flex items-center mb-4 text-xl font-bold"
               style={{ color: "var(--accent-primary)" }}
@@ -1112,7 +1112,7 @@ const App: React.FC = () => {
           <div id="selection-section" className="mb-6">
             <div className="grid items-start grid-cols-1 gap-6 lg:grid-cols-4">
               {/* Left Side: Item Selection */}
-              <div className="glass-card p-6 lg:col-span-3">
+              <div className="p-6 glass-card lg:col-span-3">
                 <h3
                   className="flex items-center mb-4 text-xl font-bold"
                   style={{ color: "var(--accent-primary)" }}
@@ -1177,7 +1177,7 @@ const App: React.FC = () => {
               </div>
 
               {/* Right Side: Quantity and Controls */}
-              <div className="glass-card p-6">
+              <div className="p-6 glass-card">
                 <h3
                   className="flex items-center mb-4 text-xl font-bold"
                   style={{ color: "var(--accent-primary)" }}
@@ -1324,7 +1324,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Inventory Tools */}
-          <div id="inventory-section" className="glass-card p-6 mb-6">
+          <div id="inventory-section" className="p-6 mb-6 glass-card">
             <h3
               className="flex items-center mb-4 text-xl font-bold"
               style={{ color: "var(--accent-primary)" }}
@@ -1448,7 +1448,7 @@ const App: React.FC = () => {
 
           {craftingData && (
             <div id="crafting-section" className="mb-6">
-              <div className="glass-card p-6">
+              <div className="p-6 glass-card">
                 <div className="flex items-center justify-between mb-4">
                   <h2
                     className="flex items-center text-2xl font-bold"
@@ -1507,7 +1507,7 @@ const App: React.FC = () => {
 
           {summaryData && (summaryData.materials || summaryData.xpGains) && (
             <div id="summary-section" className="mb-6">
-              <div className="glass-card p-6">
+              <div className="p-6 glass-card">
                 <h2
                   className="flex items-center mb-4 text-2xl font-bold"
                   style={{ color: "var(--accent-primary)" }}
@@ -1550,7 +1550,7 @@ const App: React.FC = () => {
 
           {/* Tradeskill Calculator Section */}
           <div id="tradeskill-section" className="mb-6">
-            <div className="glass-card p-6">
+            <div className="p-6 glass-card">
               <h2
                 className="flex items-center mb-4 text-2xl font-bold"
                 style={{ color: "var(--accent-primary)" }}
@@ -1562,16 +1562,18 @@ const App: React.FC = () => {
                 className="mb-4 text-sm"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Calculate gear score, XP gains, perk chances, and material costs
-                for crafting items. Click the ⭐ to mark recipes as favorites.
+                Comprehensive tradeskill system with recipe search, bulk
+                calculator, cost optimizer, leveling guide, crafting goals,
+                shopping lists, profit analysis, and AI recommendations.
               </p>
-              <TradeskillCalculator
+              <TradeskillCalculatorV2
                 recipes={_recipes}
                 items={items}
                 bonuses={bonuses}
                 priceData={priceData}
                 favoriteRecipes={favoriteRecipes}
                 onToggleFavorite={toggleFavoriteRecipe}
+                inventory={inventory}
               />
             </div>
           </div>

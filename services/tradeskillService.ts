@@ -235,3 +235,108 @@ export function checkAlternativeMaterials(
 
   return alternatives;
 }
+
+/**
+ * Calculate XP needed to reach target level from current level
+ * Based on New World's XP curve
+ */
+export function calculateXPToLevel(
+  currentLevel: number,
+  targetLevel: number
+): number {
+  if (currentLevel >= targetLevel) return 0;
+
+  // Simplified XP curve for New World crafting
+  // Real curve is more complex, but this approximation works well
+  let totalXP = 0;
+  for (let level = currentLevel + 1; level <= targetLevel; level++) {
+    // XP per level increases as you level up
+    const xpForLevel = Math.floor(100 + level * 50 + Math.pow(level, 2) * 2);
+    totalXP += xpForLevel;
+  }
+
+  return totalXP;
+}
+
+/**
+ * Find the cheapest alternative materials for a recipe
+ */
+export function findCheapestAlternative(
+  calculation: CraftingCalculation,
+  priceData: Record<string, { price: number }>,
+  items: Record<string, Item>
+): number {
+  let cheapestCost = calculation.cost;
+
+  calculation.requiredMaterials.forEach(mat => {
+    const alternatives = checkAlternativeMaterials(mat.itemId, items);
+    const currentPrice = priceData[mat.itemId]?.price || 0;
+
+    // Find cheapest alternative
+    let bestPrice = currentPrice;
+    alternatives.forEach(altId => {
+      const altPrice = priceData[altId]?.price || 0;
+      if (altPrice > 0 && altPrice < bestPrice) {
+        bestPrice = altPrice;
+      }
+    });
+
+    // Calculate savings
+    if (bestPrice < currentPrice) {
+      cheapestCost -= (currentPrice - bestPrice) * mat.quantity;
+    }
+  });
+
+  return Math.max(0, cheapestCost);
+}
+
+/**
+ * Calculate profit for a crafted item
+ */
+export function calculateProfit(
+  calculation: CraftingCalculation,
+  priceData: Record<string, { price: number }>,
+  itemId: string
+): number {
+  const sellPrice = priceData[itemId]?.price || 0;
+  return sellPrice;
+}
+
+/**
+ * Recommend best recipes based on skill, inventory, and efficiency
+ */
+export function recommendRecipes(
+  calculations: CraftingCalculation[],
+  _bonuses: Record<string, any>,
+  inventory: Record<string, number>,
+  _items: Record<string, Item>,
+  _recipes: Record<string, any>
+): CraftingCalculation[] {
+  // Score each recipe based on multiple factors
+  const scored = calculations.map(calc => {
+    let score = 0;
+
+    // Factor 1: Cost efficiency (XP per gold)
+    const efficiency = (calc.tradeskillXP || 1) / (calc.cost || 1);
+    score += efficiency * 100;
+
+    // Factor 2: Materials in inventory
+    const materialsInInventory = calc.requiredMaterials.filter(
+      mat => (inventory[mat.itemId] || 0) >= mat.quantity
+    ).length;
+    const inventoryRatio = materialsInInventory / calc.requiredMaterials.length;
+    score += inventoryRatio * 50;
+
+    // Factor 3: XP reward
+    score += (calc.tradeskillXP || 0) / 100;
+
+    // Factor 4: Gear score potential
+    const avgGS = (calc.minGearScore + calc.maxGearScore) / 2;
+    score += avgGS / 50;
+
+    return { ...calc, score };
+  });
+
+  // Sort by score and return top 12
+  return scored.sort((a, b) => b.score - a.score).slice(0, 12);
+}
