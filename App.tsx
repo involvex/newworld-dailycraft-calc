@@ -1164,30 +1164,33 @@ const App: React.FC = () => {
                   ))}
                 </select>
 
-                {/* Selected Item Preview */}
-                {selectedItemId && items[selectedItemId] && (
-                  <div className="p-4 mt-4 border rounded-lg bg-gradient-to-br from-gray-700/50 to-gray-800/50 border-yellow-900/30">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={getIconUrl(selectedItemId)}
-                        alt={items[selectedItemId].name}
-                        className="w-16 h-16 rounded-lg shadow-lg ring-2 ring-yellow-500/30"
-                        onError={e => {
-                          (e.target as HTMLImageElement).src =
-                            "https://nwdb.info/images/db/icons/filters/itemtypes/all.png";
-                        }}
-                      />
-                      <div className="flex-1">
-                        <h4 className="mb-1 text-lg font-bold text-yellow-400">
-                          {items[selectedItemId].name}
-                        </h4>
-                        <p className="text-xs text-gray-400">
-                          Crafting quantity: {quantity.toLocaleString()}
-                        </p>
+                {/* Selected Item Preview - Only show when item has loaded with valid name */}
+                {selectedItemId &&
+                  items[selectedItemId] &&
+                  items[selectedItemId].name &&
+                  !items[selectedItemId].name.startsWith("@") && (
+                    <div className="p-4 mt-4 border rounded-lg bg-gradient-to-br from-gray-700/50 to-gray-800/50 border-yellow-900/30">
+                      <div className="flex items-center gap-4">
+                        <img
+                          src={getIconUrl(selectedItemId)}
+                          alt={items[selectedItemId].name}
+                          className="w-16 h-16 rounded-lg shadow-lg ring-2 ring-yellow-500/30"
+                          onError={e => {
+                            (e.target as HTMLImageElement).src =
+                              "https://nwdb.info/images/db/icons/filters/itemtypes/all.png";
+                          }}
+                        />
+                        <div className="flex-1">
+                          <h4 className="mb-1 text-lg font-bold text-yellow-400">
+                            {items[selectedItemId].name}
+                          </h4>
+                          <p className="text-xs text-gray-400">
+                            Crafting quantity: {quantity.toLocaleString()}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {multiItems.length > 0 && (
                   <div className="p-4 mt-4 border rounded-lg bg-gray-700/50 border-yellow-900/30">
@@ -1248,13 +1251,22 @@ const App: React.FC = () => {
                 <div className="flex-1 space-y-2">
                   <button
                     onClick={() => setShowSettings(true)}
-                    className="w-full px-4 py-3 text-sm font-medium transition-all duration-200 bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-lg"
+                    className="w-full px-4 py-3 text-sm font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                    }}
                   >
                     ⚙️ Settings
                   </button>
                   <button
                     onClick={() => setShowAbout(true)}
-                    className="w-full px-4 py-3 text-sm font-medium transition-all duration-200 bg-gray-600 rounded-lg hover:bg-gray-700 hover:shadow-lg"
+                    className="w-full px-4 py-3 text-sm font-semibold transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                    style={{
+                      background: "var(--bg-tertiary)",
+                      color: "var(--text-primary)",
+                      border: "1px solid var(--border-color)"
+                    }}
                   >
                     ℹ️ About
                   </button>
@@ -1379,11 +1391,16 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2">
               <button
                 onClick={captureAndProcessScreenshot}
-                className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center ${
+                className={`px-4 py-3 rounded-lg text-sm font-semibold text-white transition-all duration-200 flex items-center justify-center hover:scale-105 ${
                   isProcessingOCR
-                    ? "bg-yellow-600 text-white cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg"
+                    ? "cursor-not-allowed opacity-70"
+                    : "hover:shadow-xl"
                 }`}
+                style={{
+                  background: isProcessingOCR
+                    ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                    : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
+                }}
                 disabled={isProcessingOCR}
               >
                 {isProcessingOCR ? (
@@ -1400,7 +1417,11 @@ const App: React.FC = () => {
               </button>
               <button
                 onClick={() => setShowManualEntry(true)}
-                className="flex items-center justify-center px-4 py-3 text-sm font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg hover:bg-purple-700 hover:shadow-lg"
+                className="flex items-center justify-center px-4 py-3 text-sm font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
+                }}
               >
                 <span className="mr-2">✏️</span>
                 Manual Entry
@@ -1409,15 +1430,17 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2">
               <button
                 onClick={processClipboardImage}
-                style={{ marginBottom: "10px" }}
-                className="flex items-center justify-center px-12 py-3 text-sm font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg hover:bg-purple-700 hover:shadow-lg"
+                className="flex items-center justify-center px-4 py-3 text-sm font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)"
+                }}
               >
-                {" "}
-                <span className="mr-2">📸</span>
-                Use Image from Clipboard
+                <span className="mr-2">📋</span>
+                Use Clipboard Image
               </button>
               {/* Manual File Selection and Upload */}
-              <div className="flex content-center mb-3 text-center text-white transition-all duration-200 bg-purple-800 rounded-lg hover:bg-purple-700 hover:shadow-lg">
+              <div>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -1428,7 +1451,11 @@ const App: React.FC = () => {
                 />
                 <button
                   onClick={handleFileButtonClick}
-                  className="w-full px-4 py-3 text-sm font-medium text-white transition-all duration-200 bg-purple-800 rounded-lg hover:bg-purple-700 hover:shadow-lg"
+                  className="w-full px-4 py-3 text-sm font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                  }}
                 >
                   <span className="mr-2">📁</span>
                   Upload Image
@@ -1501,7 +1528,7 @@ const App: React.FC = () => {
                     <span className="mr-2">🌳</span>
                     Crafting Tree
                   </h2>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => {
                         setShowPrices(!showPrices);
@@ -1510,24 +1537,33 @@ const App: React.FC = () => {
                           JSON.stringify(!showPrices)
                         );
                       }}
-                      className={`px-3 py-2 text-xs font-medium text-white transition-all duration-200 rounded-lg hover:shadow-lg ${
-                        showPrices
-                          ? "bg-yellow-600 hover:bg-yellow-700"
-                          : "bg-green-900 hover:bg-green-700"
-                      }`}
+                      className="px-3 py-2 text-xs font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                      style={{
+                        background: showPrices
+                          ? "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)"
+                          : "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                      }}
                       title={`${showPrices ? "Hide" : "Show"} item prices`}
                     >
                       💰 {showPrices ? "Hide Prices" : "Display Prices"}
                     </button>
                     <button
                       onClick={() => handleExpandAll(craftingData)}
-                      className="px-3 py-2 text-xs font-medium text-white transition-all duration-200 bg-green-600 rounded-lg hover:bg-green-700 hover:shadow-lg"
+                      className="px-3 py-2 text-xs font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
+                      }}
                     >
                       📖 Expand All
                     </button>
                     <button
                       onClick={() => handleCollapseAll(craftingData)}
-                      className="px-3 py-2 text-xs font-medium text-white transition-all duration-200 bg-orange-600 rounded-lg hover:bg-orange-700 hover:shadow-lg"
+                      className="px-3 py-2 text-xs font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #f97316 0%, #ea580c 100%)"
+                      }}
                     >
                       📕 Collapse All
                     </button>
@@ -2041,64 +2077,153 @@ const App: React.FC = () => {
           )}
 
           {/* Footer */}
-          <footer className="py-8 mt-12 text-center border bg-gray-800/50 border-blue-500/20 rounded-xl">
-            <div className="mb-4">
-              <img
-                alt="New World Crafting Calculator"
-                className="w-auto h-16 mx-auto mb-3 opacity-80"
-                src="logo.png"
-              />
-            </div>
-            <div className="space-y-2 text-gray-400">
-              <p className="text-sm font-medium">
-                Created with ❤️ by{" "}
-                <span className="text-yellow-400">Involvex</span>
-              </p>
-              <p className="text-xs">
-                Game data sourced from{" "}
-                <a
-                  href="https://nw-buddy.de"
-                  className="text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
-                  target="_blank"
-                  rel="noopener noreferrer"
+          <footer className="relative py-10 mt-12 overflow-hidden glass-card">
+            {/* Decorative gradient overlay */}
+            <div
+              className="absolute inset-0 opacity-20"
+              style={{
+                background:
+                  "radial-gradient(circle at 50% 0%, var(--accent-primary) 0%, transparent 70%)"
+              }}
+            ></div>
+
+            <div className="relative z-10">
+              <div className="flex flex-col items-center mb-6">
+                <img
+                  alt="New World Crafting Calculator"
+                  className="w-auto h-20 mx-auto mb-3 transition-transform duration-300 hover:scale-110"
+                  src="logo.png"
+                  style={{
+                    filter: "drop-shadow(0 0 8px var(--accent-primary))"
+                  }}
+                />
+                <h3
+                  className="text-lg font-bold"
+                  style={{ color: "var(--accent-primary)" }}
                 >
-                  nw-buddy.de
-                </a>
-              </p>
-              <p className="text-xs text-gray-500">
-                New World Crafting Calculator v{APP_VERSION} • Open Source
-              </p>
-              <div className="pt-2 mt-3 border-t border-gray-600/30">
-                <p className="mb-1 text-xs text-gray-400">
-                  💝 Like this project?
+                  New World Crafting Calculator
+                </h3>
+                <p className="text-sm text-gray-400">
+                  v{APP_VERSION} • Complete Tradeskill Management
                 </p>
-                <a
-                  href="https://paypal.me/involvex"
-                  className="text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  PayPal 💰
-                </a>
+              </div>
 
-                <a
-                  href="https://buymeacoffee.com/involvex"
-                  className="text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Buymeacoffee ☕
-                </a>
+              <div className="max-w-3xl mx-auto mb-6">
+                <div className="grid grid-cols-1 gap-6 text-center md:grid-cols-3">
+                  {/* Creator */}
+                  <div className="p-4 rounded-lg bg-gray-800/30">
+                    <p className="mb-1 text-xs font-semibold text-gray-400 uppercase">
+                      Created By
+                    </p>
+                    <p className="text-lg font-bold text-yellow-400">
+                      Involvex
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      With ❤️ for the community
+                    </p>
+                  </div>
 
+                  {/* Data Source */}
+                  <div className="p-4 rounded-lg bg-gray-800/30">
+                    <p className="mb-1 text-xs font-semibold text-gray-400 uppercase">
+                      Data Source
+                    </p>
+                    <a
+                      href="https://nw-buddy.de"
+                      className="block text-lg font-bold transition-colors hover:text-blue-300"
+                      style={{ color: "var(--accent-secondary)" }}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      nw-buddy.de
+                    </a>
+                    <p className="text-xs text-gray-500">Real-time game data</p>
+                  </div>
+
+                  {/* License */}
+                  <div className="p-4 rounded-lg bg-gray-800/30">
+                    <p className="mb-1 text-xs font-semibold text-gray-400 uppercase">
+                      License
+                    </p>
+                    <p className="text-lg font-bold text-green-400">MIT</p>
+                    <p className="text-xs text-gray-500">Open Source Project</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Support Links */}
+              <div
+                className="pt-4 pb-4 mb-4 border-t"
+                style={{ borderColor: "var(--border-color)" }}
+              >
+                <p className="mb-3 text-sm font-medium text-center text-gray-300">
+                  💝 Support Development
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <a
+                    href="https://paypal.me/involvex"
+                    className="px-4 py-2 text-xs font-semibold text-white transition-all duration-200 bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-lg hover:scale-105"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    💰 PayPal
+                  </a>
+                  <a
+                    href="https://buymeacoffee.com/involvex"
+                    className="px-4 py-2 text-xs font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-lg hover:scale-105"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #FFDD00 0%, #FF6F00 100%)"
+                    }}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    ☕ Buy Me a Coffee
+                  </a>
+                  <a
+                    href="https://github.com/sponsors/involvex"
+                    className="px-4 py-2 text-xs font-semibold text-white transition-all duration-200 bg-purple-600 rounded-lg hover:bg-purple-700 hover:shadow-lg hover:scale-105"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    💖 GitHub Sponsors
+                  </a>
+                </div>
+              </div>
+
+              {/* Bottom Links */}
+              <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-gray-500">
                 <a
-                  href="https://github.com/sponsors/involvex"
-                  className="text-xs text-blue-400 underline transition-all hover:text-blue-300 decoration-dotted hover:decoration-solid"
+                  href="https://github.com/involvex/newworld-dailycraft-calc"
+                  className="transition-colors hover:text-gray-300"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Github Sponsors 💰
+                  📖 Documentation
+                </a>
+                <span>•</span>
+                <a
+                  href="https://github.com/involvex/newworld-dailycraft-calc/issues"
+                  className="transition-colors hover:text-gray-300"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  🐛 Report Issues
+                </a>
+                <span>•</span>
+                <a
+                  href="https://github.com/involvex/newworld-dailycraft-calc/blob/main/LICENSE"
+                  className="transition-colors hover:text-gray-300"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  📜 MIT License
                 </a>
               </div>
+
+              <p className="mt-4 text-xs text-center text-gray-600">
+                © 2025 Involvex • Made for the New World Community
+              </p>
             </div>
           </footer>
         </div>
