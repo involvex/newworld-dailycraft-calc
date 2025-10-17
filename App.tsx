@@ -218,7 +218,11 @@ const App: React.FC = () => {
     setQuantity,
     restoreCollapsedNodes: treeRestoreCollapsedNodes,
     selectedPreset, // Pass selectedPreset from App.tsx
-    setSelectedPreset // Pass setSelectedPreset from App.tsx
+    setSelectedPreset, // Pass setSelectedPreset from App.tsx
+    items: isDataLoading ? {} : items, // Pass items for tree calculations
+    bonuses, // Pass bonuses for tree calculations
+    selectedIngredients, // Pass selectedIngredients for tree calculations
+    viewMode // Pass viewMode for tree calculations
   });
 
   const [quickNoteContent, setQuickNoteContent] = useState("");
@@ -282,9 +286,15 @@ const App: React.FC = () => {
       if (itemId === "GEMSTONE_DUST") {
         return "https://cdn.nwdb.info/db/images/live/v55/icons/items/consumable/gemstonedustt5.png";
       }
-      const iconId =
-        items[itemId]?.iconId || itemId.toLowerCase().replace(/_/g, "");
-      return `https://cdn.nwdb.info/db/images/live/v55/icons/items/resource/${iconId}.png`;
+
+      // Extract just the filename from iconId if it contains path information
+      const rawIconId = items[itemId]?.iconId || itemId.toLowerCase().replace(/_/g, "");
+      const iconFileName = rawIconId.split('/').pop() || rawIconId;
+
+      // Remove any existing extension (.webp, .png, etc.) and add .png
+      const baseFileName = iconFileName.replace(/\.[^/.]+$/, "");
+
+      return `https://cdn.nwdb.info/db/images/live/v55/icons/items/resource/${baseFileName}.png`;
     },
     [items]
   );
@@ -1518,9 +1528,10 @@ const App: React.FC = () => {
           </div>
 
           {craftingData &&
-            selectedItemId &&
-            items[selectedItemId]?.name &&
-            !items[selectedItemId].name.startsWith("@") && (
+            ((selectedItemId &&
+              items[selectedItemId]?.name &&
+              !items[selectedItemId].name.startsWith("@")) ||
+             (multiItems.length > 0)) && (
               <div id="crafting-section" className="mb-6">
                 <div className="p-6 glass-card">
                   <div className="flex items-center justify-between mb-4">

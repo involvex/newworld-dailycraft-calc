@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   readClipboardImage: () => ipcRenderer.invoke("read-clipboard-image"),
   isDev: () => ipcRenderer.invoke("get-is-dev"),
   getDesktopSources: () => ipcRenderer.invoke("get-desktop-sources"),
+  closeApp: () => ipcRenderer.invoke("app-exit"),
   onTriggerOCR: callback => {
     ipcRenderer.on("trigger-ocr", callback);
     // Return cleanup function

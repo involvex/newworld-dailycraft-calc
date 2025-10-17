@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Preset } from "../types";
+import { collectAllNodeIds, findNodeById, collectSubtreeNodeIds } from "../utils/treeUtils";
+import { RECIPES } from "../data/recipes";
 
 interface UsePresetsProps {
   _multiItems: any[];
@@ -12,6 +14,11 @@ interface UsePresetsProps {
   restoreCollapsedNodes: (nodes: string[] | Set<string>) => void;
   selectedPreset: string; // Add selectedPreset to props
   setSelectedPreset: (presetName: string) => void; // Add setSelectedPreset to props
+  // Add tree-related props for enhanced preset functionality
+  items?: Record<string, any>;
+  bonuses?: any;
+  selectedIngredients?: Record<string, string>;
+  viewMode?: string;
 }
 
 const PRESETS: Preset[] = [
@@ -54,7 +61,11 @@ export default function usePresets({
   setQuantity,
   restoreCollapsedNodes,
   selectedPreset, // Destructure from props
-  setSelectedPreset // Destructure from props
+  setSelectedPreset, // Destructure from props
+  items = {},
+  bonuses = {},
+  selectedIngredients = {},
+  viewMode = "net"
 }: UsePresetsProps) {
   const [customPresets, setCustomPresets] = useState<Preset[]>(() =>
     getInitial("customPresets", [])
@@ -62,6 +73,41 @@ export default function usePresets({
   const [showCreatePreset, setShowCreatePreset] = useState(false);
   const [presetName, setPresetName] = useState("");
   // selectedPreset state is now managed in App.tsx
+
+  // Helper function to calculate intelligent tree expansion for presets
+  const calculateIntelligentTreeExpansion = (presetItems: { id: string; qty: number }[]): string[] => {
+    if (!items || Object.keys(items).length === 0) {
+      return []; // No items data available yet
+    }
+
+    const expandedNodes = new Set<string>();
+
+    // For each item in the preset, calculate what should be expanded
+    for (const item of presetItems) {
+      if (items[item.id]) {
+        // Always expand the root item
+        expandedNodes.add(item.id);
+
+        // Try to get recipe information to determine first level of ingredients
+        try {
+          const recipe = RECIPES[item.id];
+          if (recipe && recipe.ingredients) {
+            // Expand first level ingredients for better UX
+            for (const ingredient of recipe.ingredients) {
+              if (ingredient.itemId && items[ingredient.itemId]) {
+                expandedNodes.add(ingredient.itemId);
+              }
+            }
+          }
+        } catch (error) {
+          // Silently handle errors - tree calculation might not be available yet
+          console.warn("Could not calculate tree expansion for preset:", error);
+        }
+      }
+    }
+
+    return Array.from(expandedNodes);
+  };
 
   // Select a preset and restore state
   const handlePresetSelect = (presetName: string) => {
@@ -85,14 +131,17 @@ export default function usePresets({
           setQuantity(preset.items[0]?.qty || 10);
         }
 
-        // Restore collapsedNodes if present in the preset
+        // Enhanced tree state management using tree utilities
         if (
           Object.prototype.hasOwnProperty.call(preset, "collapsedNodes") &&
           Array.isArray(preset.collapsedNodes)
         ) {
+          // Use saved collapsed nodes from preset
           restoreCollapsedNodes(preset.collapsedNodes);
         } else {
-          restoreCollapsedNodes([]);
+          // Use intelligent tree expansion for better UX
+          const intelligentExpansion = calculateIntelligentTreeExpansion(preset.items);
+          restoreCollapsedNodes(intelligentExpansion);
         }
         localStorage.setItem(
           "multiItems",
