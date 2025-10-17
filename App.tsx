@@ -150,6 +150,8 @@ const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string>("");
   const [showToast, setShowToast] = useState<boolean>(false);
   const [showQuickNote, setShowQuickNote] = useState<boolean>(false);
+  const [showAddItemToPreset, setShowAddItemToPreset] = useState<boolean>(false);
+  const [presetToAddTo, setPresetToAddTo] = useState<string>("");
 
   // Toast notification helper
   const showToastMessage = (message: string) => {
@@ -1148,31 +1150,49 @@ const App: React.FC = () => {
                     </button>
                   )}
                 </div>
-                <select
-                  value={selectedItemId}
-                  onChange={e => {
-                    setSelectedItemId(e.target.value);
-                    setMultiItems([]); // Clear multi-items when a single item is selected
-                  }}
-                  className="w-full px-4 py-3 text-white transition-all bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                  style={{
-                    backgroundImage: selectedItemId
-                      ? `url(${getIconUrl(selectedItemId)})`
-                      : "none",
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "8px center",
-                    backgroundSize: "24px 24px",
-                    paddingLeft: selectedItemId ? "40px" : "16px"
-                  }}
-                  aria-label="Select item"
-                >
-                  <option value="">📦 Select an item to craft...</option>
-                  {filteredCraftableItems.map((item: Item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={selectedItemId}
+                    onChange={e => {
+                      setSelectedItemId(e.target.value);
+                      setMultiItems([]); // Clear multi-items when a single item is selected
+                    }}
+                    className="w-full px-4 py-3 text-white transition-all bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    style={{
+                      backgroundImage: selectedItemId
+                        ? `url(${getIconUrl(selectedItemId)})`
+                        : "none",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "8px center",
+                      backgroundSize: "24px 24px",
+                      paddingLeft: selectedItemId ? "40px" : "16px"
+                    }}
+                    aria-label="Select item"
+                  >
+                    <option value="">📦 Select an item to craft...</option>
+                    {filteredCraftableItems.map((item: Item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Add to Preset button - shows when an item is selected */}
+                  {selectedItemId && (
+                    <button
+                      onClick={() => setShowAddItemToPreset(true)}
+                      className="absolute px-2 py-1 text-xs text-white transition-all duration-200 transform -translate-y-1/2 bg-blue-600 rounded hover:bg-blue-700 right-2 top-1/2"
+                      title="Add this item to a preset"
+                      style={{
+                        fontSize: '10px',
+                        padding: '2px 6px',
+                        minWidth: 'auto'
+                      }}
+                    >
+                      ➕
+                    </button>
+                  )}
+                </div>
 
                 {/* Selected Item Preview - Only show when item has loaded with valid name */}
                 {selectedItemId &&
@@ -1874,6 +1894,126 @@ const App: React.FC = () => {
                       setOCREditText("");
                     }}
                     className="flex-1 px-4 py-2 font-bold text-white bg-gray-600 rounded hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Add Item to Preset Modal */}
+          {showAddItemToPreset && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-xl">
+                <h2 className="mb-4 text-2xl font-bold text-yellow-300">
+                  ➕ Add Item to Preset
+                </h2>
+
+                {/* Show current item being added */}
+                <div className="p-3 mb-4 border border-gray-600 rounded bg-gray-700/50">
+                  <div className="mb-2 text-sm font-medium text-yellow-400">Item to Add:</div>
+                  {selectedItemId && (
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <img
+                        src={getIconUrl(selectedItemId)}
+                        alt={items[selectedItemId]?.name}
+                        className="w-6 h-6"
+                        onError={e => {
+                          (e.target as HTMLImageElement).src =
+                            "https://nwdb.info/images/db/icons/filters/itemtypes/all.png";
+                        }}
+                      />
+                      {quantity}x {items[selectedItemId]?.name || selectedItemId}
+                    </div>
+                  )}
+                </div>
+
+                <select
+                  value={presetToAddTo}
+                  onChange={e => setPresetToAddTo(e.target.value)}
+                  className="w-full px-3 py-2 mb-4 text-white transition-all bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  aria-label="Select preset to add item to"
+                >
+                  <option value="">Select a preset...</option>
+                  {PRESETS.map((preset: any) => (
+                    <option key={preset.name} value={preset.name}>
+                      {preset.name} ({preset.items.length} items)
+                    </option>
+                  ))}
+                  {customPresets.map((preset: any) => (
+                    <option key={preset.name} value={preset.name}>
+                      {preset.name} ({preset.items.length} items)
+                    </option>
+                  ))}
+                </select>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (presetToAddTo && selectedItemId) {
+                        // Add single item to preset
+                        const allPresets = [...PRESETS, ...customPresets];
+                        const presetIndex = allPresets.findIndex(p => p.name === presetToAddTo);
+
+                        if (presetIndex !== -1) {
+                          const existingPreset = allPresets[presetIndex];
+                          const itemToAdd = { id: selectedItemId, qty: quantity };
+
+                          // Check for duplicates
+                          const duplicateItem = existingPreset.items.find(item => item.id === selectedItemId);
+
+                          if (duplicateItem) {
+                            const confirmAdd = confirm(
+                              `"${items[selectedItemId]?.name || selectedItemId}" already exists in "${presetToAddTo}". Do you want to add it anyway?`
+                            );
+                            if (!confirmAdd) {
+                              setPresetToAddTo("");
+                              setShowAddItemToPreset(false);
+                              return;
+                            }
+                          }
+
+                          // Add item to preset
+                          const updatedItems = [...existingPreset.items, itemToAdd];
+                          const updatedPreset = {
+                            ...existingPreset,
+                            items: updatedItems,
+                            collapsedNodes: [...collapsedNodes]
+                          };
+
+                          // Update presets array
+                          let updatedPresets;
+                          if (presetIndex < PRESETS.length) {
+                            // Update built-in preset (create custom copy)
+                            const customCopy = { ...updatedPreset };
+                            updatedPresets = [...customPresets, customCopy];
+                          } else {
+                            // Update custom preset
+                            updatedPresets = [...customPresets];
+                            updatedPresets[presetIndex - PRESETS.length] = updatedPreset;
+                          }
+
+                          setCustomPresets(updatedPresets);
+                          localStorage.setItem("customPresets", JSON.stringify(updatedPresets));
+                          showToastMessage(`Item added to preset "${presetToAddTo}" successfully!`);
+                        }
+
+                        setPresetToAddTo("");
+                        setShowAddItemToPreset(false);
+                      }
+                    }}
+                    className="flex-1 px-4 py-2 font-bold text-white transition-all duration-200 bg-green-600 rounded hover:bg-green-700"
+                    disabled={!presetToAddTo || !selectedItemId}
+                  >
+                    ✅ Add to Preset
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPresetToAddTo("");
+                      setShowAddItemToPreset(false);
+                    }}
+                    className="flex-1 px-4 py-2 font-bold text-white transition-all duration-200 bg-gray-600 rounded hover:bg-gray-700"
                   >
                     Cancel
                   </button>
