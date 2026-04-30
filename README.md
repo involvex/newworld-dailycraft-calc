@@ -154,12 +154,14 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 ### 🎯 Critical Updates (Coming Soon)
 
 #### **Gear Score 800 Support**
+
 - Update maximum gear score from 700 → 800
 - Adjust all tradeskill calculations for new cap
 - Visual tier indicators for 780-800 legendary items
 - Enhanced gear score progression tracking
 
 #### **Umbral Shard Calculator** ⭐ Priority Feature
+
 - Calculate shard costs for 500 → 800 GS upgrades
 - Weekly upgrade limit planner (5 for 800 GS, 10 for 790 GS, 15 for 780 GS)
 - Shard accumulation tracker (new cap: 4,000 shards)
@@ -167,6 +169,7 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 - Alert system for approaching upgrade limits
 
 #### **Level 70 Cap Integration**
+
 - Support for new character level cap (65 → 70)
 - Updated XP calculations for levels 65-70
 - Attribute point calculator for max level characters
@@ -175,6 +178,7 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 ### 🔥 New Systems (High Priority)
 
 #### **Set Bonus Planner** ⭐ Unique Feature
+
 - Interactive gear set builder with visual preview
 - Mix & match optimizer (find best 2-piece + 3-piece combinations)
 - Active bonus tracking showing what's enabled
@@ -183,6 +187,7 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 - Set recommendations based on playstyle
 
 #### **Perk Charm Socket Planner** ⭐ New S10 System
+
 - 4 socket slots per item (Offensive, Defensive, Skill x2)
 - Comprehensive perk charm database with all effects
 - Socket optimizer based on build type (DPS, Tank, Healer, Hybrid)
@@ -191,6 +196,7 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 - Visual socket preview showing all active perks
 
 #### **Attribute System Overhaul**
+
 - New simplified attribute calculator matching S10 changes
 - Loadout manager - save/load complete attribute setups
 - Preset templates: Tank, DPS, Mage, Healer, Hybrid builds
@@ -201,12 +207,14 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 ### 💎 Content Features
 
 #### **Catacombs Preparation Planner**
+
 - Recommended gear sets for 3-player procedural dungeons
 - Consumables calculator for extended runs
 - Boss encounter preparation checklists
 - Loot table tracker and drop rates
 
 #### **Isle of Night Raid Planner**
+
 - 10-player raid material aggregator
 - Role assignment tool (2 tanks, 2 healers, 6 DPS)
 - Company raid shopping list merger
@@ -216,6 +224,7 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 ### 🚀 Quality of Life
 
 #### **Build Import/Export**
+
 - Export complete builds as shareable codes
 - Import builds from nwdb.info links
 - Community build library with tags (PvP, PvE, Solo, Group)
@@ -223,6 +232,7 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 - One-click build sharing
 
 #### **Material Upgrade Path Visualizer**
+
 - Interactive flowchart showing T1 → T5 progression
 - Visual representation of crafting dependencies
 - "How to get X" reverse lookup
@@ -230,6 +240,7 @@ The **New World Crafting Calculator** is the most comprehensive crafting tool fo
 - Alternative path suggestions
 
 #### **Enhanced Mobile Support**
+
 - Mobile-optimized responsive layout
 - Quick lookup mode for on-the-go checking
 - Touch-friendly interface improvements

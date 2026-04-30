@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Preset } from "../types";
-import { collectAllNodeIds, findNodeById, collectSubtreeNodeIds } from "../utils/treeUtils";
+import {
+  collectAllNodeIds,
+  findNodeById,
+  collectSubtreeNodeIds
+} from "../utils/treeUtils";
 import { RECIPES } from "../data/recipes";
 
 interface UsePresetsProps {
@@ -75,7 +79,9 @@ export default function usePresets({
   // selectedPreset state is now managed in App.tsx
 
   // Helper function to calculate intelligent tree expansion for presets
-  const calculateIntelligentTreeExpansion = (presetItems: { id: string; qty: number }[]): string[] => {
+  const calculateIntelligentTreeExpansion = (
+    presetItems: { id: string; qty: number }[]
+  ): string[] => {
     if (!items || Object.keys(items).length === 0) {
       return []; // No items data available yet
     }
@@ -140,7 +146,9 @@ export default function usePresets({
           restoreCollapsedNodes(preset.collapsedNodes);
         } else {
           // Use intelligent tree expansion for better UX
-          const intelligentExpansion = calculateIntelligentTreeExpansion(preset.items);
+          const intelligentExpansion = calculateIntelligentTreeExpansion(
+            preset.items
+          );
           restoreCollapsedNodes(intelligentExpansion);
         }
         localStorage.setItem(

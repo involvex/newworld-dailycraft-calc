@@ -8,12 +8,14 @@ export default defineConfig(({ mode }) => {
     define: {
       "process.env.GEMINI_API_KEY": JSON.stringify(env.GEMINI_API_KEY)
     },
+
     publicDir: "public",
     base: process.env.VITE_BASE_URL || "./",
     server: {
       host: true, // Listen on all addresses
       port: 3000, // Default port
-      strictPort: true // Fail if port is already in use
+      strictPort: true, // Fail if port is already in use
+      allowedHosts: ["involvex.involvex.myfritz.link", "http://localhost:3000"]
     },
     build: {
       outDir: "dist",

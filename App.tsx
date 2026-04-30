@@ -150,7 +150,8 @@ const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string>("");
   const [showToast, setShowToast] = useState<boolean>(false);
   const [showQuickNote, setShowQuickNote] = useState<boolean>(false);
-  const [showAddItemToPreset, setShowAddItemToPreset] = useState<boolean>(false);
+  const [showAddItemToPreset, setShowAddItemToPreset] =
+    useState<boolean>(false);
   const [presetToAddTo, setPresetToAddTo] = useState<string>("");
 
   // Toast notification helper
@@ -290,8 +291,9 @@ const App: React.FC = () => {
       }
 
       // Extract just the filename from iconId if it contains path information
-      const rawIconId = items[itemId]?.iconId || itemId.toLowerCase().replace(/_/g, "");
-      const iconFileName = rawIconId.split('/').pop() || rawIconId;
+      const rawIconId =
+        items[itemId]?.iconId || itemId.toLowerCase().replace(/_/g, "");
+      const iconFileName = rawIconId.split("/").pop() || rawIconId;
 
       // Remove any existing extension (.webp, .png, etc.) and add .png
       const baseFileName = iconFileName.replace(/\.[^/.]+$/, "");
@@ -518,9 +520,8 @@ const App: React.FC = () => {
               );
             }
 
-            const { analyzeInventoryImage } = await import(
-              "./services/geminiService"
-            );
+            const { analyzeInventoryImage } =
+              await import("./services/geminiService");
             const analyzedItems = await analyzeInventoryImage(
               base64Image,
               configState.config.GEMINI_API_KEY
@@ -1184,9 +1185,9 @@ const App: React.FC = () => {
                       className="absolute px-2 py-1 text-xs text-white transition-all duration-200 transform -translate-y-1/2 bg-blue-600 rounded hover:bg-blue-700 right-2 top-1/2"
                       title="Add this item to a preset"
                       style={{
-                        fontSize: '10px',
-                        padding: '2px 6px',
-                        minWidth: 'auto'
+                        fontSize: "10px",
+                        padding: "2px 6px",
+                        minWidth: "auto"
                       }}
                     >
                       ➕
@@ -1551,7 +1552,7 @@ const App: React.FC = () => {
             ((selectedItemId &&
               items[selectedItemId]?.name &&
               !items[selectedItemId].name.startsWith("@")) ||
-             (multiItems.length > 0)) && (
+              multiItems.length > 0) && (
               <div id="crafting-section" className="mb-6">
                 <div className="p-6 glass-card">
                   <div className="flex items-center justify-between mb-4">
@@ -1562,62 +1563,62 @@ const App: React.FC = () => {
                       <span className="mr-2">🌳</span>
                       Crafting Tree
                     </h2>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        setShowPrices(!showPrices);
-                        localStorage.setItem(
-                          "showPrices",
-                          JSON.stringify(!showPrices)
-                        );
-                      }}
-                      className="px-3 py-2 text-xs font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
-                      style={{
-                        background: showPrices
-                          ? "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)"
-                          : "linear-gradient(135deg, #10b981 0%, #059669 100%)"
-                      }}
-                      title={`${showPrices ? "Hide" : "Show"} item prices`}
-                    >
-                      💰 {showPrices ? "Hide Prices" : "Display Prices"}
-                    </button>
-                    <button
-                      onClick={() => handleExpandAll(craftingData)}
-                      className="px-3 py-2 text-xs font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
-                      }}
-                    >
-                      📖 Expand All
-                    </button>
-                    <button
-                      onClick={() => handleCollapseAll(craftingData)}
-                      className="px-3 py-2 text-xs font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #f97316 0%, #ea580c 100%)"
-                      }}
-                    >
-                      📕 Collapse All
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => {
+                          setShowPrices(!showPrices);
+                          localStorage.setItem(
+                            "showPrices",
+                            JSON.stringify(!showPrices)
+                          );
+                        }}
+                        className="px-3 py-2 text-xs font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                        style={{
+                          background: showPrices
+                            ? "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)"
+                            : "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                        }}
+                        title={`${showPrices ? "Hide" : "Show"} item prices`}
+                      >
+                        💰 {showPrices ? "Hide Prices" : "Display Prices"}
+                      </button>
+                      <button
+                        onClick={() => handleExpandAll(craftingData)}
+                        className="px-3 py-2 text-xs font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
+                        }}
+                      >
+                        📖 Expand All
+                      </button>
+                      <button
+                        onClick={() => handleCollapseAll(craftingData)}
+                        className="px-3 py-2 text-xs font-semibold text-white transition-all duration-200 rounded-lg hover:shadow-xl hover:scale-105"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #f97316 0%, #ea580c 100%)"
+                        }}
+                      >
+                        📕 Collapse All
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-lg bg-gray-800/50">
+                    <CraftingNode
+                      node={craftingData}
+                      collapsedNodes={collapsedNodes}
+                      onToggle={handleToggleNode}
+                      getIconUrl={getIconUrl}
+                      onNodeContextMenu={handleContextMenu}
+                      showPrices={showPrices && priceConfig?.enabled}
+                      priceConfig={priceConfig}
+                      priceData={priceData}
+                    />
                   </div>
                 </div>
-                <div className="p-4 rounded-lg bg-gray-800/50">
-                  <CraftingNode
-                    node={craftingData}
-                    collapsedNodes={collapsedNodes}
-                    onToggle={handleToggleNode}
-                    getIconUrl={getIconUrl}
-                    onNodeContextMenu={handleContextMenu}
-                    showPrices={showPrices && priceConfig?.enabled}
-                    priceConfig={priceConfig}
-                    priceData={priceData}
-                  />
-                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {summaryData &&
             (summaryData.materials || summaryData.xpGains) &&
@@ -1633,38 +1634,38 @@ const App: React.FC = () => {
                     <span className="mr-2">📊</span>
                     {summaryData.title || "Summary"}
                   </h2>
-                {summaryMode === "xp" && summaryData.xpGains ? (
-                  <XPSummaryList xpGains={summaryData.xpGains} />
-                ) : summaryData.materials ? (
-                  <SummaryList
-                    materials={summaryData.materials}
-                    inventory={inventory}
-                    onInventoryChange={handleInventoryChange}
-                    getIconUrl={getIconUrl}
-                    title={summaryData.title || "Raw Materials"}
-                    showInventory={summaryMode === "net"}
-                    selectedIngredients={selectedIngredients}
-                    onIngredientChange={(
-                      itemId: string,
-                      ingredient: string
-                    ) => {
-                      setSelectedIngredients(prev => ({
-                        ...prev,
-                        [itemId]: ingredient
-                      }));
-                    }}
-                    showPrices={showPrices}
-                    priceConfig={priceConfig}
-                    priceData={priceData}
-                  />
-                ) : (
-                  <div className="py-8 text-center text-gray-400">
-                    <p>No data available for this view.</p>
-                  </div>
-                )}
+                  {summaryMode === "xp" && summaryData.xpGains ? (
+                    <XPSummaryList xpGains={summaryData.xpGains} />
+                  ) : summaryData.materials ? (
+                    <SummaryList
+                      materials={summaryData.materials}
+                      inventory={inventory}
+                      onInventoryChange={handleInventoryChange}
+                      getIconUrl={getIconUrl}
+                      title={summaryData.title || "Raw Materials"}
+                      showInventory={summaryMode === "net"}
+                      selectedIngredients={selectedIngredients}
+                      onIngredientChange={(
+                        itemId: string,
+                        ingredient: string
+                      ) => {
+                        setSelectedIngredients(prev => ({
+                          ...prev,
+                          [itemId]: ingredient
+                        }));
+                      }}
+                      showPrices={showPrices}
+                      priceConfig={priceConfig}
+                      priceData={priceData}
+                    />
+                  ) : (
+                    <div className="py-8 text-center text-gray-400">
+                      <p>No data available for this view.</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Tradeskill Calculator Section */}
           <div id="tradeskill-section" className="mb-6">
@@ -1912,7 +1913,9 @@ const App: React.FC = () => {
 
                 {/* Show current item being added */}
                 <div className="p-3 mb-4 border border-gray-600 rounded bg-gray-700/50">
-                  <div className="mb-2 text-sm font-medium text-yellow-400">Item to Add:</div>
+                  <div className="mb-2 text-sm font-medium text-yellow-400">
+                    Item to Add:
+                  </div>
                   {selectedItemId && (
                     <div className="flex items-center gap-2 text-sm text-gray-300">
                       <img
@@ -1924,7 +1927,8 @@ const App: React.FC = () => {
                             "https://nwdb.info/images/db/icons/filters/itemtypes/all.png";
                         }}
                       />
-                      {quantity}x {items[selectedItemId]?.name || selectedItemId}
+                      {quantity}x{" "}
+                      {items[selectedItemId]?.name || selectedItemId}
                     </div>
                   )}
                 </div>
@@ -1954,14 +1958,21 @@ const App: React.FC = () => {
                       if (presetToAddTo && selectedItemId) {
                         // Add single item to preset
                         const allPresets = [...PRESETS, ...customPresets];
-                        const presetIndex = allPresets.findIndex(p => p.name === presetToAddTo);
+                        const presetIndex = allPresets.findIndex(
+                          p => p.name === presetToAddTo
+                        );
 
                         if (presetIndex !== -1) {
                           const existingPreset = allPresets[presetIndex];
-                          const itemToAdd = { id: selectedItemId, qty: quantity };
+                          const itemToAdd = {
+                            id: selectedItemId,
+                            qty: quantity
+                          };
 
                           // Check for duplicates
-                          const duplicateItem = existingPreset.items.find(item => item.id === selectedItemId);
+                          const duplicateItem = existingPreset.items.find(
+                            item => item.id === selectedItemId
+                          );
 
                           if (duplicateItem) {
                             const confirmAdd = confirm(
@@ -1975,7 +1986,10 @@ const App: React.FC = () => {
                           }
 
                           // Add item to preset
-                          const updatedItems = [...existingPreset.items, itemToAdd];
+                          const updatedItems = [
+                            ...existingPreset.items,
+                            itemToAdd
+                          ];
                           const updatedPreset = {
                             ...existingPreset,
                             items: updatedItems,
@@ -1991,12 +2005,18 @@ const App: React.FC = () => {
                           } else {
                             // Update custom preset
                             updatedPresets = [...customPresets];
-                            updatedPresets[presetIndex - PRESETS.length] = updatedPreset;
+                            updatedPresets[presetIndex - PRESETS.length] =
+                              updatedPreset;
                           }
 
                           setCustomPresets(updatedPresets);
-                          localStorage.setItem("customPresets", JSON.stringify(updatedPresets));
-                          showToastMessage(`Item added to preset "${presetToAddTo}" successfully!`);
+                          localStorage.setItem(
+                            "customPresets",
+                            JSON.stringify(updatedPresets)
+                          );
+                          showToastMessage(
+                            `Item added to preset "${presetToAddTo}" successfully!`
+                          );
                         }
 
                         setPresetToAddTo("");
