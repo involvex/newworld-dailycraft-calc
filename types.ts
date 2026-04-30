@@ -154,6 +154,49 @@ export interface QuickNote {
   timestamp: string;
 }
 
+// Territory Standing Optimizer Types
+export interface MaterialInventory {
+  azoth: number;
+  corruptedFragment: number;
+  corruptedShard: number;
+  corruptedCrystal: number;
+  corruptedLodestone: number;
+  stoneBrick: number;
+  lodestoneBrick: number;
+  obsidianVoidstone: number;
+  runestone: number;
+  timber: number;
+  lumber: number;
+  wyrdwoodPlanks: number;
+  ironwoodPlanks: number;
+}
+
+export interface TerritoryOptimizerConfig {
+  activeTerritoryId: string; // e.g. "brightwood"
+  standingGainMultiplier: number; // decimal multiplier, e.g. 1.5 = +50%
+  allowMarketPurchases: boolean;
+  goldBudget: number;
+  strategy: "inventory_only" | "gold_augmented" | "time_limited";
+}
+
+export interface OptimizerCraftBatch {
+  tier: 1 | 2 | 3 | 4;
+  count: number;
+  standingBase: number;
+  standingEffective: number;
+  materialsUsed: Record<string, number>;
+}
+
+export interface OptimizerResult {
+  batches: OptimizerCraftBatch[];
+  totalStandingBase: number;
+  totalStandingEffective: number;
+  shortageGold: number;
+  materialsNeededToBuy: Record<string, number>;
+  azothConsumed: number;
+  azothRemaining: number;
+}
+
 export interface GEMINI_API_KEY {
   GEMINI_API_KEY: string;
 }
@@ -200,6 +243,7 @@ export interface Config {
     config: PriceConfig;
     data: Record<string, PriceData>;
   };
+  territoryOptimizer: TerritoryOptimizerConfig; // New
   [key: string]: any;
 }
 

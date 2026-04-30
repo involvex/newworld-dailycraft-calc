@@ -536,18 +536,97 @@ export const RECIPES: Record<string, Recipe> = {
       { itemId: 'PURE_SOLVENT', quantity: 50 } // SolventT5
     ]
   },
-  GEMSTONE_DUST: {
-    recipeId: 'GEMSTONE_DUST',
-    itemId: 'GEMSTONE_DUST',
-    baseYield: 1,
-    category: 'Stonecutting',
-    baseTier: 5,
-    bonusItemChance: -0.1, // -10% from CSV
-    craftAll: true,
-    ingredients: [
-      { itemId: 'PRISTINE_AMBER', quantity: 3 },
-      { itemId: 'PRISTINE_DIAMOND', quantity: 3 },
-      { itemId: 'PRISTINE_EMERALD', quantity: 3 }
-    ]
-  }
-};
+   GEMSTONE_DUST: {
+     recipeId: 'GEMSTONE_DUST',
+     itemId: 'GEMSTONE_DUST',
+     baseYield: 1,
+     category: 'Stonecutting',
+     baseTier: 5,
+     bonusItemChance: -0.1, // -10% from CSV
+     craftAll: true,
+     ingredients: [
+       { itemId: 'PRISTINE_AMBER', quantity: 3 },
+       { itemId: 'PRISTINE_DIAMOND', quantity: 3 },
+       { itemId: 'PRISTINE_EMERALD', quantity: 3 }
+     ]
+   },
+
+   // ===== TERRITORY STANDING SUPPLIES RECIPES =====
+   // These recipes consume materials and grant Territory Standing only (no physical item kept)
+   BASIC_TERRITORY_SUPPLIES: {
+     recipeId: 'BASIC_TERRITORY_SUPPLIES',
+     itemId: 'BASIC_TERRITORY_SUPPLIES',
+     baseYield: 1,
+     category: 'Stonecutting',
+     isCooldown: false,
+     baseTier: 1,
+     requiredLevel: 25,
+     tradeskillXP: 0,
+     standingXP: 560,
+     bonusItemChance: 0,
+     craftAll: true,
+     ingredients: [
+       { itemId: 'AZOTH', quantity: 200 },
+       { itemId: 'CORRUPTED_FRAGMENT', quantity: 20 },
+       { itemId: 'STONE_BRICK', quantity: 40 },
+       { itemId: 'TIMBER', quantity: 20 }
+     ]
+   },
+   TERRITORY_SUPPLIES: {
+     recipeId: 'TERRITORY_SUPPLIES',
+     itemId: 'TERRITORY_SUPPLIES',
+     baseYield: 1,
+     category: 'Stonecutting',
+     isCooldown: false,
+     baseTier: 2,
+     requiredLevel: 50,
+     tradeskillXP: 0,
+     standingXP: 1000,
+     bonusItemChance: 0,
+     craftAll: true,
+     ingredients: [
+       { itemId: 'AZOTH', quantity: 200 },
+       { itemId: 'CORRUPTED_SHARD', quantity: 10 },
+       { itemId: 'LODESTONE_BRICK', quantity: 20 },
+       { itemId: 'LUMBER', quantity: 20 }
+     ]
+   },
+   QUALITY_TERRITORY_SUPPLIES: {
+     recipeId: 'QUALITY_TERRITORY_SUPPLIES',
+     itemId: 'QUALITY_TERRITORY_SUPPLIES',
+     baseYield: 1,
+     category: 'Stonecutting',
+     isCooldown: false,
+     baseTier: 3,
+     requiredLevel: 75,
+     tradeskillXP: 0,
+     standingXP: 2436,
+     bonusItemChance: 0,
+     craftAll: true,
+     ingredients: [
+       { itemId: 'AZOTH', quantity: 200 },
+       { itemId: 'CORRUPTED_CRYSTAL', quantity: 3 },
+       { itemId: 'OBSIDIAN_VOIDSTONE', quantity: 6 },
+       { itemId: 'WYRDWOOD_PLANKS', quantity: 20 }
+     ]
+   },
+   SUPERIOR_TERRITORY_SUPPLIES: {
+     recipeId: 'SUPERIOR_TERRITORY_SUPPLIES',
+     itemId: 'SUPERIOR_TERRITORY_SUPPLIES',
+     baseYield: 1,
+     category: 'Stonecutting',
+     isCooldown: false,
+     baseTier: 4,
+     requiredLevel: 100,
+     tradeskillXP: 0,
+     standingXP: 5280,
+     bonusItemChance: 0,
+     craftAll: true,
+     ingredients: [
+       { itemId: 'AZOTH', quantity: 200 },
+       { itemId: 'CORRUPTED_LODESTONE', quantity: 2 },
+       { itemId: 'RUNESTONE', quantity: 2 },
+       { itemId: 'IRONWOOD_PLANKS', quantity: 20 }
+     ]
+   }
+ };

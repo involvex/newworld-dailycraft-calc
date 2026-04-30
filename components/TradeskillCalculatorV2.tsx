@@ -8,6 +8,7 @@ import {
   calculateProfit,
   recommendRecipes
 } from "../services/tradeskillService";
+import { TerritoryStandingOptimizer } from "./TerritoryStandingOptimizer";
 
 interface TradeskillCalculatorV2Props {
   recipes: Record<string, Recipe[]>;
@@ -27,7 +28,8 @@ type ViewMode =
   | "goals"
   | "shopping"
   | "profit"
-  | "recommendations";
+  | "recommendations"
+  | "standing";
 
 interface CraftingGoal {
   id: string;
@@ -253,12 +255,13 @@ export const TradeskillCalculatorV2: React.FC<TradeskillCalculatorV2Props> = ({
           { mode: "goals", label: "🎯 Goals", icon: "🎯" },
           { mode: "shopping", label: "🛒 Shopping List", icon: "🛒" },
           { mode: "profit", label: "💰 Profit", icon: "💰" },
-          { mode: "recommendations", label: "🌟 Recommended", icon: "🌟" }
-        ].map(({ mode, label }) => (
+          { mode: "recommendations", label: "🌟 Recommended", icon: "🌟" },
+          { mode: "standing", label: "🏛️ Standing", icon: "🏛️" }
+        ].map(({ mode, label, icon }) => (
           <button
             key={mode}
             onClick={() => setViewMode(mode as ViewMode)}
-            className="px-4 py-2 text-sm font-semibold transition-all duration-200 rounded-lg hover:scale-105"
+            className={`px-4 py-2 text-sm font-semibold transition-all duration-200 rounded-lg hover:scale-105`}
             style={{
               background:
                 viewMode === mode
@@ -272,7 +275,7 @@ export const TradeskillCalculatorV2: React.FC<TradeskillCalculatorV2Props> = ({
                   : "1px solid var(--border-color)"
             }}
           >
-            {label}
+            {icon} {label}
           </button>
         ))}
       </div>
@@ -455,6 +458,8 @@ export const TradeskillCalculatorV2: React.FC<TradeskillCalculatorV2Props> = ({
           onToggleFavorite={onToggleFavorite}
         />
       )}
+
+      {viewMode === "standing" && <TerritoryStandingOptimizer />}
     </div>
   );
 };

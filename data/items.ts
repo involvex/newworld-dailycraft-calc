@@ -92,8 +92,16 @@ export const ITEMS: Record<string, Item> = {
   LOAMY_LODESTONE: { id: 'LOAMY_LODESTONE', name: 'Loamy Lodestone', iconId: 'lodestoneeartht1', tier: 3, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 3 Stone, Alchemy, Protective Reagents' },
   SHOCKING_LODESTONE: { id: 'SHOCKING_LODESTONE', name: 'Shocking Lodestone', iconId: 'lodestoneairt1', tier: 3, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 3 Stone, Alchemy, Offensive Reagents' },
   GLEAMING_LODESTONE: { id: 'GLEAMING_LODESTONE', name: 'Gleaming Lodestone', iconId: 'lodestonelifet1', tier: 3, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 3 Stone, Alchemy, Medicinal Reagents' },
-  CORRUPTED_LODESTONE: { id: 'CORRUPTED_LODESTONE', name: 'Corrupted Lodestone', iconId: 'breachlodestone', tier: 5, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 5 Stone, Crafting Components' },
-  CURSED_LODESTONE: { id: 'CURSED_LODESTONE', name: 'Cursed Lodestone', iconId: 'cursed10ws_stonet4', tier: 4, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 4 Stone, Stone' },
+   CORRUPTED_LODESTONE: { id: 'CORRUPTED_LODESTONE', name: 'Corrupted Lodestone', iconId: 'breachlodestone', tier: 5, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 5 Stone, Crafting Components' },
+   CURSED_LODESTONE: { id: 'CURSED_LODESTONE', name: 'Cursed Lodestone', iconId: 'cursed10ws_stonet4', tier: 4, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 4 Stone, Stone' },
+
+   // Corrupted Materials (Breach loot)
+   CORRUPTED_FRAGMENT: { id: 'CORRUPTED_FRAGMENT', name: 'Corrupted Fragment', iconId: 'corruptedfragment', tier: 1, type: 'Crafting Component', weight: 0.1, maxStack: 10000, types: 'Corrupted Material, Crafting Component' },
+   CORRUPTED_SHARD: { id: 'CORRUPTED_SHARD', name: 'Corrupted Shard', iconId: 'corruptedshard', tier: 2, type: 'Crafting Component', weight: 0.1, maxStack: 10000, types: 'Corrupted Material, Crafting Component' },
+   CORRUPTED_CRYSTAL: { id: 'CORRUPTED_CRYSTAL', name: 'Corrupted Crystal', iconId: 'corruptedcrystal', tier: 3, type: 'Crafting Component', weight: 0.1, maxStack: 10000, types: 'Corrupted Material, Crafting Component' },
+
+   // Azoth (currency/resource)
+   AZOTH: { id: 'AZOTH', name: 'Azoth', iconId: 'azoth', tier: 1, type: 'Currency', weight: 0.0, maxStack: 10000, types: 'Currency, Resource, Teleportation' },
   
   // Alchemy Quintessences
   FIRE_QUINTESSENCE: { id: 'FIRE_QUINTESSENCE', name: 'Fire Quintessence', iconId: 'essencefiret1', tier: 5, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 5 Alchemy, Fire Arcana' },
@@ -129,5 +137,11 @@ export const ITEMS: Record<string, Item> = {
   PRISTINE_RUBY: { id: 'PRISTINE_RUBY', name: 'Pristine Ruby', iconId: 'rubyt4', tier: 4, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 4 Gemstone' },
   PRISTINE_SAPPHIRE: { id: 'PRISTINE_SAPPHIRE', name: 'Pristine Sapphire', iconId: 'sapphiret4', tier: 4, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 4 Gemstone' },
   PRISTINE_TOPAZ: { id: 'PRISTINE_TOPAZ', name: 'Pristine Topaz', iconId: 'topazt4', tier: 4, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 4 Gemstone' },
-  PRISTINE_TURQUOISE: { id: 'PRISTINE_TURQUOISE', name: 'Pristine Turquoise', iconId: 'turquoiset4', tier: 4, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 4 Gemstone' },
-};
+   PRISTINE_TURQUOISE: { id: 'PRISTINE_TURQUOISE', name: 'Pristine Turquoise', iconId: 'turquoiset4', tier: 4, type: 'Raw Resource', weight: 0.1, maxStack: 10000, types: 'Tier 4 Gemstone' },
+
+   // Territory Supplies (for Territory Standing contribution)
+   BASIC_TERRITORY_SUPPLIES: { id: 'BASIC_TERRITORY_SUPPLIES', name: 'Basic Territory Supplies', iconId: 'territorystandingsuppliest1', tier: 1, type: 'Crafting Component', weight: 0.1, maxStack: 10000, types: 'Territory Contributions, Crafting Components' },
+   TERRITORY_SUPPLIES: { id: 'TERRITORY_SUPPLIES', name: 'Territory Supplies', iconId: 'territorystandingsuppliest2', tier: 2, type: 'Crafting Component', weight: 0.1, maxStack: 10000, types: 'Territory Contributions, Crafting Components' },
+   QUALITY_TERRITORY_SUPPLIES: { id: 'QUALITY_TERRITORY_SUPPLIES', name: 'Quality Territory Supplies', iconId: 'territorystandingsuppliest3', tier: 3, type: 'Crafting Component', weight: 0.1, maxStack: 10000, types: 'Territory Contributions, Crafting Components' },
+   SUPERIOR_TERRITORY_SUPPLIES: { id: 'SUPERIOR_TERRITORY_SUPPLIES', name: 'Superior Territory Supplies', iconId: 'territorystandingsuppliest4', tier: 4, type: 'Crafting Component', weight: 0.1, maxStack: 10000, types: 'Territory Contributions, Crafting Components' },
+ };

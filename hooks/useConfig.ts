@@ -48,6 +48,13 @@ const defaultConfig: ConfigData = {
       updateInterval: 24
     },
     data: {}
+  },
+  territoryOptimizer: {
+    activeTerritoryId: "windsward",
+    standingGainMultiplier: 1.0, // +0%
+    allowMarketPurchases: false,
+    goldBudget: 0,
+    strategy: "inventory_only"
   }
 };
 
