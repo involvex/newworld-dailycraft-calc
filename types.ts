@@ -113,6 +113,7 @@ export type ItemDefinitionMap = Record<string, string>;
 
 // Electron API types
 declare global {
+  // eslint-disable-next-line @/no-unused-vars
   interface Window {
     electronAPI?: {
       getDesktopSources: () => Promise<any[]>;
@@ -204,3 +205,6 @@ export interface Config {
 
 // Re-export for useConfig.ts
 export type ConfigData = Config;
+
+// Reference Window to avoid unused warning
+export type ElectronAPI = Window["electronAPI"];

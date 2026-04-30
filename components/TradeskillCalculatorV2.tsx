@@ -15,7 +15,7 @@ interface TradeskillCalculatorV2Props {
   bonuses: AllBonuses;
   priceData: Record<string, { price: number }>;
   favoriteRecipes: Set<string>;
-  onToggleFavorite: (recipeId: string) => void;
+  onToggleFavorite: (_recipeId: string) => void;
   inventory: Record<string, number>;
 }
 
@@ -463,7 +463,7 @@ export const TradeskillCalculatorV2: React.FC<TradeskillCalculatorV2Props> = ({
 const RecipesView: React.FC<{
   calculations: CraftingCalculation[];
   favoriteRecipes: Set<string>;
-  onToggleFavorite: (recipeId: string) => void;
+  onToggleFavorite: (_recipeId: string) => void;
   showOptimized: boolean;
   priceData: Record<string, { price: number }>;
   items: Record<string, Item>;
@@ -717,12 +717,18 @@ const RecipesView: React.FC<{
   );
 };
 
-const BulkCalculatorView: React.FC<{
+interface BulkCalculatorViewProps {
   calculations: CraftingCalculation[];
   bulkQuantity: number;
-  setBulkQuantity: (qty: number) => void;
+  setBulkQuantity: (_qty: number) => void;
   priceData: Record<string, { price: number }>;
-}> = ({ calculations, bulkQuantity, setBulkQuantity, priceData }) => {
+}
+
+const BulkCalculatorView: React.FC<BulkCalculatorViewProps> = ({
+  calculations,
+  bulkQuantity,
+  setBulkQuantity
+}) => {
   return (
     <div className="space-y-4">
       <div
@@ -853,7 +859,7 @@ const BulkCalculatorView: React.FC<{
 const CompareView: React.FC<{
   calculations: CraftingCalculation[];
   selectedForCompare: string[];
-  toggleCompare: (recipeId: string) => void;
+  toggleCompare: (_recipeId: string) => void;
   recipes: Record<string, Recipe[]>;
 }> = ({ calculations, selectedForCompare, toggleCompare, recipes }) => {
   const selectedCalcs = calculations.filter(calc =>
@@ -1189,7 +1195,7 @@ const LevelingGuideView: React.FC<{
 
 const GoalsView: React.FC<{
   goals: CraftingGoal[];
-  saveGoals: (goals: CraftingGoal[]) => void;
+  saveGoals: (_goals: CraftingGoal[]) => void;
   bonuses: AllBonuses;
   categories: string[];
 }> = ({ goals, saveGoals, bonuses, categories }) => {
@@ -1709,7 +1715,7 @@ const ProfitView: React.FC<{
 const RecommendationsView: React.FC<{
   recommendations: CraftingCalculation[];
   favoriteRecipes: Set<string>;
-  onToggleFavorite: (recipeId: string) => void;
+  onToggleFavorite: (_recipeId: string) => void;
 }> = ({ recommendations, favoriteRecipes, onToggleFavorite }) => {
   if (recommendations.length === 0) {
     return (

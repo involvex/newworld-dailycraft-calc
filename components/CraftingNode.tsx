@@ -3,16 +3,19 @@ import { CraftingNodeData, PriceConfig } from "../types";
 
 interface CraftingNodeProps {
   node: CraftingNodeData;
-  getIconUrl: (itemId: string, _tier: number) => string;
+  getIconUrl: (_itemId: string, _tier: number) => string;
   isRoot?: boolean;
   isLast?: boolean;
   collapsedNodes: Set<string>;
-  onToggle: (nodeId: string) => void;
+  onToggle: (_nodeId: string) => void;
   selectedIngredients?: Record<string, string>;
-  onIngredientChange?: (itemId: string, ingredient: string) => void;
+  onIngredientChange?: (_itemId: string, _ingredient: string) => void;
   viewMode?: "net" | "gross";
   summaryData?: any[];
-  onNodeContextMenu?: (node: CraftingNodeData, event: React.MouseEvent) => void;
+  onNodeContextMenu?: (
+    _node: CraftingNodeData,
+    _event: React.MouseEvent
+  ) => void;
   showPrices?: boolean;
   priceConfig?: PriceConfig;
   priceData?: Record<string, any>;

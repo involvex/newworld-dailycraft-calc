@@ -1,10 +1,5 @@
 import { useState } from "react";
 import { Preset } from "../types";
-import {
-  collectAllNodeIds,
-  findNodeById,
-  collectSubtreeNodeIds
-} from "../utils/treeUtils";
 import { RECIPES } from "../data/recipes";
 
 interface UsePresetsProps {
@@ -12,13 +7,12 @@ interface UsePresetsProps {
   _selectedItemId: string;
   _quantity: number;
   _collapsedNodes: Set<string>;
-  setMultiItems: (items: any[]) => void;
-  setSelectedItemId: (itemId: string) => void;
-  setQuantity: (quantity: number) => void;
-  restoreCollapsedNodes: (nodes: string[] | Set<string>) => void;
-  selectedPreset: string; // Add selectedPreset to props
-  setSelectedPreset: (presetName: string) => void; // Add setSelectedPreset to props
-  // Add tree-related props for enhanced preset functionality
+  setMultiItems: (_items: any[]) => void;
+  setSelectedItemId: (_itemId: string) => void;
+  setQuantity: (_quantity: number) => void;
+  restoreCollapsedNodes: (_nodes: string[] | Set<string>) => void;
+  selectedPreset: string;
+  setSelectedPreset: (_presetName: string) => void;
   items?: Record<string, any>;
   bonuses?: any;
   selectedIngredients?: Record<string, string>;
@@ -66,10 +60,7 @@ export default function usePresets({
   restoreCollapsedNodes,
   selectedPreset, // Destructure from props
   setSelectedPreset, // Destructure from props
-  items = {},
-  bonuses = {},
-  selectedIngredients = {},
-  viewMode = "net"
+  items = {}
 }: UsePresetsProps) {
   const [customPresets, setCustomPresets] = useState<Preset[]>(() =>
     getInitial("customPresets", [])

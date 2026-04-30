@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ConfigData, PriceConfig, PriceData, AllBonuses } from "../types";
+import type { ConfigData } from "../types";
 
 // Type for config stored in browser (without API key for security)
 export interface StoredConfigData {

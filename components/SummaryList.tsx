@@ -54,7 +54,6 @@ const SummaryList = ({
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text);
       } else {
-        // Fallback for browsers without clipboard API
         const textArea = document.createElement("textarea");
         textArea.value = text;
         textArea.style.position = "fixed";
@@ -129,13 +128,10 @@ const SummaryList = ({
     if (!showPrices || !priceConfig?.enabled || !itemName || !_priceData)
       return null;
 
-    // Try multiple ways to find the price data
     let itemPriceData = null;
 
-    // First try exact lowercase match
     itemPriceData = _priceData[itemName.toLowerCase()];
 
-    // If not found, try finding by item name in the price data keys
     if (!itemPriceData) {
       const priceDataKeys = Object.keys(_priceData);
       const matchingKey = priceDataKeys.find(
@@ -146,7 +142,6 @@ const SummaryList = ({
       }
     }
 
-    // If still not found, try partial matching
     if (!itemPriceData) {
       const priceDataKeys = Object.keys(_priceData);
       const matchingKey = priceDataKeys.find(
@@ -279,12 +274,13 @@ const SummaryList = ({
                   <p className="font-semibold text-white">
                     {item.name}
                     {item.id === "GEMSTONE_DUST" &&
-                      selectedIngredients[item.id] && (
+                      selectedIngredients?.[item.id] && (
                         <span className="ml-2 text-xs text-yellow-400">
                           (
-                          {selectedIngredients[item.id]
-                            .replace("PRISTINE_", "")
-                            .toLowerCase()}
+                          {selectedIngredients[item.id]!.replace(
+                            "PRISTINE_",
+                            ""
+                          ).toLowerCase()}
                           )
                         </span>
                       )}

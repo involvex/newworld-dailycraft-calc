@@ -1,18 +1,10 @@
 import { useMemo } from "react";
-import {
-  AllBonuses,
-  RawMaterial,
-  XPSummary,
-  CraftingSummary,
-  Item,
-  Recipe
-} from "../types";
+import type { AllBonuses, Item, CraftingNodeData } from "../types";
 import {
   calculateCraftingTree,
   aggregateRawMaterials,
   calculateXPGains
 } from "../services/craftingService";
-import { CraftingNodeData } from "../types";
 import { RECIPES } from "../data/recipes";
 
 interface UseCraftingTreeProps {

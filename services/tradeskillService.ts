@@ -294,7 +294,7 @@ export function findCheapestAlternative(
  * Calculate profit for a crafted item
  */
 export function calculateProfit(
-  calculation: CraftingCalculation,
+  _calculation: CraftingCalculation,
   priceData: Record<string, { price: number }>,
   itemId: string
 ): number {

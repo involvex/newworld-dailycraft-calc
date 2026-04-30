@@ -22,14 +22,14 @@ const getItem = (itemId: string, items: Record<string, Item>): Item => {
   }
 
   // If not found, try to find by item.id property
-  for (const [key, itemObj] of Object.entries(items)) {
+  for (const [, itemObj] of Object.entries(items)) {
     if (itemObj.id === itemId) {
       return itemObj;
     }
   }
 
   // Try to find by item name (for cases where itemId is the display name)
-  for (const [key, itemObj] of Object.entries(items)) {
+  for (const [, itemObj] of Object.entries(items)) {
     if (itemObj.name === itemId) {
       return itemObj;
     }

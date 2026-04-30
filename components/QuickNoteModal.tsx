@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { QuickNote } from "../types";
-import { ITEMS } from "../data/items";
 
 interface QuickNoteModalProps {
   isOpen: boolean;
@@ -11,7 +10,7 @@ interface QuickNoteModalProps {
   onManualOCR: () => void;
   showPrices: boolean;
   priceData: Record<string, { price: number }>;
-  findBestItemMatch: (itemName: string) => string | null;
+  findBestItemMatch: (_itemName: string) => string | null;
 }
 
 export function QuickNoteModal({

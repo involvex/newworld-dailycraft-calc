@@ -35,14 +35,7 @@ export function SettingsModal({
   onBonusChange,
   configState
 }: SettingsModalProps) {
-  const {
-    config,
-    updateConfig,
-    registerHotkeys,
-    exportConfig,
-    importConfig,
-    isElectron
-  } = configState;
+  const { config, updateConfig, registerHotkeys, isElectron } = configState;
   const [hotkeys, setHotkeys] = useState(config?.hotkeys || {});
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [toast, setToast] = useState<{
@@ -70,7 +63,6 @@ export function SettingsModal({
     openSettings: 0,
     quickNote: 0
   });
-  const [forceUpdate, setForceUpdate] = useState(0);
   const currentRecordedKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -214,9 +206,6 @@ export function SettingsModal({
         return updated;
       });
 
-      // Force component re-render to ensure input fields update
-      setForceUpdate(prev => prev + 1);
-
       showToast(`Hotkey recorded: ${formattedCombo}`, "success");
       console.log("Toast should show for:", formattedCombo);
     } else {
@@ -348,9 +337,6 @@ export function SettingsModal({
             return updated;
           });
 
-          // Force component re-render to ensure input fields update
-          setForceUpdate(prev => prev + 1);
-
           showToast(`Hotkey recorded: ${formattedCombo}`, "success");
           console.log("Toast should show for:", formattedCombo);
         } else {
@@ -392,44 +378,6 @@ export function SettingsModal({
     } catch (error) {
       showToast("Failed to save API Key", "error");
       console.error("Error saving API key:", error);
-    }
-  };
-
-  const handleExportConfig = async () => {
-    try {
-      if (isElectron) {
-        const success = await exportConfig();
-        if (success) {
-          showToast("Configuration exported successfully!", "success");
-        } else {
-          showToast("Export cancelled or failed", "error");
-        }
-      } else {
-        showToast("Export only available in desktop app", "error");
-      }
-    } catch (error) {
-      showToast("Failed to export configuration", "error");
-    }
-  };
-
-  const handleImportConfig = async () => {
-    try {
-      if (isElectron) {
-        const success = await importConfig();
-        if (success) {
-          showToast(
-            "Configuration imported successfully! Reloading...",
-            "success"
-          );
-          setTimeout(() => window.location.reload(), 1500);
-        } else {
-          showToast("Import cancelled or failed", "error");
-        }
-      } else {
-        showToast("Import only available in desktop app", "error");
-      }
-    } catch (error) {
-      showToast("Failed to import configuration", "error");
     }
   };
 

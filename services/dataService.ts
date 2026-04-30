@@ -56,7 +56,7 @@ function processItemData(itemData: any[]): Record<string, Item> {
 
 function processRecipeData(
   recipeData: any[],
-  category: string
+  category: Recipe["category"]
 ): Record<string, Recipe> {
   const recipes: Record<string, Recipe> = {};
   if (!Array.isArray(recipeData)) {

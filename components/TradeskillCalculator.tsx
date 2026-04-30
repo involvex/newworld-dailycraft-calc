@@ -11,7 +11,7 @@ interface TradeskillCalculatorProps {
   bonuses: AllBonuses;
   priceData: Record<string, { price: number }>;
   favoriteRecipes: Set<string>;
-  onToggleFavorite: (recipeId: string) => void;
+  onToggleFavorite: (_recipeId: string) => void;
 }
 
 export const TradeskillCalculator: React.FC<TradeskillCalculatorProps> = ({
