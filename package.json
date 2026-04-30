@@ -55,13 +55,13 @@
   },
   "dependencies": {
     "@google/genai": "^1.51.0",
-    "@vitejs/plugin-react": "^5.0.4",
+    "@vitejs/plugin-react": "^6.0.1",
     "cloneable-readable": "^3.0.0",
     "core-util-is": "^1.0.3",
-    "globals": "^16.4.0",
+    "globals": "^17.5.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "tesseract.js": "^6.0.1"
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@eslint/css": "^0.12.0",
@@ -72,17 +72,17 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "concurrently": "^9.2.1",
-    "cross-env": "^7.0.3",
-    "electron": "^38.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^41.3.0",
     "electron-builder": "^26.8.1",
     "eslint-plugin-react": "^7.37.5",
     "generate": "^0.14.0",
     "generate-eslint": "^1.0.0",
     "gh-pages": "^6.3.0",
     "prettier": "^3.8.3",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.1",
-    "vite": "^7.3.2",
+    "vite": "^8.0.10",
     "wait-on": "^9.0.5"
   },
   "build": {
@@ -121,6 +121,8 @@
   },
   "trustedDependencies": [
     "@google/genai",
+    "electron",
+    "electron-winstaller",
     "protobufjs",
     "tesseract.js"
   ]
